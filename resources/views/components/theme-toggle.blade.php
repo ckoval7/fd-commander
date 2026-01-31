@@ -2,10 +2,11 @@
     darkMode: localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches),
     toggle() {
         this.darkMode = !this.darkMode;
-        localStorage.setItem('theme', this.darkMode ? 'dark' : 'light');
-        document.documentElement.classList.toggle('dark', this.darkMode);
+        const theme = this.darkMode ? 'dark' : 'light';
+        localStorage.setItem('theme', theme);
+        document.documentElement.setAttribute('data-theme', theme);
     }
-}" x-init="document.documentElement.classList.toggle('dark', darkMode)" {{ $attributes }}>
+}" x-init="document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light')" {{ $attributes }}>
     <button
         @click="toggle()"
         type="button"
