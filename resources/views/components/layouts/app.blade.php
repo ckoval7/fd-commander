@@ -24,11 +24,8 @@
         </x-slot:actions>
     </x-nav>
 
-    {{-- HEADER desktop only --}}
-    <x-header />
-
     {{-- MAIN --}}
-    <x-main>
+    <x-main with-nav full-width>
         {{-- SIDEBAR --}}
         <x-slot:sidebar drawer="main-drawer" collapsible class="bg-base-100 lg:bg-inherit">
 
@@ -98,6 +95,22 @@
 
         {{-- The `$slot` goes here --}}
         <x-slot:content>
+            {{-- Desktop header - shown above main content --}}
+            <div class="hidden lg:block sticky top-0 z-10 bg-base-100 border-b border-base-300">
+                <div class="flex items-center justify-between px-6 py-4">
+                    {{-- Left: App Brand --}}
+                    <div class="flex items-center gap-4">
+                        <x-app-brand />
+                    </div>
+
+                    {{-- Right: Theme toggle and User menu --}}
+                    <div class="flex items-center gap-3">
+                        <x-theme-toggle />
+                        <x-user-menu />
+                    </div>
+                </div>
+            </div>
+
             {{ $slot }}
         </x-slot:content>
     </x-main>
