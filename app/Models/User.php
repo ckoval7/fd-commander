@@ -19,18 +19,20 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'call_sign',
+        'first_name',
+        'last_name',
         'email',
         'password',
-        'call_sign',
         'license_class',
         'user_role',
-        'lockout_until',
+        'account_locked_at',
         'failed_login_attempts',
         'last_login_at',
         'last_login_ip',
         'password_changed_at',
-        'must_change_password',
+        'requires_password_change',
+        'two_factor_secret',
     ];
 
     /**
@@ -55,10 +57,12 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'lockout_until' => 'datetime',
+            'account_locked_at' => 'datetime',
             'last_login_at' => 'datetime',
             'password_changed_at' => 'datetime',
-            'must_change_password' => 'boolean',
+            'requires_password_change' => 'boolean',
+            'two_factor_bypass_enabled' => 'boolean',
+            'two_factor_bypass_expires_at' => 'datetime',
         ];
     }
 
@@ -75,7 +79,7 @@ class User extends Authenticatable
      */
     public function isLocked(): bool
     {
-        return $this->lockout_until !== null && $this->lockout_until->isFuture();
+        return $this->account_locked_at !== null && $this->account_locked_at->isFuture();
     }
 
     /**
