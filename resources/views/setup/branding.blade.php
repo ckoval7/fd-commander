@@ -50,7 +50,7 @@
                     Back
                 </x-button>
 
-                <x-button type="submit" class="btn-primary" icon="o-arrow-right" icon-right>
+                <x-button type="submit" class="btn-primary" icon="o-arrow-right" :icon-right="true">
                     Next: Preferences
                 </x-button>
             </div>

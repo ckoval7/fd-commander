@@ -68,7 +68,7 @@
                     Back
                 </x-button>
 
-                <x-button type="submit" class="btn-success" icon="o-check-circle" icon-right>
+                <x-button type="submit" class="btn-success" icon="o-check-circle" :icon-right="true">
                     Complete Setup
                 </x-button>
             </div>
