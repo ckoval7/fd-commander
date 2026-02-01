@@ -15,9 +15,7 @@
             </x-tab>
 
             <x-tab name="roles" label="Role Management" icon="o-shield-check">
-                <div class="p-4">
-                    <p class="text-gray-600">Role management tab coming soon...</p>
-                </div>
+                <livewire:settings.role-manager />
             </x-tab>
         </x-tabs>
     </div>
