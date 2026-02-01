@@ -26,6 +26,7 @@ class PermissionSeeder extends Seeder
             // User Administration
             ['name' => 'manage-users', 'description' => 'Create, edit, and delete user accounts'],
             ['name' => 'manage-roles', 'description' => 'Create roles and assign permissions'],
+            ['name' => 'manage-settings', 'description' => 'Configure system settings and preferences'],
 
             // Content Management
             ['name' => 'manage-guestbook', 'description' => 'Moderate visitor guestbook entries'],
@@ -39,6 +40,6 @@ class PermissionSeeder extends Seeder
             Permission::create($permission);
         }
 
-        $this->command->info('Created 12 permissions');
+        $this->command->info('Created 13 permissions');
     }
 }
