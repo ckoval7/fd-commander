@@ -32,6 +32,11 @@
                 <x-app-brand />
             </div>
 
+            {{-- Center: Event Countdown Timer --}}
+            <div class="flex-1 flex items-center justify-center">
+                <livewire:components.event-countdown />
+            </div>
+
             {{-- Right: Theme toggle and User menu --}}
             <div class="flex items-center gap-3">
                 <x-theme-toggle />
@@ -40,8 +45,13 @@
         </div>
     </div>
 
+    {{-- Mobile timer bar - below navbar --}}
+    <div class="lg:hidden sticky top-16 z-40 bg-base-100 border-b border-base-300 px-4 py-2">
+        <livewire:components.event-countdown />
+    </div>
+
     {{-- MAIN --}}
-    <x-main full-width>
+    <x-main full-width with-nav>
         {{-- SIDEBAR --}}
         <x-slot:sidebar drawer="main-drawer" collapsible class="bg-base-100 lg:bg-inherit">
             {{-- MENU --}}
