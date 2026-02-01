@@ -11,9 +11,7 @@
             </x-tab>
 
             <x-tab name="branding" label="Site Branding" icon="o-paint-brush">
-                <div class="p-4">
-                    <p class="text-gray-600">Site branding tab coming soon...</p>
-                </div>
+                <livewire:settings.site-branding />
             </x-tab>
 
             <x-tab name="roles" label="Role Management" icon="o-shield-check">
