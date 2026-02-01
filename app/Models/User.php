@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -23,6 +24,7 @@ class User extends Authenticatable
         'first_name',
         'last_name',
         'email',
+        'email_verified_at',
         'password',
         'license_class',
         'user_role',
@@ -88,5 +90,13 @@ class User extends Authenticatable
     public function has2FAEnabled(): bool
     {
         return $this->two_factor_secret !== null;
+    }
+
+    /**
+     * Get the user's invitations.
+     */
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(UserInvitation::class);
     }
 }

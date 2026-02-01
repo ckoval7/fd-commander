@@ -11,8 +11,8 @@ class CheckSystemSetupComplete
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // Allow setup routes through
-        if ($request->is('setup/*')) {
+        // Allow setup routes and invitation routes through
+        if ($request->is('setup/*') || $request->is('register/invite/*')) {
             return $next($request);
         }
 
@@ -23,7 +23,7 @@ class CheckSystemSetupComplete
 
         if (! $setupComplete) {
             // Redirect to setup wizard
-            if (! $request->is('setup/*')) {
+            if (! $request->is('setup/*') && ! $request->is('register/invite/*')) {
                 return redirect('/setup/welcome');
             }
         }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\SetupController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,6 +13,10 @@ Route::prefix('setup')->group(function () {
     Route::get('/preferences', [SetupController::class, 'preferences'])->name('setup.preferences');
     Route::post('/complete', [SetupController::class, 'complete'])->name('setup.complete');
 });
+
+// User Invitation Routes
+Route::get('/register/invite/{token}', [InvitationController::class, 'show'])->name('invitation.show');
+Route::post('/register/invite/{token}', [InvitationController::class, 'accept'])->name('invitation.accept');
 
 // Dashboard
 Route::get('/', function () {

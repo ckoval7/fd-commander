@@ -3,8 +3,11 @@
 namespace App\Livewire\Users;
 
 use App\Models\User;
+use App\Models\UserInvitation;
+use App\Notifications\UserInvitation as UserInvitationNotification;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Computed;
@@ -210,13 +213,29 @@ class UserManagement extends Component
         $user->assignRole($role);
 
         if ($this->inviteMode) {
-            // TODO: Send invitation email
-            // Will be implemented in invitation system task
-        }
+            try {
+                $token = Str::random(64);
+                $adminName = auth()->user()->first_name.' '.auth()->user()->last_name;
 
-        $this->showModal = false;
-        $this->reset(['selectedUsers', 'selectAll']);
-        $this->dispatch('toast', title: 'Success', description: 'User created successfully', icon: 'o-check-circle', css: 'alert-success');
+                UserInvitation::create([
+                    'user_id' => $user->id,
+                    'token' => $token,
+                    'expires_at' => now()->addHours(72),
+                ]);
+
+                $user->notify(new UserInvitationNotification($token, $adminName));
+
+                $this->showModal = false;
+                $this->reset(['selectedUsers', 'selectAll']);
+                $this->dispatch('toast', title: 'Success', description: 'User created and invitation email sent', icon: 'o-envelope', css: 'alert-success');
+            } catch (\Exception $e) {
+                $this->dispatch('toast', title: 'Warning', description: 'User created but invitation email failed to send. Please check mail configuration.', icon: 'o-exclamation-triangle', css: 'alert-warning');
+            }
+        } else {
+            $this->showModal = false;
+            $this->reset(['selectedUsers', 'selectAll']);
+            $this->dispatch('toast', title: 'Success', description: 'User created successfully', icon: 'o-check-circle', css: 'alert-success');
+        }
     }
 
     protected function updateUser(): void
