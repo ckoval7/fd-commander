@@ -1,11 +1,11 @@
 <x-layouts.guest>
     <div class="max-w-2xl mx-auto py-12 px-4">
         {{-- Progress Stepper --}}
-        <x-steps wire:model="currentStep" class="mb-8">
-            <x-step step="1" text="Admin Password" />
-            <x-step step="2" text="Site Branding" />
-            <x-step step="3" text="Preferences" />
-        </x-steps>
+        <ul class="steps steps-horizontal w-full mb-8">
+            <li class="step {{ $currentStep >= 1 ? 'step-primary' : '' }}">Admin Password</li>
+            <li class="step {{ $currentStep >= 2 ? 'step-primary' : '' }}">Site Branding</li>
+            <li class="step {{ $currentStep >= 3 ? 'step-primary' : '' }}">Preferences</li>
+        </ul>
 
         <x-card title="Step 1: Admin Password">
             <div class="space-y-6">

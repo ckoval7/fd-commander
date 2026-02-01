@@ -7,7 +7,6 @@ use App\Http\Requests\SetupStep2Request;
 use App\Http\Requests\SetupStep3Request;
 use App\Models\Setting;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +15,7 @@ class SetupController extends Controller
 {
     public function welcome()
     {
-        return view('setup.welcome');
+        return view('setup.welcome', ['currentStep' => 1]);
     }
 
     public function stepOne(SetupStep1Request $request)
@@ -31,7 +30,7 @@ class SetupController extends Controller
 
     public function branding()
     {
-        return view('setup.branding');
+        return view('setup.branding', ['currentStep' => 2]);
     }
 
     public function stepTwo(SetupStep2Request $request)
@@ -54,7 +53,7 @@ class SetupController extends Controller
 
     public function preferences()
     {
-        return view('setup.preferences');
+        return view('setup.preferences', ['currentStep' => 3]);
     }
 
     public function complete(SetupStep3Request $request)
@@ -64,7 +63,7 @@ class SetupController extends Controller
         $step3 = $request->validated();
 
         // Verify all steps are complete
-        if (!$step1 || !$step2) {
+        if (! $step1 || ! $step2) {
             return redirect()->route('setup.welcome')
                 ->with('error', 'Please complete all setup steps.');
         }
@@ -78,16 +77,16 @@ class SetupController extends Controller
 
             // Save site branding settings
             Setting::set('site_name', $step2['site_name']);
-            if (!empty($step2['site_tagline'])) {
+            if (! empty($step2['site_tagline'])) {
                 Setting::set('site_tagline', $step2['site_tagline']);
             }
 
             // Move logo from temp to permanent storage
-            if (!empty($step2['logo_temp_path'])) {
+            if (! empty($step2['logo_temp_path'])) {
                 $tempPath = $step2['logo_temp_path'];
                 $extension = pathinfo(Storage::path($tempPath), PATHINFO_EXTENSION);
-                $filename = 'logo-' . time() . '.' . $extension;
-                $permanentPath = 'branding/' . $filename;
+                $filename = 'logo-'.time().'.'.$extension;
+                $permanentPath = 'branding/'.$filename;
 
                 Storage::disk('public')->put(
                     $permanentPath,
@@ -102,9 +101,9 @@ class SetupController extends Controller
             Setting::set('timezone', $step3['timezone']);
             Setting::set('date_format', $step3['date_format']);
             Setting::set('time_format', $step3['time_format']);
-            Setting::set('datetime_format', $step3['date_format'] . ' ' . $step3['time_format']);
+            Setting::set('datetime_format', $step3['date_format'].' '.$step3['time_format']);
 
-            if (!empty($step3['contact_email'])) {
+            if (! empty($step3['contact_email'])) {
                 Setting::set('contact_email', $step3['contact_email']);
             }
 
