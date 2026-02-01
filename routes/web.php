@@ -1,30 +1,33 @@
 <?php
 
+use App\Http\Controllers\SetupController;
 use Illuminate\Support\Facades\Route;
+
+// Setup Wizard Routes (exempt from setup check middleware)
+Route::prefix('setup')->group(function () {
+    Route::get('/welcome', [SetupController::class, 'welcome'])->name('setup.welcome');
+    Route::post('/step-1', [SetupController::class, 'stepOne'])->name('setup.step-1');
+    Route::get('/branding', [SetupController::class, 'branding'])->name('setup.branding');
+    Route::post('/step-2', [SetupController::class, 'stepTwo'])->name('setup.step-2');
+    Route::get('/preferences', [SetupController::class, 'preferences'])->name('setup.preferences');
+    Route::post('/complete', [SetupController::class, 'complete'])->name('setup.complete');
+});
 
 // Dashboard
 Route::get('/', function () {
     return view('dashboard');
 })->name('dashboard');
 
-// Authentication routes (placeholder - will be replaced by Breeze/Fortify later)
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', function () {
-        return view('profile.show');
-    })->name('profile.show');
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard.alt');
 
-    Route::get('/profile/edit', function () {
-        return view('profile.edit');
-    })->name('profile.edit');
-
-    Route::post('/logout', function () {
-        auth()->logout();
-        request()->session()->invalidate();
-        request()->session()->regenerateToken();
-
-        return redirect('/');
-    })->name('logout');
-});
+// Profile Management - TODO: Create ProfileController or move to Livewire component
+// Route::middleware('auth')->group(function () {
+//     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+//     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+//     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+// });
 
 // Contact Logging
 Route::middleware(['auth', 'can:log-contacts'])->group(function () {
