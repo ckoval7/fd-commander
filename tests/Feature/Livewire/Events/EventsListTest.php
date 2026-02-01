@@ -150,8 +150,15 @@ test('activate action requires activate-events permission', function () {
 test('activate action sets event as active', function () {
     $this->actingAs($this->user);
 
-    $event = Event::factory()->create();
-    $oldActiveEvent = Event::factory()->create();
+    // Create event within date range
+    $event = Event::factory()->create([
+        'start_time' => now()->subHours(6),
+        'end_time' => now()->addHours(6),
+    ]);
+    $oldActiveEvent = Event::factory()->create([
+        'start_time' => now()->subDays(10),
+        'end_time' => now()->subDays(9),
+    ]);
 
     // Set old active event in settings
     \App\Models\Setting::set('active_event_id', $oldActiveEvent->id);
@@ -232,4 +239,59 @@ test('events list eager loads relationships to avoid N+1 queries', function () {
     // - Contacts count (eager loaded via withCount)
     // Total should be significantly less than 5*N (where N is relationships per event)
     expect(count($queries))->toBeLessThan(30);
+});
+
+test('cannot activate event outside date range', function () {
+    $this->actingAs($this->user);
+
+    // Create an event in the future
+    $futureEvent = Event::factory()->create([
+        'name' => 'Future Event',
+        'start_time' => now()->addDays(7),
+        'end_time' => now()->addDays(8),
+    ]);
+
+    Livewire::test(EventsList::class)
+        ->call('activate', $futureEvent->id)
+        ->assertDispatched('notify');
+
+    // Verify the event was NOT activated
+    expect(\App\Models\Setting::get('active_event_id'))->toBeNull();
+});
+
+test('cannot activate event that has ended', function () {
+    $this->actingAs($this->user);
+
+    // Create an event in the past
+    $pastEvent = Event::factory()->create([
+        'name' => 'Past Event',
+        'start_time' => now()->subDays(8),
+        'end_time' => now()->subDays(7),
+    ]);
+
+    Livewire::test(EventsList::class)
+        ->call('activate', $pastEvent->id)
+        ->assertDispatched('notify');
+
+    // Verify the event was NOT activated
+    expect(\App\Models\Setting::get('active_event_id'))->toBeNull();
+});
+
+test('can activate event within date range', function () {
+    $this->actingAs($this->user);
+
+    // Create an event that is in progress
+    $currentEvent = Event::factory()->create([
+        'name' => 'Current Event',
+        'start_time' => now()->subHours(6),
+        'end_time' => now()->addHours(6),
+    ]);
+
+    Livewire::test(EventsList::class)
+        ->call('activate', $currentEvent->id)
+        ->assertDispatched('notify');
+
+    // Verify the event was activated
+    expect(\App\Models\Setting::get('active_event_id'))->toBe($currentEvent->id);
+    expect(\App\Models\Setting::getBoolean('manual_activation'))->toBe(true);
 });

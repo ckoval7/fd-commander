@@ -76,7 +76,6 @@ Route::middleware(['auth', 'can:manage-equipment'])->group(function () {
 // Administration
 Route::middleware(['auth', 'can:view-events'])->group(function () {
     Route::get('/events', \App\Livewire\Events\EventsList::class)->name('events.index');
-    Route::get('/events/{event}', \App\Livewire\Events\EventDashboard::class)->name('events.show');
 });
 
 Route::middleware(['auth', 'can:create-events'])->group(function () {
@@ -91,10 +90,12 @@ Route::middleware(['auth', 'can:create-events'])->group(function () {
     Route::get('/events/{eventId}/clone', \App\Livewire\Events\EventForm::class)->name('events.clone');
 });
 
+Route::middleware(['auth', 'can:view-events'])->group(function () {
+    Route::get('/events/{event}', \App\Livewire\Events\EventDashboard::class)->name('events.show');
+});
+
 Route::middleware(['auth', 'can:manage-users'])->group(function () {
-    Route::get('/users', function () {
-        return view('users.index');
-    })->name('users.index');
+    Route::get('/users', \App\Livewire\Users\UserManagement::class)->name('users.index');
 });
 
 Route::middleware(['auth', 'can:manage-settings'])->group(function () {

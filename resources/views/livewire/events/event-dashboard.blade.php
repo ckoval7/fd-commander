@@ -133,17 +133,15 @@
                                     @if($event->eventConfiguration->uses_battery)
                                         <x-badge value="Battery" class="badge-success" />
                                     @endif
-                                    @if($event->eventConfiguration->uses_solar)
-                                        <x-badge value="Solar" class="badge-success" />
-                                    @endif
-                                    @if($event->eventConfiguration->uses_wind)
-                                        <x-badge value="Wind" class="badge-success" />
-                                    @endif
-                                    @if($event->eventConfiguration->uses_water)
-                                        <x-badge value="Water" class="badge-success" />
-                                    @endif
-                                    @if($event->eventConfiguration->uses_methane)
-                                        <x-badge value="Methane" class="badge-success" />
+                                    @php
+                                        $alternatePowerSources = [];
+                                        if($event->eventConfiguration->uses_solar) $alternatePowerSources[] = 'Solar';
+                                        if($event->eventConfiguration->uses_wind) $alternatePowerSources[] = 'Wind';
+                                        if($event->eventConfiguration->uses_water) $alternatePowerSources[] = 'Water';
+                                        if($event->eventConfiguration->uses_methane) $alternatePowerSources[] = 'Methane';
+                                    @endphp
+                                    @if(count($alternatePowerSources) > 0)
+                                        <x-badge value="Alternate Power ({{ implode(', ', $alternatePowerSources) }})" class="badge-success" />
                                     @endif
                                     @if($event->eventConfiguration->uses_other_power)
                                         <x-badge value="Other" class="badge-neutral" />

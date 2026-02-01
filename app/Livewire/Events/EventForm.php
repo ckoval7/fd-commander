@@ -7,6 +7,7 @@ use App\Models\EventConfiguration;
 use App\Models\EventType;
 use App\Models\OperatingClass;
 use App\Models\Section;
+use App\Models\Setting;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +62,8 @@ class EventForm extends Component
     public bool $uses_water = false;
 
     public bool $uses_methane = false;
+
+    public bool $uses_alternate_power = false;
 
     public ?string $uses_other_power = null;
 
@@ -149,6 +152,10 @@ class EventForm extends Component
             $this->uses_wind = $this->configuration->uses_wind;
             $this->uses_water = $this->configuration->uses_water;
             $this->uses_methane = $this->configuration->uses_methane;
+            $this->uses_alternate_power = $this->configuration->uses_solar
+                || $this->configuration->uses_wind
+                || $this->configuration->uses_water
+                || $this->configuration->uses_methane;
             $this->uses_other_power = $this->configuration->uses_other_power;
             $this->has_gota_station = $this->configuration->has_gota_station;
             $this->gota_callsign = $this->configuration->gota_callsign;
@@ -282,6 +289,7 @@ class EventForm extends Component
             'uses_wind',
             'uses_water',
             'uses_methane',
+            'uses_alternate_power',
             'uses_other_power',
             'gota_callsign',
         ])) {
@@ -314,11 +322,34 @@ class EventForm extends Component
                 $this->uses_commercial_power = false;
             }
         }
+
+        // Sync alternate power checkbox with individual fields
+        if ($property === 'uses_alternate_power') {
+            $this->uses_solar = $this->uses_alternate_power;
+            $this->uses_wind = $this->uses_alternate_power;
+            $this->uses_water = $this->uses_alternate_power;
+            $this->uses_methane = $this->uses_alternate_power;
+        }
     }
 
     public function save(): void
     {
         $validated = $this->validate();
+
+        // STRICT VALIDATION: If editing currently active event, ensure new dates still include NOW()
+        if ($this->mode === 'edit' && $this->eventId) {
+            $activeEventId = Setting::get('active_event_id');
+            if ($activeEventId && $this->eventId == $activeEventId) {
+                $newStartTime = \Carbon\Carbon::parse($validated['start_time']);
+                $newEndTime = \Carbon\Carbon::parse($validated['end_time']);
+
+                if (now() < $newStartTime || now() > $newEndTime) {
+                    $this->addError('dates', 'Cannot modify dates on the currently active event to exclude the current time.');
+
+                    return;
+                }
+            }
+        }
 
         DB::transaction(function () use ($validated) {
             if ($this->mode === 'edit' && $this->eventId) {
@@ -434,13 +465,30 @@ class EventForm extends Component
                     }
                 },
             ],
-            'uses_commercial_power' => ['boolean'],
+            'uses_commercial_power' => [
+                'boolean',
+                function ($attribute, $value, $fail) {
+                    $hasAnyPowerSource = $this->uses_commercial_power
+                        || $this->uses_generator
+                        || $this->uses_battery
+                        || $this->uses_solar
+                        || $this->uses_wind
+                        || $this->uses_water
+                        || $this->uses_methane
+                        || $this->uses_other_power;
+
+                    if (! $hasAnyPowerSource) {
+                        $fail('At least one power source must be selected.');
+                    }
+                },
+            ],
             'uses_generator' => ['boolean'],
             'uses_battery' => ['boolean'],
             'uses_solar' => ['boolean'],
             'uses_wind' => ['boolean'],
             'uses_water' => ['boolean'],
             'uses_methane' => ['boolean'],
+            'uses_alternate_power' => ['boolean'],
             'uses_other_power' => ['nullable', 'string', 'max:255'],
             'has_gota_station' => [
                 'boolean',

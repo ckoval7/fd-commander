@@ -112,7 +112,7 @@ class Event extends Model
 
     public function getParticipantsCountAttribute(): int
     {
-        return $this->eventConfiguration?->contacts()->distinct('logger_id')->count('logger_id') ?? 0;
+        return $this->eventConfiguration?->contacts()->distinct('logger_user_id')->count('logger_user_id') ?? 0;
     }
 
     public function getFinalScoreAttribute(): int

@@ -154,3 +154,67 @@ test('command is idempotent', function () {
     expect($firstActivation)->toBe($event->id);
     expect($secondActivation)->toBe($event->id);
 });
+
+test('auto-deactivates event when it ends', function () {
+    // Create an event that has ended
+    $event = Event::factory()->create([
+        'name' => 'Ending Event',
+        'start_time' => now()->subHours(24),
+        'end_time' => now()->subHours(1),
+    ]);
+
+    // Set it as active (simulating it was active during the event)
+    Setting::set('active_event_id', $event->id);
+    Setting::set('manual_activation', false);
+
+    // Run the command
+    $this->artisan('events:activate-by-date')
+        ->expectsOutputToContain('Auto-deactivated event (outside date range)')
+        ->assertSuccessful();
+
+    // Verify the event was deactivated
+    expect(Setting::get('active_event_id'))->toBeNull();
+    expect(Setting::getBoolean('manual_activation'))->toBe(false);
+});
+
+test('auto-deactivates manually activated event when it ends', function () {
+    // Create an event that has ended
+    $event = Event::factory()->create([
+        'name' => 'Manually Activated Event',
+        'start_time' => now()->subHours(24),
+        'end_time' => now()->subHours(1),
+    ]);
+
+    // Set it as manually active
+    Setting::set('active_event_id', $event->id);
+    Setting::set('manual_activation', true);
+
+    // Run the command
+    $this->artisan('events:activate-by-date')
+        ->expectsOutputToContain('Auto-deactivated event (outside date range)')
+        ->assertSuccessful();
+
+    // Verify the event was deactivated and manual flag cleared
+    expect(Setting::get('active_event_id'))->toBeNull();
+    expect(Setting::getBoolean('manual_activation'))->toBe(false);
+});
+
+test('does not auto-deactivate event still in progress', function () {
+    // Create an event that is in progress
+    $event = Event::factory()->create([
+        'name' => 'Active Event',
+        'start_time' => now()->subHours(6),
+        'end_time' => now()->addHours(6),
+    ]);
+
+    // Set it as active
+    Setting::set('active_event_id', $event->id);
+    Setting::set('manual_activation', false);
+
+    // Run the command
+    $this->artisan('events:activate-by-date')
+        ->assertSuccessful();
+
+    // Verify the event is still active
+    expect(Setting::get('active_event_id'))->toBe($event->id);
+});

@@ -65,7 +65,19 @@ class EventsList extends Component
 
         $event = Event::findOrFail($eventId);
 
+        // STRICT VALIDATION: Event must be within date range
+        if (! $event->start_time || ! $event->end_time || now() < $event->start_time || now() > $event->end_time) {
+            $this->dispatch('notify', title: 'Cannot Activate Event', description: sprintf(
+                'Event can only be activated during its date range (%s to %s).',
+                $event->start_time?->format('M j, Y H:i T') ?? 'Not set',
+                $event->end_time?->format('M j, Y H:i T') ?? 'Not set'
+            ), type: 'error');
+
+            return;
+        }
+
         Setting::set('active_event_id', $event->id);
+        Setting::set('manual_activation', true);
 
         $this->dispatch('notify', title: 'Success', description: "Event '{$event->name}' is now active.");
     }

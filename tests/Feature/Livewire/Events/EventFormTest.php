@@ -349,3 +349,107 @@ test('event form prevents GOTA callsign when class does not allow GOTA', functio
         ->call('save')
         ->assertHasErrors(['has_gota_station']);
 });
+
+test('event form prevents changing dates on active event to exclude current time', function () {
+    $this->actingAs($this->user);
+
+    // Create an active event
+    $event = Event::factory()->create([
+        'name' => 'Active Event',
+        'event_type_id' => $this->eventType->id,
+        'start_time' => now()->subHours(6),
+        'end_time' => now()->addHours(6),
+    ]);
+
+    EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+        'section_id' => $this->section->id,
+        'operating_class_id' => $this->operatingClassA->id,
+    ]);
+
+    // Set as active event
+    \App\Models\Setting::set('active_event_id', $event->id);
+
+    // Try to change dates to exclude current time
+    Livewire::test(EventForm::class, ['mode' => 'edit', 'eventId' => $event->id])
+        ->set('start_time', now()->addDays(7)->format('Y-m-d H:i:s'))
+        ->set('end_time', now()->addDays(8)->format('Y-m-d H:i:s'))
+        ->call('save')
+        ->assertHasErrors(['dates']);
+
+    // Verify event dates were not changed
+    expect($event->fresh()->start_time->diffInHours(now()->subHours(6), false))->toBeLessThan(1);
+});
+
+test('event form allows extending end time on active event', function () {
+    $this->actingAs($this->user);
+
+    // Create an active event
+    $event = Event::factory()->create([
+        'name' => 'Active Event',
+        'event_type_id' => $this->eventType->id,
+        'start_time' => now()->subHours(6),
+        'end_time' => now()->addHours(6),
+    ]);
+
+    EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+        'section_id' => $this->section->id,
+        'operating_class_id' => $this->operatingClassA->id,
+    ]);
+
+    // Set as active event
+    \App\Models\Setting::set('active_event_id', $event->id);
+
+    $newEndTime = now()->addHours(12);
+
+    // Try to extend end time (should succeed since current time is still within range)
+    Livewire::test(EventForm::class, ['mode' => 'edit', 'eventId' => $event->id])
+        ->set('end_time', $newEndTime->format('Y-m-d H:i:s'))
+        ->call('save')
+        ->assertHasNoErrors();
+
+    // Verify end time was extended
+    expect($event->fresh()->end_time->diffInHours($newEndTime, false))->toBeLessThan(1);
+});
+
+test('event form requires at least one power source', function () {
+    $this->actingAs($this->user);
+
+    // Try to create event with no power sources selected
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Test Event')
+        ->set('event_type_id', $this->eventType->id)
+        ->set('operating_class_id', $this->operatingClassA->id)
+        ->set('start_time', '2025-06-28 18:00:00')
+        ->set('end_time', '2025-06-29 20:59:00')
+        ->set('callsign', 'W1AW')
+        ->set('section_id', $this->section->id)
+        ->set('transmitter_count', 1)
+        ->set('max_power_watts', 100)
+        ->set('uses_commercial_power', false)
+        ->set('uses_generator', false)
+        ->set('uses_battery', false)
+        ->set('uses_solar', false)
+        ->set('uses_wind', false)
+        ->set('uses_water', false)
+        ->set('uses_methane', false)
+        ->set('uses_other_power', null)
+        ->call('save')
+        ->assertHasErrors(['uses_commercial_power']);
+
+    // Should succeed with at least one power source
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Test Event 2')
+        ->set('event_type_id', $this->eventType->id)
+        ->set('operating_class_id', $this->operatingClassA->id)
+        ->set('start_time', '2025-06-28 18:00:00')
+        ->set('end_time', '2025-06-29 20:59:00')
+        ->set('callsign', 'W1AW')
+        ->set('section_id', $this->section->id)
+        ->set('transmitter_count', 1)
+        ->set('max_power_watts', 100)
+        ->set('uses_battery', true)
+        ->call('save')
+        ->assertHasNoErrors();
+});

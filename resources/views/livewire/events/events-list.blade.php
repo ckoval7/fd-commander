@@ -20,7 +20,7 @@
 
     <!-- Events Table -->
     <x-card shadow>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto pb-64">
             <table class="table table-zebra">
                 <thead>
                     <tr>
@@ -96,7 +96,7 @@
                                     <button tabindex="0" class="btn btn-ghost btn-sm btn-square">
                                         <x-icon name="o-ellipsis-vertical" class="w-5 h-5" />
                                     </button>
-                                    <ul tabindex="0" class="dropdown-content menu menu-sm z-[100] p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300">
+                                    <ul tabindex="0" class="dropdown-content menu menu-sm z-[1000] p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300 mt-1">
                                         <li>
                                             <a href="{{ route('events.show', $event) }}" wire:navigate>
                                                 <x-icon name="o-eye" class="w-4 h-4" />
@@ -117,10 +117,16 @@
 
                                         @can('activate-events')
                                             @if(!$event->deleted_at && $event->status !== 'active')
-                                                <li>
+                                                @php
+                                                    $canActivate = $event->start_time && $event->end_time
+                                                        && now() >= $event->start_time
+                                                        && now() <= $event->end_time;
+                                                @endphp
+                                                <li class="{{ !$canActivate ? 'disabled' : '' }}">
                                                     <a wire:click.prevent="activate({{ $event->id }})"
                                                        wire:confirm="Are you sure you want to set '{{ $event->name }}' as the active event?"
-                                                       class="cursor-pointer">
+                                                       class="cursor-pointer {{ !$canActivate ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                                       title="{{ !$canActivate ? 'Can only activate during event dates (' . ($event->start_time?->format('M j, Y') ?? 'Not set') . ' to ' . ($event->end_time?->format('M j, Y') ?? 'Not set') . ')' : '' }}">
                                                         <x-icon name="o-check-circle" class="w-4 h-4" />
                                                         Set as Active
                                                     </a>

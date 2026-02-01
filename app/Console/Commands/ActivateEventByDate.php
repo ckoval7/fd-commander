@@ -27,8 +27,24 @@ class ActivateEventByDate extends Command
      */
     public function handle(): int
     {
-        // Check if manual activation is enabled
-        if (Setting::getBoolean('manual_activation', false)) {
+        $currentActiveEventId = Setting::get('active_event_id');
+        $manualActivation = Setting::getBoolean('manual_activation', false);
+
+        // Check if current active event is still within its date range
+        if ($currentActiveEventId) {
+            $activeEvent = Event::find($currentActiveEventId);
+
+            // If active event exists but is outside its date range, deactivate it
+            if ($activeEvent && ($activeEvent->start_time > now() || $activeEvent->end_time < now())) {
+                Setting::set('active_event_id', null);
+                Setting::set('manual_activation', false);
+                $this->info("Auto-deactivated event (outside date range): {$activeEvent->name}");
+                $manualActivation = false;
+            }
+        }
+
+        // If manual activation is enabled, don't auto-activate a different event
+        if ($manualActivation) {
             $this->info('Manual activation is enabled - skipping auto-activation');
 
             return self::SUCCESS;
@@ -42,11 +58,11 @@ class ActivateEventByDate extends Command
             ->first();
 
         if ($event) {
-            // Activate the event
-            Setting::set('active_event_id', $event->id);
-            Setting::set('manual_activation', false);
-
-            $this->info("Auto-activated event: {$event->name}");
+            // Only activate if it's not already the active event
+            if ($event->id != $currentActiveEventId) {
+                Setting::set('active_event_id', $event->id);
+                $this->info("Auto-activated event: {$event->name}");
+            }
 
             return self::SUCCESS;
         }
@@ -55,9 +71,9 @@ class ActivateEventByDate extends Command
         $this->info('No events match the current date range');
 
         // Clear active event if one was set
-        $currentActiveEventId = Setting::get('active_event_id');
         if ($currentActiveEventId) {
             Setting::set('active_event_id', null);
+            Setting::set('manual_activation', false);
             $this->info('Cleared active event');
         }
 

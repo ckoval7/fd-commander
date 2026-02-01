@@ -159,9 +159,10 @@
             </x-slot:title>
 
             <div class="space-y-4">
+                {{-- Use blur with live to update multiplier after typing, without interference during typing --}}
                 <x-input
                     label="Maximum Power (Watts)"
-                    wire:model.live="max_power_watts"
+                    wire:model.blur.live="max_power_watts"
                     type="number"
                     min="1"
                     max="{{ $this->maxPowerLimit ?? 1500 }}"
@@ -214,48 +215,15 @@
                             <label class="label cursor-pointer justify-start gap-3">
                                 <input
                                     type="checkbox"
-                                    wire:model.live="uses_solar"
+                                    wire:model.live="uses_alternate_power"
                                     class="checkbox checkbox-sm"
                                     @if($isLocked) disabled @endif
                                 />
-                                <span class="label-text">Solar</span>
+                                <span class="label-text">Alternate Power</span>
                             </label>
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label cursor-pointer justify-start gap-3">
-                                <input
-                                    type="checkbox"
-                                    wire:model.live="uses_wind"
-                                    class="checkbox checkbox-sm"
-                                    @if($isLocked) disabled @endif
-                                />
-                                <span class="label-text">Wind</span>
-                            </label>
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label cursor-pointer justify-start gap-3">
-                                <input
-                                    type="checkbox"
-                                    wire:model.live="uses_water"
-                                    class="checkbox checkbox-sm"
-                                    @if($isLocked) disabled @endif
-                                />
-                                <span class="label-text">Water (Hydro)</span>
-                            </label>
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label cursor-pointer justify-start gap-3">
-                                <input
-                                    type="checkbox"
-                                    wire:model.live="uses_methane"
-                                    class="checkbox checkbox-sm"
-                                    @if($isLocked) disabled @endif
-                                />
-                                <span class="label-text">Methane</span>
-                            </label>
+                            <p class="text-xs text-base-content/60 ml-9 -mt-2">
+                                Examples: Solar, Wind, Water (Hydro), Methane
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -273,7 +241,7 @@
                     <div class="text-sm">
                         <strong>Power Multiplier Rules:</strong>
                         <ul class="list-disc list-inside mt-1 space-y-1">
-                            <li><strong>5×:</strong> ≤5W + Natural power (battery/solar/wind/water) + No commercial/generator</li>
+                            <li><strong>5×:</strong> ≤5W + Natural power (battery/alternate power) + No commercial/generator</li>
                             <li><strong>2×:</strong> ≤5W + Commercial/generator OR 6-100W (any power)</li>
                             <li><strong>1×:</strong> >100W (any power)</li>
                         </ul>
