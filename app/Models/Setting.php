@@ -8,8 +8,6 @@ use Illuminate\Support\Facades\Cache;
 
 class Setting extends Model
 {
-    public $timestamps = true;
-
     protected $table = 'system_config';
 
     protected $primaryKey = 'key';
@@ -44,7 +42,14 @@ class Setting extends Model
      */
     public static function set(string $key, mixed $value): void
     {
-        $storedValue = is_array($value) || is_object($value) ? json_encode($value) : $value;
+        if (is_array($value) || is_object($value)) {
+            $storedValue = json_encode($value);
+            if ($storedValue === false) {
+                throw new \InvalidArgumentException("Failed to encode value for setting key: {$key}");
+            }
+        } else {
+            $storedValue = $value;
+        }
         static::updateOrInsert(
             ['key' => $key],
             ['value' => $storedValue, 'updated_at' => now(), 'created_at' => now()]
