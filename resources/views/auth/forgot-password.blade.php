@@ -13,7 +13,7 @@
         @csrf
 
         <div class="space-y-4">
-            <x-input label="Email" type="email" name="email" :value="old('email')" required autofocus icon="o-envelope" />
+            <x-input label="Email" type="email" name="email" :value="old('email')" required autofocus icon="o-envelope" errorField="email" />
 
             <div class="flex items-center justify-between pt-2">
                 <a href="{{ route('login') }}" class="link link-primary text-sm">

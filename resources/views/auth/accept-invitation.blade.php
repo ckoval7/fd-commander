@@ -23,6 +23,7 @@
                 required
                 icon="o-lock-closed"
                 hint="Choose a strong password for your account"
+                errorField="password"
             />
 
             <x-input
@@ -31,6 +32,7 @@
                 name="password_confirmation"
                 required
                 icon="o-lock-closed"
+                errorField="password_confirmation"
             />
 
             <div class="flex items-center justify-end pt-2">

@@ -9,8 +9,8 @@
         @csrf
 
         <div class="space-y-4">
-            <x-input label="Email" type="email" name="email" :value="old('email')" required autofocus icon="o-envelope" />
-            <x-input label="Password" type="password" name="password" required icon="o-lock-closed" />
+            <x-input label="Email" type="email" name="email" :value="old('email')" required autofocus icon="o-envelope" errorField="email" />
+            <x-input label="Password" type="password" name="password" required icon="o-lock-closed" errorField="password" />
             <x-checkbox label="Remember me" name="remember" />
 
             <div class="flex items-center justify-between pt-2">
