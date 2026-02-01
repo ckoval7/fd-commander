@@ -288,7 +288,8 @@ test('deleting user cascades and deletes invitations', function () {
 
     expect(UserInvitation::count())->toBe(1);
 
-    $user->delete();
+    // Force delete to trigger cascade (soft delete doesn't trigger database cascades)
+    $user->forceDelete();
 
     expect(UserInvitation::count())->toBe(0);
 });
