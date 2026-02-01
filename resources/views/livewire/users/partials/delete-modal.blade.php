@@ -10,7 +10,7 @@
     </div>
 
     <x-slot:actions>
-        <x-button label="Cancel" wire:click="$set('showDeleteModal', false)" />
+        <x-button label="Cancel" wire:click="$set('showDeleteModal', false)" class="btn-ghost" />
         <x-button label="Delete User" wire:click="deleteUser" class="btn-error" icon="o-trash" spinner="deleteUser" />
     </x-slot:actions>
 </x-modal>

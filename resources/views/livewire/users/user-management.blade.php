@@ -11,6 +11,7 @@
         {{-- Search and Filters --}}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <x-input
+                label="Search"
                 placeholder="Search by call sign, name, or email..."
                 wire:model.live.debounce.300ms="search"
                 icon="o-magnifying-glass"

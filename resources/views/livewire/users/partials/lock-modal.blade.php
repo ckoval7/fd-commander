@@ -10,7 +10,7 @@
         />
 
         <x-slot:actions>
-            <x-button label="Cancel" wire:click="$set('showLockModal', false)" />
+            <x-button label="Cancel" wire:click="$set('showLockModal', false)" class="btn-ghost" />
             <x-button label="Lock Account" type="submit" class="btn-warning" icon="o-lock-closed" spinner="lockAccount" />
         </x-slot:actions>
     </form>

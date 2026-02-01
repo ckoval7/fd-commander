@@ -31,7 +31,7 @@
         @endif
 
         <x-slot:actions>
-            <x-button label="Cancel" wire:click="$set('showResetModal', false)" />
+            <x-button label="Cancel" wire:click="$set('showResetModal', false)" class="btn-ghost" />
             <x-button
                 label="{{ $sendResetEmail ? 'Send Email' : 'Reset Password' }}"
                 type="submit"
