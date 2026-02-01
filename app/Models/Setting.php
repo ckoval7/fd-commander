@@ -42,6 +42,15 @@ class Setting extends Model
      */
     public static function set(string $key, mixed $value): void
     {
+        // If value is null, delete the setting
+        if ($value === null) {
+            static::where('key', $key)->delete();
+            Cache::forget("setting.{$key}");
+            Cache::forget('settings.all');
+
+            return;
+        }
+
         if (is_array($value) || is_object($value)) {
             $storedValue = json_encode($value);
             if ($storedValue === false) {
