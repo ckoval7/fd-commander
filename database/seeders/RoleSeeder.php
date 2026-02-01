@@ -10,6 +10,9 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
+        // Clear permission cache to ensure all permissions are available
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
         // System Administrator - All except contact logging
         $systemAdmin = Role::create([
             'name' => 'System Administrator',
@@ -25,6 +28,11 @@ class RoleSeeder extends Seeder
             'guard_name' => 'web',
         ]);
         $eventManager->givePermissionTo([
+            'view-events',
+            'create-events',
+            'edit-events',
+            'delete-events',
+            'activate-events',
             'manage-events',
             'manage-event-config',
             'manage-stations',

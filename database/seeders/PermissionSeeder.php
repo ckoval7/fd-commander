@@ -15,6 +15,11 @@ class PermissionSeeder extends Seeder
             ['name' => 'edit-contacts', 'description' => 'Edit or delete existing QSOs'],
 
             // Event Management
+            ['name' => 'view-events', 'description' => 'View events list and details'],
+            ['name' => 'create-events', 'description' => 'Create new Field Day events'],
+            ['name' => 'edit-events', 'description' => 'Edit existing Field Day events'],
+            ['name' => 'delete-events', 'description' => 'Delete Field Day events'],
+            ['name' => 'activate-events', 'description' => 'Activate or deactivate events'],
             ['name' => 'manage-events', 'description' => 'Create and edit Field Day events'],
             ['name' => 'manage-event-config', 'description' => 'Configure event settings'],
             ['name' => 'verify-bonuses', 'description' => 'Approve or reject bonus point claims'],
@@ -40,6 +45,6 @@ class PermissionSeeder extends Seeder
             Permission::create($permission);
         }
 
-        $this->command->info('Created 13 permissions');
+        $this->command->info('Created 18 permissions');
     }
 }
