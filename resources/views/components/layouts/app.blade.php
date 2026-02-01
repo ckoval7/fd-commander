@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ isset($title) ? $title.' - '.config('app.name') : config('app.name') }}</title>
+    <title>{{ isset($title) ? $title.' - '.(\App\Models\Setting::get('site_name') ?: config('app.name')) : (\App\Models\Setting::get('site_name') ?: config('app.name')) }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -24,16 +24,28 @@
         </x-slot:actions>
     </x-nav>
 
+    {{-- Desktop header - spans full width above sidebar and content --}}
+    <div class="hidden lg:block sticky top-0 z-50 bg-base-100 border-b border-base-300">
+        <div class="flex items-center justify-between px-6 py-4">
+            {{-- Left: App Brand --}}
+            <div class="flex items-center gap-4">
+                <x-app-brand />
+            </div>
+
+            {{-- Right: Theme toggle and User menu --}}
+            <div class="flex items-center gap-3">
+                <x-theme-toggle />
+                <x-user-menu />
+            </div>
+        </div>
+    </div>
+
     {{-- MAIN --}}
-    <x-main with-nav full-width>
+    <x-main full-width>
         {{-- SIDEBAR --}}
         <x-slot:sidebar drawer="main-drawer" collapsible class="bg-base-100 lg:bg-inherit">
-
-            {{-- BRAND --}}
-            <x-app-brand class="px-5 pt-4" />
-
             {{-- MENU --}}
-            <x-menu activate-by-route>
+            <x-menu activate-by-route class="mt-4">
                 @auth
                     <x-menu-item title="Dashboard" icon="o-home" link="/" />
 
@@ -95,22 +107,6 @@
 
         {{-- The `$slot` goes here --}}
         <x-slot:content>
-            {{-- Desktop header - shown above main content --}}
-            <div class="hidden lg:block sticky top-0 z-10 bg-base-100 border-b border-base-300">
-                <div class="flex items-center justify-between px-6 py-4">
-                    {{-- Left: App Brand --}}
-                    <div class="flex items-center gap-4">
-                        <x-app-brand />
-                    </div>
-
-                    {{-- Right: Theme toggle and User menu --}}
-                    <div class="flex items-center gap-3">
-                        <x-theme-toggle />
-                        <x-user-menu />
-                    </div>
-                </div>
-            </div>
-
             {{ $slot }}
         </x-slot:content>
     </x-main>
