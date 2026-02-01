@@ -1,6 +1,26 @@
 <x-layouts.app>
-    <x-slot:title>Settings</x-slot:title>
-    <div class="p-6">
-        <x-placeholder-page title="Settings" icon="o-cog-6-tooth" />
+    <div class="max-w-7xl mx-auto py-8 px-4">
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold">Settings</h1>
+            <p class="text-gray-600 dark:text-gray-400">Configure system preferences, branding, and roles</p>
+        </div>
+
+        <x-tabs selected="system-preferences">
+            <x-tab name="system-preferences" label="System Preferences" icon="o-cog-6-tooth">
+                <livewire:settings.system-preferences />
+            </x-tab>
+
+            <x-tab name="branding" label="Site Branding" icon="o-paint-brush">
+                <div class="p-4">
+                    <p class="text-gray-600">Site branding tab coming soon...</p>
+                </div>
+            </x-tab>
+
+            <x-tab name="roles" label="Role Management" icon="o-shield-check">
+                <div class="p-4">
+                    <p class="text-gray-600">Role management tab coming soon...</p>
+                </div>
+            </x-tab>
+        </x-tabs>
     </div>
 </x-layouts.app>
