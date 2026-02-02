@@ -41,6 +41,7 @@ class RoleSeeder extends Seeder
             'view-reports',
             'manage-guestbook',
             'manage-images',
+            'view-security-logs',
         ]);
 
         // Operator (Default)

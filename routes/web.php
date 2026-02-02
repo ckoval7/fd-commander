@@ -112,3 +112,8 @@ Route::middleware(['auth', 'can:view-reports'])->group(function () {
         return view('reports.index');
     })->name('reports.index');
 });
+
+// Administration
+Route::middleware(['auth', 'can:view-security-logs'])->prefix('admin')->group(function () {
+    Route::get('/audit-logs', \App\Livewire\Admin\AuditLogViewer::class)->name('admin.audit-logs');
+});

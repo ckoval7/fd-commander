@@ -87,7 +87,7 @@
 
                     <x-menu-item title="Guestbook" icon="o-book-open" link="/guestbook" />
 
-                    @canany(['manage-events', 'manage-users', 'manage-settings', 'view-reports'])
+                    @canany(['manage-events', 'manage-users', 'manage-settings', 'view-reports', 'view-security-logs'])
                         <x-menu-separator title="ADMINISTRATION" />
 
                         @can('manage-events')
@@ -104,6 +104,10 @@
 
                         @can('view-reports')
                             <x-menu-item title="Reports" icon="o-document-chart-bar" link="/reports" />
+                        @endcan
+
+                        @can('view-security-logs')
+                            <x-menu-item title="Audit Logs" icon="o-clipboard-document-list" link="{{ route('admin.audit-logs') }}" :active="request()->routeIs('admin.audit-logs')" />
                         @endcan
                     @endcanany
                 @else

@@ -39,12 +39,18 @@ class PermissionSeeder extends Seeder
 
             // Reporting
             ['name' => 'view-reports', 'description' => 'Access detailed score reports'],
+
+            // Security
+            ['name' => 'view-security-logs', 'description' => 'View security logs and activity records'],
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create($permission);
+            Permission::firstOrCreate(
+                ['name' => $permission['name']],
+                ['description' => $permission['description']]
+            );
         }
 
-        $this->command->info('Created 18 permissions');
+        $this->command->info('Created 19 permissions');
     }
 }
