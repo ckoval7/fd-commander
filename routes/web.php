@@ -98,6 +98,11 @@ Route::middleware(['auth', 'can:view-events'])->group(function () {
     Route::get('/events/{event}', \App\Livewire\Events\EventDashboard::class)->name('events.show');
 });
 
+// Equipment Dashboard - requires manage-event-equipment OR view-all-equipment (checked in component)
+Route::middleware('auth')->group(function () {
+    Route::get('/events/{event}/equipment', \App\Livewire\Equipment\EventEquipmentDashboard::class)->name('events.equipment.dashboard');
+});
+
 Route::middleware(['auth', 'can:manage-users'])->group(function () {
     Route::get('/users', \App\Livewire\Users\UserManagement::class)->name('users.index');
 });

@@ -253,5 +253,46 @@
                 </x-card>
             </div>
         </x-tab>
+
+        <!-- Tab 5 - Equipment -->
+        @can('manage-event-equipment')
+            <x-tab name="equipment" label="Equipment" icon="o-wrench-screwdriver">
+                <div class="mt-6">
+                    <x-card shadow>
+                        <div class="flex flex-col items-center justify-center py-12 text-center">
+                            <x-icon name="o-wrench-screwdriver" class="w-16 h-16 mx-auto opacity-50 mb-4 text-base-content/60" />
+                            <p class="text-lg font-semibold mb-2">Equipment Management</p>
+                            <p class="text-base-content/60 mb-6">Manage all equipment commitments and assignments for this event.</p>
+                            <x-button
+                                label="Go to Equipment Dashboard"
+                                icon="o-arrow-right"
+                                class="btn-primary"
+                                link="{{ route('events.equipment.dashboard', ['event' => $event->id]) }}"
+                                wire:navigate
+                            />
+                        </div>
+                    </x-card>
+                </div>
+            </x-tab>
+        @elsecan('view-all-equipment')
+            <x-tab name="equipment" label="Equipment" icon="o-wrench-screwdriver">
+                <div class="mt-6">
+                    <x-card shadow>
+                        <div class="flex flex-col items-center justify-center py-12 text-center">
+                            <x-icon name="o-wrench-screwdriver" class="w-16 h-16 mx-auto opacity-50 mb-4 text-base-content/60" />
+                            <p class="text-lg font-semibold mb-2">Equipment Management</p>
+                            <p class="text-base-content/60 mb-6">View all equipment commitments and assignments for this event.</p>
+                            <x-button
+                                label="View Equipment Dashboard"
+                                icon="o-arrow-right"
+                                class="btn-primary"
+                                link="{{ route('events.equipment.dashboard', ['event' => $event->id]) }}"
+                                wire:navigate
+                            />
+                        </div>
+                    </x-card>
+                </div>
+            </x-tab>
+        @endcan
     </x-tabs>
 </div>
