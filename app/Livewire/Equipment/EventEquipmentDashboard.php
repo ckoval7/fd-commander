@@ -132,6 +132,7 @@ class EventEquipmentDashboard extends Component
             ->with([
                 'equipment.owner',
                 'equipment.owningOrganization',
+                'equipment.manager',
                 'station',
                 'statusChangedBy',
                 'assignedBy',

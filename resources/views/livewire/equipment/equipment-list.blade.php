@@ -14,7 +14,7 @@
         </div>
 
         {{-- Search and Filters --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <x-input
                 label="Search"
                 placeholder="Search by make, model, or serial number..."
@@ -51,6 +51,20 @@
                 option-value="value"
                 option-label="label"
             />
+
+            @can('view-all-equipment')
+                <x-select
+                    label="Owner"
+                    wire:model.live="ownerFilter"
+                    :options="[
+                        ['value' => 'my', 'label' => 'My Equipment'],
+                        ['value' => 'club', 'label' => 'Club Equipment'],
+                        ['value' => 'all', 'label' => 'All Equipment'],
+                    ]"
+                    option-value="value"
+                    option-label="label"
+                />
+            @endcan
         </div>
 
         {{-- Equipment Card --}}
@@ -87,6 +101,19 @@
                                 <td class="font-semibold">
                                     <div>{{ $item->make }}</div>
                                     <div class="text-sm opacity-60">{{ $item->model }}</div>
+                                    @if($item->is_club_equipment)
+                                        <div class="mt-1">
+                                            <span class="badge badge-secondary badge-xs">
+                                                <x-icon name="o-building-office" class="w-3 h-3 mr-0.5" />
+                                                Club Equipment
+                                            </span>
+                                        </div>
+                                        @if($item->managed_by_user_id && $item->manager)
+                                            <div class="text-xs opacity-70 mt-0.5">
+                                                Managed by {{ $item->manager->full_name }}
+                                            </div>
+                                        @endif
+                                    @endif
                                 </td>
                                 <td>
                                     <span class="badge badge-primary badge-sm">

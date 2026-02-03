@@ -436,7 +436,22 @@
                                     <tbody>
                                         @foreach($ownerGroup['items'] as $commitment)
                                             <tr wire:key="owner-{{ $ownerGroup['owner_id'] ?? 'unknown' }}-{{ $commitment->id }}">
-                                                <td class="font-medium">{{ $commitment->equipment->make }} {{ $commitment->equipment->model }}</td>
+                                                <td class="font-medium">
+                                                    <div>{{ $commitment->equipment->make }} {{ $commitment->equipment->model }}</div>
+                                                    @if($commitment->equipment->is_club_equipment)
+                                                        <div class="mt-1">
+                                                            <span class="badge badge-secondary badge-xs">
+                                                                <x-icon name="o-building-office" class="w-3 h-3 mr-0.5" />
+                                                                Club Equipment
+                                                            </span>
+                                                        </div>
+                                                        @if($commitment->equipment->managed_by_user_id && $commitment->equipment->manager)
+                                                            <div class="text-xs opacity-70 mt-0.5">
+                                                                Managed by {{ $commitment->equipment->manager->full_name }}
+                                                            </div>
+                                                        @endif
+                                                    @endif
+                                                </td>
                                                 <td class="text-sm">{{ ucfirst(str_replace('_', ' ', $commitment->equipment->type)) }}</td>
                                                 <td>
                                                     @php
@@ -584,7 +599,17 @@
                                     <tbody>
                                         @foreach($stationGroup['items'] as $commitment)
                                             <tr wire:key="station-{{ $stationGroup['station_id'] ?? 'unassigned' }}-{{ $commitment->id }}">
-                                                <td class="font-medium">{{ $commitment->equipment->make }} {{ $commitment->equipment->model }}</td>
+                                                <td class="font-medium">
+                                                    <div>{{ $commitment->equipment->make }} {{ $commitment->equipment->model }}</div>
+                                                    @if($commitment->equipment->is_club_equipment)
+                                                        <div class="mt-1">
+                                                            <span class="badge badge-secondary badge-xs">
+                                                                <x-icon name="o-building-office" class="w-3 h-3 mr-0.5" />
+                                                                Club Equipment
+                                                            </span>
+                                                        </div>
+                                                    @endif
+                                                </td>
                                                 <td class="text-sm">{{ ucfirst(str_replace('_', ' ', $commitment->equipment->type)) }}</td>
                                                 <td class="text-sm">{{ $commitment->equipment->owner_name }}</td>
                                                 <td>
