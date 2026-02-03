@@ -1,59 +1,274 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Field Day Logging Database (v2)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A modern, web-based ham radio Field Day logging application built with Laravel 12 and Mary UI. Designed for easy deployment in air-gapped environments with simple hardware requirements.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### ✅ Implemented
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+#### Equipment Inventory Management
+Complete equipment tracking and management system for Field Day operations.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+**For All Operators:**
+- Create and manage personal equipment catalog
+- Track equipment by make, model, serial number, and type
+- Upload equipment photos and add searchable tags
+- Commit equipment to Field Day events
+- View equipment status and commitments
+- Search and filter equipment by type, status, and owner
+- Prevent overlapping equipment commitments
+- Receive notifications for equipment status changes
 
-## Learning Laravel
+**For Event Managers:**
+- Manage club-owned equipment with assigned managers
+- Track equipment through full event lifecycle (Committed → Delivered → In Use → Returned)
+- Mark equipment as Lost or Damaged with audit trail
+- Assign equipment to specific operating stations
+- View equipment dashboard with real-time status
+- Generate equipment utilization and commitment reports
+- Override status changes during event operations
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+**Technical Highlights:**
+- Dual ownership model (User and Organization equipment)
+- State machine for equipment status transitions
+- Comprehensive permission system (manage-own-equipment, view-all-equipment, edit-any-equipment, manage-event-equipment)
+- Automated notifications for equipment owners
+- Soft deletes for data preservation
+- Full test coverage with 38 comprehensive tests
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+#### User Management
+- Role-based access control (Admin, Event Manager, Operator)
+- User profile management with activity tracking
+- Session management and security monitoring
+- Callsign and email validation
+- Last login tracking
 
-## Laravel Sponsors
+#### System Features
+- Setup wizard for initial configuration
+- Organization management
+- Comprehensive audit logging
+- Admin audit log viewer with filtering and export
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 🚧 In Development
 
-### Premium Partners
+- QSO Logging
+- Real-time scoring
+- Station management
+- Band/mode tracking
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### 📋 Planned
+
+- 2025 Field Day Rules Compliance
+- Interactive ARRL/RAC section maps
+- Rig interface agents (hamlib integration)
+- Callsign lookup (callook.info integration)
+- Winter Field Day support
+
+## Technology Stack
+
+- **Backend**: Laravel 12 (PHP 8.4+)
+- **Frontend**: Mary UI (Livewire 4 + Tailwind CSS + Alpine.js)
+- **Database**: MySQL 8.0+ / MariaDB 10.6+
+- **Real-time**: Laravel Reverb (WebSockets)
+- **Testing**: Pest 4
+- **Code Quality**: Laravel Pint
+
+## Requirements
+
+### Minimum System Requirements
+- PHP 8.4 or higher
+- Composer 2.x
+- Node.js 18+ and npm
+- MySQL 8.0+ or MariaDB 10.6+
+
+### Tested Hardware
+- Raspberry Pi 4 (4GB RAM)
+- Intel NUC
+- Standard LAMP server
+
+### Air-Gapped Deployment
+All dependencies are bundled and can run without internet connectivity:
+- No CDN dependencies
+- All assets compiled locally
+- Self-contained deployment
+
+## Installation
+
+### Development Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd fdlogdb/fdlogdb
+   ```
+
+2. **Install dependencies**
+   ```bash
+   composer install
+   npm install
+   ```
+
+3. **Environment configuration**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+4. **Configure database**
+   Edit `.env` and set your database credentials:
+   ```env
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=fdlogdb
+   DB_USERNAME=your_username
+   DB_PASSWORD=your_password
+   ```
+
+5. **Run migrations**
+   ```bash
+   php artisan migrate
+   ```
+
+6. **Build assets**
+   ```bash
+   npm run build
+   ```
+
+7. **Start development server**
+   ```bash
+   php artisan serve
+   ```
+
+8. **Run setup wizard**
+   Navigate to `http://localhost:8000/setup` and complete the setup wizard.
+
+### Production Deployment
+
+#### Docker Compose (Recommended)
+```bash
+docker-compose up -d
+```
+
+#### Traditional LAMP Stack
+1. Configure Apache/Nginx to serve from `public/` directory
+2. Set appropriate file permissions
+3. Configure environment variables
+4. Run migrations
+5. Build production assets: `npm run build`
+
+## Testing
+
+Run the full test suite:
+```bash
+php artisan test
+```
+
+Run specific test files:
+```bash
+php artisan test tests/Feature/Equipment/EquipmentPermissionTest.php
+php artisan test --filter=EquipmentEvent
+```
+
+Run with coverage:
+```bash
+php artisan test --coverage
+```
+
+## Documentation
+
+- **User Guide**: See `/docs/equipment-inventory.md` for equipment inventory user documentation
+- **Project Tracking**: See `CLAUDE_DOCS/PROJECT_TRACKER.md` for development status
+- **Security**: See `CLAUDE_DOCS/SECURITY_AUDIT.md` for security considerations
+- **Architecture**: See `CLAUDE_DOCS/IMPLEMENTATION_ROADMAP.md` for technical details
+
+## Project Structure
+
+```
+fdlogdb/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/      # HTTP controllers
+│   │   └── Requests/         # Form request validation
+│   ├── Livewire/             # Livewire components
+│   ├── Models/               # Eloquent models
+│   ├── Policies/             # Authorization policies
+│   └── Observers/            # Model observers
+├── database/
+│   ├── factories/            # Model factories
+│   ├── migrations/           # Database migrations
+│   └── seeders/              # Database seeders
+├── resources/
+│   ├── css/                  # Tailwind CSS
+│   ├── js/                   # JavaScript/Alpine.js
+│   └── views/                # Blade templates
+│       ├── components/       # Blade components
+│       ├── livewire/         # Livewire views
+│       └── layouts/          # Layout templates
+├── tests/
+│   ├── Feature/              # Feature tests
+│   └── Unit/                 # Unit tests
+├── docs/                     # User documentation
+└── CLAUDE_DOCS/              # Development documentation
+```
+
+## Development Workflow
+
+1. **Check Project Status**: Always start by reading `CLAUDE_DOCS/PROJECT_TRACKER.md`
+2. **Update Tracker**: Update the project tracker as changes are made
+3. **Test First**: Write tests before implementation
+4. **Code Style**: Run `vendor/bin/pint` before committing
+5. **Commit Messages**: Use conventional commits format
+
+## Guiding Principles
+
+- **Easy Deployment**: Simple setup for non-technical users
+- **Air-Gapped Ready**: No internet required during operation
+- **Open Source**: All dependencies are open source compatible
+- **Lightweight**: Runs on modest hardware (Raspberry Pi)
+- **Security First**: Modern security practices, no legacy vulnerabilities
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+This is a modernization of a 10-year-old Field Day logging application. Contributions are welcome!
 
-## Code of Conduct
+1. Fork the repository
+2. Create a feature branch
+3. Write tests for new features
+4. Ensure all tests pass
+5. Run Laravel Pint for code formatting
+6. Submit a pull request
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Security
 
-## Security Vulnerabilities
+If you discover a security vulnerability, please send an email to the project maintainer. All security vulnerabilities will be promptly addressed.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+**Note**: The legacy v1 application (in `../html/`) contained 7 critical vulnerabilities including SQL injection and hardcoded credentials. v2 addresses all known security issues using Laravel's built-in protections.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced software licensed under the MIT license.
+
+## Field Day Rules
+
+This application aims to comply with:
+- ARRL Field Day Rules 2025 (see `Field-Day-Rules-2025.pdf`)
+- Winter Field Day Rules (see `winter-Field-Day.pdf`)
+
+## Acknowledgments
+
+- Built with [Laravel](https://laravel.com)
+- UI components by [Mary UI](https://mary-ui.com)
+- Icons by [Heroicons](https://heroicons.com)
+- Testing with [Pest PHP](https://pestphp.com)
+
+## Support
+
+For questions or issues:
+- Check documentation in `/docs/` directory
+- Review `CLAUDE_DOCS/` for development information
+- Submit issues on the project repository
+
+---
+
+**Original Project Proposal**: See `FDLDB_proposal.md` for the original 2016 vision behind this project.
