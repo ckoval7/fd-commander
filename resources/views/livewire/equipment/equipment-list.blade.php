@@ -8,7 +8,7 @@
             <div class="flex gap-2">
                 <x-button label="Add Equipment" icon="o-plus" class="btn-primary" link="{{ route('equipment.create') }}" wire:navigate />
                 @can('edit-any-equipment')
-                    <x-button label="Add Club Equipment" icon="o-building-office" class="btn-secondary" link="{{ route('equipment.create', ['club' => true]) }}" wire:navigate />
+                    <x-button label="Add Club Equipment" icon="o-building-office" class="btn-club" link="{{ route('equipment.create', ['club' => true]) }}" wire:navigate />
                 @endcan
             </div>
         </div>
@@ -80,6 +80,7 @@
                             <th>Type</th>
                             <th>Description</th>
                             <th>Serial Number</th>
+                            <th>Status</th>
                             <th>Tags</th>
                             <th class="text-right">Actions</th>
                         </tr>
@@ -106,7 +107,7 @@
                                     <div class="text-sm opacity-60">{{ $item->model }}</div>
                                     @if($item->is_club_equipment)
                                         <div class="mt-1">
-                                            <span class="badge badge-secondary badge-xs">
+                                            <span class="badge badge-club badge-xs">
                                                 <x-icon name="o-building-office" class="w-3 h-3 mr-0.5" />
                                                 Club Equipment
                                             </span>
@@ -128,6 +129,38 @@
                                 </td>
                                 <td>
                                     <code class="text-xs">{{ $item->serial_number ?? '-' }}</code>
+                                </td>
+                                <td>
+                                    @php
+                                        $statusClasses = match($item->status ?? 'available') {
+                                            'committed' => 'badge-info',
+                                            'delivered' => 'badge-success',
+                                            'in_use' => 'badge-warning',
+                                            'returned' => 'badge-neutral',
+                                            'cancelled' => 'badge-error',
+                                            'lost' => 'badge-error',
+                                            'damaged' => 'badge-error',
+                                            default => 'badge-ghost'
+                                        };
+                                        $statusIcon = match($item->status ?? 'available') {
+                                            'committed' => 'heroicon-o-clipboard-document-list',
+                                            'delivered' => 'heroicon-o-truck',
+                                            'in_use' => 'heroicon-o-bolt',
+                                            'returned' => 'heroicon-o-check-circle',
+                                            'cancelled' => 'heroicon-o-x-circle',
+                                            'lost' => 'heroicon-o-exclamation-triangle',
+                                            'damaged' => 'heroicon-o-exclamation-triangle',
+                                            default => 'o-check'
+                                        };
+                                    @endphp
+                                    <x-badge
+                                        value="{{ ucfirst(str_replace('_', ' ', $item->status ?? 'available')) }}"
+                                        class="{{ $statusClasses }}"
+                                    >
+                                        <x-slot:icon>
+                                            <x-icon name="{{ $statusIcon }}" class="w-4 h-4 mr-2" />
+                                        </x-slot:icon>
+                                    </x-badge>
                                 </td>
                                 <td>
                                     <div class="flex flex-wrap gap-1">
@@ -154,7 +187,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center py-8 text-base-content/60">
+                                <td colspan="8" class="text-center py-8 text-base-content/60">
                                     <x-icon name="o-wrench-screwdriver" class="w-12 h-12 mx-auto mb-2 opacity-50" />
                                     <p>No equipment found</p>
                                     <x-button label="Create First Equipment" icon="o-plus" class="btn-primary btn-sm mt-2" link="{{ route('equipment.create') }}" wire:navigate />

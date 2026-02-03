@@ -19,9 +19,11 @@ class SiteBranding extends Component
 
     public $new_logo;
 
-    public string $primary_color = '#2563eb';
+    // Default primary color matches var(--color-primary) = hsl(223, 71%, 40%) = #1e40af (blue-800)
+    public string $primary_color = '#1e40af';
 
-    public string $secondary_color = '#7c3aed';
+    // Default secondary color matches var(--color-accent) = hsl(38, 92%, 50%) = #f59e0b (amber-500)
+    public string $secondary_color = '#f59e0b';
 
     public ?string $footer_text = null;
 
@@ -30,8 +32,8 @@ class SiteBranding extends Component
         $this->site_name = Setting::get('site_name', 'Field Day Log Database');
         $this->site_tagline = Setting::get('site_tagline');
         $this->logo_path = Setting::get('site_logo_path');
-        $this->primary_color = Setting::get('primary_color', '#2563eb');
-        $this->secondary_color = Setting::get('secondary_color', '#7c3aed');
+        $this->primary_color = Setting::get('primary_color', '#1e40af');
+        $this->secondary_color = Setting::get('secondary_color', '#f59e0b');
         $this->footer_text = Setting::get('site_footer_text');
     }
 

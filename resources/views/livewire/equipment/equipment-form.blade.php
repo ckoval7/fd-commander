@@ -8,7 +8,7 @@
     >
         <x-slot:actions>
             @if($isClubEquipment)
-                <span class="badge badge-secondary badge-lg">
+                <span class="badge badge-club badge-lg">
                     <x-icon name="o-building-office" class="w-4 h-4 mr-1" />
                     Club Equipment
                 </span>

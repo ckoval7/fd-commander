@@ -102,28 +102,40 @@
         <x-card class="bg-info/10 cursor-pointer hover:bg-info/20 transition-colors" wire:click="$set('statusFilter', 'committed')">
             <div class="text-center">
                 <div class="text-3xl font-bold text-info">{{ $this->statsCards['committed'] }}</div>
-                <div class="text-sm text-base-content/60">Committed</div>
+                <div class="text-sm text-base-content/60 flex items-center justify-center">
+                    <x-icon name="heroicon-o-clipboard-document-list" class="w-4 h-4 mr-2" />
+                    Committed
+                </div>
             </div>
         </x-card>
 
         <x-card class="bg-success/10 cursor-pointer hover:bg-success/20 transition-colors" wire:click="$set('statusFilter', 'delivered')">
             <div class="text-center">
                 <div class="text-3xl font-bold text-success">{{ $this->statsCards['delivered'] }}</div>
-                <div class="text-sm text-base-content/60">Delivered</div>
+                <div class="text-sm text-base-content/60 flex items-center justify-center">
+                    <x-icon name="heroicon-o-truck" class="w-4 h-4 mr-2" />
+                    Delivered
+                </div>
             </div>
         </x-card>
 
         <x-card class="bg-warning/10 cursor-pointer hover:bg-warning/20 transition-colors" wire:click="$set('statusFilter', 'in_use')">
             <div class="text-center">
                 <div class="text-3xl font-bold text-warning">{{ $this->statsCards['in_use'] }}</div>
-                <div class="text-sm text-base-content/60">In Use</div>
+                <div class="text-sm text-base-content/60 flex items-center justify-center">
+                    <x-icon name="heroicon-o-bolt" class="w-4 h-4 mr-2" />
+                    In Use
+                </div>
             </div>
         </x-card>
 
         <x-card class="bg-neutral/10 cursor-pointer hover:bg-neutral/20 transition-colors" wire:click="$set('statusFilter', 'returned')">
             <div class="text-center">
                 <div class="text-3xl font-bold text-neutral">{{ $this->statsCards['returned'] }}</div>
-                <div class="text-sm text-base-content/60">Returned</div>
+                <div class="text-sm text-base-content/60 flex items-center justify-center">
+                    <x-icon name="heroicon-o-check-circle" class="w-4 h-4 mr-2" />
+                    Returned
+                </div>
             </div>
         </x-card>
 
@@ -261,11 +273,24 @@
                                                         'damaged' => 'badge-error',
                                                         default => 'badge-ghost'
                                                     };
+                                                    $statusIcon = match($commitment->status) {
+                                                        'committed' => 'heroicon-o-clipboard-document-list',
+                                                        'delivered' => 'heroicon-o-truck',
+                                                        'in_use' => 'heroicon-o-bolt',
+                                                        'returned' => 'heroicon-o-check-circle',
+                                                        'cancelled' => 'heroicon-o-x-circle',
+                                                        'lost' => 'heroicon-o-exclamation-triangle',
+                                                        'damaged' => 'heroicon-o-exclamation-triangle',
+                                                        default => 'heroicon-o-question-mark-circle'
+                                                    };
                                                 @endphp
-                                                <x-badge
-                                                    value="{{ ucfirst(str_replace('_', ' ', $commitment->status)) }}"
-                                                    class="{{ $statusClasses }}"
-                                                />
+                                                <div class="flex items-center gap-2">
+                                                    <x-icon name="{{ $statusIcon }}" class="w-4 h-4" />
+                                                    <x-badge
+                                                        value="{{ ucfirst(str_replace('_', ' ', $commitment->status)) }}"
+                                                        class="{{ $statusClasses }}"
+                                                    />
+                                                </div>
                                             </td>
 
                                             {{-- Station --}}
@@ -440,7 +465,7 @@
                                                     <div>{{ $commitment->equipment->make }} {{ $commitment->equipment->model }}</div>
                                                     @if($commitment->equipment->is_club_equipment)
                                                         <div class="mt-1">
-                                                            <span class="badge badge-secondary badge-xs">
+                                                            <span class="badge badge-club badge-xs">
                                                                 <x-icon name="o-building-office" class="w-3 h-3 mr-0.5" />
                                                                 Club Equipment
                                                             </span>
@@ -463,11 +488,24 @@
                                                             'cancelled', 'lost', 'damaged' => 'badge-error',
                                                             default => 'badge-ghost'
                                                         };
+                                                        $statusIcon = match($commitment->status) {
+                                                            'committed' => 'heroicon-o-clipboard-document-list',
+                                                            'delivered' => 'heroicon-o-truck',
+                                                            'in_use' => 'heroicon-o-bolt',
+                                                            'returned' => 'heroicon-o-check-circle',
+                                                            'cancelled' => 'heroicon-o-x-circle',
+                                                            'lost' => 'heroicon-o-exclamation-triangle',
+                                                            'damaged' => 'heroicon-o-exclamation-triangle',
+                                                            default => 'heroicon-o-question-mark-circle'
+                                                        };
                                                     @endphp
-                                                    <x-badge
-                                                        value="{{ ucfirst(str_replace('_', ' ', $commitment->status)) }}"
-                                                        class="{{ $statusClasses }} badge-sm"
-                                                    />
+                                                    <div class="flex items-center gap-2">
+                                                        <x-icon name="{{ $statusIcon }}" class="w-4 h-4" />
+                                                        <x-badge
+                                                            value="{{ ucfirst(str_replace('_', ' ', $commitment->status)) }}"
+                                                            class="{{ $statusClasses }} badge-sm"
+                                                        />
+                                                    </div>
                                                 </td>
                                                 <td>
                                                     @if($commitment->station)
@@ -538,11 +576,24 @@
                                                         'cancelled', 'lost', 'damaged' => 'badge-error',
                                                         default => 'badge-ghost'
                                                     };
+                                                    $statusIcon = match($commitment->status) {
+                                                        'committed' => 'heroicon-o-clipboard-document-list',
+                                                        'delivered' => 'heroicon-o-truck',
+                                                        'in_use' => 'heroicon-o-bolt',
+                                                        'returned' => 'heroicon-o-check-circle',
+                                                        'cancelled' => 'heroicon-o-x-circle',
+                                                        'lost' => 'heroicon-o-exclamation-triangle',
+                                                        'damaged' => 'heroicon-o-exclamation-triangle',
+                                                        default => 'heroicon-o-question-mark-circle'
+                                                    };
                                                 @endphp
-                                                <x-badge
-                                                    value="{{ ucfirst(str_replace('_', ' ', $commitment->status)) }}"
-                                                    class="{{ $statusClasses }} badge-sm"
-                                                />
+                                                <div class="flex items-center gap-2">
+                                                    <x-icon name="{{ $statusIcon }}" class="w-4 h-4" />
+                                                    <x-badge
+                                                        value="{{ ucfirst(str_replace('_', ' ', $commitment->status)) }}"
+                                                        class="{{ $statusClasses }} badge-sm"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     @endforeach
@@ -603,7 +654,7 @@
                                                     <div>{{ $commitment->equipment->make }} {{ $commitment->equipment->model }}</div>
                                                     @if($commitment->equipment->is_club_equipment)
                                                         <div class="mt-1">
-                                                            <span class="badge badge-secondary badge-xs">
+                                                            <span class="badge badge-club badge-xs">
                                                                 <x-icon name="o-building-office" class="w-3 h-3 mr-0.5" />
                                                                 Club Equipment
                                                             </span>
@@ -622,11 +673,24 @@
                                                             'cancelled', 'lost', 'damaged' => 'badge-error',
                                                             default => 'badge-ghost'
                                                         };
+                                                        $statusIcon = match($commitment->status) {
+                                                            'committed' => 'heroicon-o-clipboard-document-list',
+                                                            'delivered' => 'heroicon-o-truck',
+                                                            'in_use' => 'heroicon-o-bolt',
+                                                            'returned' => 'heroicon-o-check-circle',
+                                                            'cancelled' => 'heroicon-o-x-circle',
+                                                            'lost' => 'heroicon-o-exclamation-triangle',
+                                                            'damaged' => 'heroicon-o-exclamation-triangle',
+                                                            default => 'heroicon-o-question-mark-circle'
+                                                        };
                                                     @endphp
-                                                    <x-badge
-                                                        value="{{ ucfirst(str_replace('_', ' ', $commitment->status)) }}"
-                                                        class="{{ $statusClasses }} badge-sm"
-                                                    />
+                                                    <div class="flex items-center gap-2">
+                                                        <x-icon name="{{ $statusIcon }}" class="w-4 h-4" />
+                                                        <x-badge
+                                                            value="{{ ucfirst(str_replace('_', ' ', $commitment->status)) }}"
+                                                            class="{{ $statusClasses }} badge-sm"
+                                                        />
+                                                    </div>
                                                 </td>
                                                 @if($this->canManage)
                                                     <td class="text-right">

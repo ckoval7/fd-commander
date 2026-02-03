@@ -69,6 +69,7 @@
 
         <div class="space-y-4">
             <div>
+                {{-- Default primary color matches var(--color-primary) = hsl(223, 71%, 40%) = #1e40af (blue-800) --}}
                 <x-input
                     label="Primary Color"
                     type="color"
@@ -82,6 +83,7 @@
             </div>
 
             <div>
+                {{-- Default secondary color matches var(--color-accent) = hsl(38, 92%, 50%) = #f59e0b (amber-500) --}}
                 <x-input
                     label="Secondary Color"
                     type="color"
@@ -94,7 +96,7 @@
                 </div>
             </div>
 
-            <x-button wire:click="$set('primary_color', '#2563eb'); $set('secondary_color', '#7c3aed')" class="btn-ghost btn-sm">
+            <x-button wire:click="$set('primary_color', '#1e40af'); $set('secondary_color', '#f59e0b')" class="btn-ghost btn-sm">
                 Reset to Defaults
             </x-button>
         </div>

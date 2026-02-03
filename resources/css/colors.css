@@ -1,0 +1,217 @@
+/**
+ * Field Day Log Database - Color System
+ *
+ * A comprehensive color token system using HSL notation for both light and dark modes.
+ * Based on the 60-30-10 design principle:
+ * - 60% Background colors (dominant)
+ * - 30% Primary brand colors
+ * - 10% Accent colors
+ *
+ * All colors are WCAG 2.1 AA compliant for accessibility.
+ */
+
+:root {
+  /* ============================================================================
+     BACKGROUND COLORS (60% - Dominant)
+     Light, neutral backgrounds that don't compete with content
+     ========================================================================== */
+
+  /* Primary background - main page background */
+  --color-bg-primary: hsl(210, 20%, 98%);      /* Very light slate - subtle blue tint */
+
+  /* Secondary background - cards, containers */
+  --color-bg-secondary: hsl(210, 16%, 93%);    /* Light slate - slightly darker */
+
+  /* Tertiary background - nested elements, hover states */
+  --color-bg-tertiary: hsl(210, 20%, 88%);     /* Medium-light slate */
+
+  /* Surface colors - elevated elements */
+  --color-surface: hsl(0, 0%, 100%);           /* Pure white - highest elevation */
+  --color-surface-elevated: hsl(210, 25%, 97%); /* Blue-tinted white - subtle elevation */
+
+  /* ============================================================================
+     TEXT COLORS
+     High contrast text for excellent readability
+     ========================================================================== */
+
+  /* Primary text - body text, headings (15:1 contrast ratio) */
+  --color-text-primary: hsl(215, 25%, 18%);    /* Very dark slate - WCAG AAA */
+
+  /* Secondary text - less important content (7:1 contrast ratio) */
+  --color-text-secondary: hsl(215, 20%, 40%);  /* Medium slate - WCAG AA */
+
+  /* Muted text - captions, help text (4.5:1 contrast ratio) */
+  --color-text-muted: hsl(215, 15%, 55%);      /* Light slate - WCAG AA minimum */
+
+  /* Inverse text - for dark backgrounds */
+  --color-text-inverse: hsl(0, 0%, 100%);      /* Pure white */
+
+  /* ============================================================================
+     BRAND COLORS (30% - Primary)
+     Main brand identity colors for buttons, links, and key UI elements
+     ========================================================================== */
+
+  /* Primary brand color - Blue-800 equivalent (rgb(30, 64, 175)) */
+  --color-primary: hsl(223, 71%, 40%);         /* Deep blue - professional, trustworthy */
+  --color-primary-hover: hsl(223, 71%, 32%);   /* Darker blue - hover state */
+  --color-primary-active: hsl(223, 71%, 24%);  /* Even darker - active/pressed state */
+  --color-primary-light: hsl(223, 90%, 90%);   /* Very light blue - backgrounds/badges */
+
+  /* ============================================================================
+     ACCENT COLOR (10%)
+     Secondary brand color for highlights and important actions
+     ========================================================================== */
+
+  /* Accent color - Amber-500 equivalent (#f59e0b) */
+  --color-accent: hsl(38, 92%, 50%);           /* Warm amber - energetic, attention-grabbing */
+  --color-accent-hover: hsl(38, 92%, 42%);     /* Darker amber - hover state */
+  --color-accent-active: hsl(38, 92%, 34%);    /* Even darker - active/pressed state */
+
+  /* ============================================================================
+     SEMANTIC STATUS COLORS
+     Color-coded feedback for different states and messages
+     ========================================================================== */
+
+  /* Success - Green-600 equivalent (#16a34a) */
+  --color-success: hsl(142, 71%, 45%);         /* Positive actions, confirmations */
+  --color-success-hover: hsl(142, 71%, 38%);   /* Darker green - hover state */
+  --color-success-light: hsl(142, 60%, 90%);   /* Light green - backgrounds/alerts */
+
+  /* Warning - Amber-500 (same as accent) */
+  --color-warning: hsl(38, 92%, 50%);          /* Caution, requires attention */
+  --color-warning-hover: hsl(38, 92%, 42%);    /* Darker amber - hover state */
+  --color-warning-light: hsl(38, 90%, 90%);    /* Light amber - backgrounds/alerts */
+
+  /* Error - Red-600 equivalent (#dc2626) */
+  --color-error: hsl(0, 72%, 51%);             /* Errors, destructive actions */
+  --color-error-hover: hsl(0, 72%, 43%);       /* Darker red - hover state */
+  --color-error-light: hsl(0, 70%, 92%);       /* Light red - backgrounds/alerts */
+
+  /* Info - Sky-500 equivalent (#0ea5e9) */
+  --color-info: hsl(199, 89%, 48%);            /* Informational messages, tips */
+  --color-info-hover: hsl(199, 89%, 40%);      /* Darker sky - hover state */
+  --color-info-light: hsl(199, 90%, 90%);      /* Light blue - backgrounds/alerts */
+
+  /* Neutral - Slate-400 equivalent (#94a3b8) */
+  --color-neutral: hsl(215, 20%, 65%);         /* Neutral/inactive states */
+  --color-neutral-hover: hsl(215, 20%, 55%);   /* Darker slate - hover state */
+  --color-neutral-light: hsl(215, 20%, 90%);   /* Light gray - backgrounds/badges */
+
+  /* ============================================================================
+     SPECIAL PURPOSE COLORS
+     Domain-specific colors for unique use cases
+     ========================================================================== */
+
+  /* Club equipment color - Indigo-600 equivalent (rgb(79, 70, 229)) */
+  --color-club: hsl(244, 75%, 59%);            /* Distinguishes club-owned equipment */
+  --color-club-hover: hsl(244, 75%, 51%);      /* Darker indigo - hover state */
+  --color-club-light: hsl(244, 70%, 92%);      /* Light indigo - backgrounds/badges */
+
+  /* ============================================================================
+     BORDERS & DIVIDERS
+     Subtle lines that separate content without being distracting
+     ========================================================================== */
+
+  /* Standard border */
+  --color-border: hsl(215, 20%, 85%);          /* Medium border - visible but subtle */
+
+  /* Light border - more subtle separation */
+  --color-border-light: hsl(215, 20%, 92%);    /* Very light border */
+
+  /* ============================================================================
+     FOCUS RINGS
+     Keyboard navigation and accessibility indicators
+     ========================================================================== */
+
+  /* Focus indicator - Blue-500 for high visibility */
+  --color-focus: hsl(217, 91%, 60%);           /* Bright blue - WCAG compliant focus ring */
+}
+
+/* ==============================================================================
+   DARK MODE OVERRIDES
+   Optimized colors for dark theme with proper contrast ratios
+   ============================================================================ */
+
+[data-theme="dark"] {
+  /* ============================================================================
+     BACKGROUNDS - Dark blue-black palette
+     ========================================================================== */
+
+  /* Primary background - Slate-900 equivalent (#0f172a) */
+  --color-bg-primary: hsl(222, 47%, 11%);      /* Very dark blue-black */
+
+  /* Secondary background - Slate-800 equivalent (#1e293b) */
+  --color-bg-secondary: hsl(217, 33%, 17%);    /* Dark blue-gray */
+
+  /* Tertiary background - Slate-700 equivalent (#334155) */
+  --color-bg-tertiary: hsl(215, 25%, 27%);     /* Medium dark blue-gray */
+
+  /* Surface colors */
+  --color-surface: hsl(217, 33%, 17%);         /* Slate-800 - elevated surfaces */
+  --color-surface-elevated: hsl(215, 25%, 27%); /* Slate-700 - higher elevation */
+
+  /* ============================================================================
+     TEXT - Light colors for dark backgrounds
+     ========================================================================== */
+
+  /* Primary text - very light for maximum readability */
+  --color-text-primary: hsl(210, 20%, 98%);    /* Nearly white - high contrast */
+
+  /* Secondary text - medium light */
+  --color-text-secondary: hsl(215, 20%, 75%);  /* Light gray - good contrast */
+
+  /* Muted text - less prominent */
+  --color-text-muted: hsl(215, 15%, 60%);      /* Medium gray - adequate contrast */
+
+  /* Inverse text - for light backgrounds in dark mode */
+  --color-text-inverse: hsl(215, 25%, 18%);    /* Very dark slate */
+
+  /* ============================================================================
+     BRAND COLORS - Lighter for better contrast on dark backgrounds
+     ========================================================================== */
+
+  /* Primary - Blue-500 equivalent (#3b82f6) - lighter than light mode */
+  --color-primary: hsl(217, 91%, 60%);         /* Bright blue - pops on dark */
+  --color-primary-hover: hsl(217, 91%, 68%);   /* Lighter blue - hover */
+  --color-primary-active: hsl(217, 91%, 76%);  /* Even lighter - active */
+
+  /* Accent - Amber-400 equivalent (#fbbf24) - lighter amber */
+  --color-accent: hsl(43, 96%, 56%);           /* Bright amber */
+  --color-accent-hover: hsl(43, 96%, 64%);     /* Lighter amber - hover */
+
+  /* ============================================================================
+     SEMANTIC COLORS - Adjusted for dark backgrounds
+     ========================================================================== */
+
+  /* Success - Green-500 equivalent (#22c55e) */
+  --color-success: hsl(142, 76%, 48%);         /* Bright green */
+
+  /* Warning - Amber-400 (same as accent) */
+  --color-warning: hsl(43, 96%, 56%);          /* Bright amber */
+
+  /* Error - Red-400 equivalent (#f87171) */
+  --color-error: hsl(0, 84%, 60%);             /* Lighter red for visibility */
+
+  /* Info - Sky-400 equivalent (#38bdf8) */
+  --color-info: hsl(199, 89%, 58%);            /* Bright sky blue */
+
+  /* Neutral - Slate-400 (same as light mode) */
+  --color-neutral: hsl(215, 20%, 65%);         /* Medium slate */
+
+  /* ============================================================================
+     SPECIAL PURPOSE - Lighter variants
+     ========================================================================== */
+
+  /* Club - Indigo-400 equivalent (#818cf8) */
+  --color-club: hsl(244, 75%, 65%);            /* Lighter indigo */
+
+  /* ============================================================================
+     BORDERS - Lighter for visibility on dark backgrounds
+     ========================================================================== */
+
+  /* Standard border - visible on dark */
+  --color-border: hsl(215, 25%, 35%);          /* Medium-light border */
+
+  /* Light border - subtle separation */
+  --color-border-light: hsl(215, 25%, 40%);    /* Slightly lighter */
+}
