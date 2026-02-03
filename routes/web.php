@@ -74,6 +74,7 @@ Route::middleware(['auth', 'can:manage-equipment'])->group(function () {
     Route::get('/equipment', \App\Livewire\Equipment\EquipmentList::class)->name('equipment.index');
     Route::get('/equipment/create', \App\Livewire\Equipment\EquipmentForm::class)->name('equipment.create');
     Route::get('/equipment/{equipment}/edit', \App\Livewire\Equipment\EquipmentForm::class)->name('equipment.edit');
+    Route::get('/equipment/events', \App\Livewire\Equipment\EventEquipment::class)->name('equipment.events');
 });
 
 // Administration

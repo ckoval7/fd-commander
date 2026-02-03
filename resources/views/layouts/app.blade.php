@@ -79,7 +79,10 @@
                         <x-menu-item title="Stations" icon="o-signal" link="/stations" />
                     @endcan
 
-                    <x-menu-item title="Equipment" icon="o-wrench-screwdriver" link="{{ route('equipment.index') }}" />
+                    <x-menu-sub title="Equipment" icon="o-wrench-screwdriver">
+                        <x-menu-item title="My Catalog" link="{{ route('equipment.index') }}" route="equipment.index" />
+                        <x-menu-item title="Event Commitments" link="{{ route('equipment.events') }}" route="equipment.events" />
+                    </x-menu-sub>
 
                     <x-menu-item title="Gallery" icon="o-photo" link="/gallery" />
 

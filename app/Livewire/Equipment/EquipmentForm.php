@@ -104,7 +104,7 @@ class EquipmentForm extends Component
         ];
     }
 
-    public function save(): void
+    public function save()
     {
         $validated = $this->validate();
 
