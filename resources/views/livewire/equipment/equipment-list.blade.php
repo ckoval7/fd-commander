@@ -133,7 +133,7 @@
                                     <div class="flex flex-wrap gap-1">
                                         @if($item->tags && is_array($item->tags))
                                             @foreach($item->tags as $tag)
-                                                <span class="badge badge-outline badge-xs">{{ $tag }}</span>
+                                                <span class="badge badge-outline badge-sm">{{ $tag }}</span>
                                             @endforeach
                                         @else
                                             <span class="text-xs opacity-50">-</span>
