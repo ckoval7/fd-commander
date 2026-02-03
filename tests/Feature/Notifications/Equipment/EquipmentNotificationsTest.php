@@ -35,7 +35,7 @@ beforeEach(function () {
         'owner_user_id' => $this->operator->id,
         'make' => 'Icom',
         'model' => 'IC-7300',
-        'type' => 'transceiver',
+        'type' => 'radio',
     ]);
 
     $this->equipmentEvent = EquipmentEvent::factory()->create([

@@ -6,6 +6,7 @@ use App\Models\Band;
 use App\Models\Equipment;
 use App\Models\Organization;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Storage;
@@ -60,7 +61,7 @@ class EquipmentForm extends Component
 
     public ?string $existingPhotoPath = null;
 
-    public function mount(?Equipment $equipment = null, bool $club = false): void
+    public function mount(?Equipment $equipment = null): void
     {
         if ($equipment) {
             $this->equipmentId = $equipment->id;
@@ -68,7 +69,8 @@ class EquipmentForm extends Component
             $this->loadEquipment();
             $this->authorize('update', $equipment);
         } else {
-            $this->isClubEquipment = $club;
+            // Read club parameter from query string
+            $this->isClubEquipment = (bool) request()->query('club', false);
             if ($this->isClubEquipment) {
                 // Verify user has permission to create club equipment
                 $this->authorize('edit-any-equipment');

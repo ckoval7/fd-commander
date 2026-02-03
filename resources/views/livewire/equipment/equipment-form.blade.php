@@ -55,7 +55,7 @@
                     option-value="value"
                     option-label="label"
                     required
-                    icon="o-catalog"
+                    icon="o-rectangle-stack"
                 />
 
                 {{-- Serial Number --}}
@@ -212,8 +212,10 @@
                             class="h-40 rounded-lg border border-base-300"
                         />
                     @else
-                        <div class="text-center py-8">
-                            <p class="text-base-content/70">Click to upload photo</p>
+                        <div class="flex flex-col items-center justify-center py-12 px-6 border-2 border-dashed border-base-300 rounded-lg bg-base-200/30 hover:bg-base-200/50 hover:border-primary/50 transition-colors cursor-pointer">
+                            <x-icon name="o-photo" class="w-12 h-12 text-base-content/40 mb-3" />
+                            <p class="text-base font-medium text-base-content mb-1">Click to upload photo</p>
+                            <p class="text-sm text-base-content/60">PNG or JPEG up to 5MB</p>
                         </div>
                     @endif
                 </x-file>

@@ -66,7 +66,7 @@ class EquipmentReportServiceTest extends TestCase
         // Create equipment and commitment
         $equipment = Equipment::factory()->create([
             'owner_user_id' => $this->owner->id,
-            'type' => 'transceiver',
+            'type' => 'radio',
             'make' => 'Icom',
             'model' => 'IC-7300',
             'value_usd' => 1200.00,
