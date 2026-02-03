@@ -14,8 +14,9 @@ class RoleSeeder extends Seeder
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         // System Administrator - All except contact logging
-        $systemAdmin = Role::create([
+        $systemAdmin = Role::firstOrCreate([
             'name' => 'System Administrator',
+        ], [
             'guard_name' => 'web',
         ]);
         $systemAdmin->givePermissionTo(
@@ -23,8 +24,9 @@ class RoleSeeder extends Seeder
         );
 
         // Event Manager
-        $eventManager = Role::create([
+        $eventManager = Role::firstOrCreate([
             'name' => 'Event Manager',
+        ], [
             'guard_name' => 'web',
         ]);
         $eventManager->givePermissionTo([
@@ -42,18 +44,27 @@ class RoleSeeder extends Seeder
             'manage-guestbook',
             'manage-images',
             'view-security-logs',
+            'manage-own-equipment',
+            'view-all-equipment',
+            'manage-event-equipment',
+            'edit-any-equipment',
         ]);
 
         // Operator (Default)
-        $operator = Role::create([
+        $operator = Role::firstOrCreate([
             'name' => 'Operator',
+        ], [
             'guard_name' => 'web',
         ]);
-        $operator->givePermissionTo('log-contacts');
+        $operator->givePermissionTo([
+            'log-contacts',
+            'manage-own-equipment',
+        ]);
 
         // Station Captain
-        $stationCaptain = Role::create([
+        $stationCaptain = Role::firstOrCreate([
             'name' => 'Station Captain',
+        ], [
             'guard_name' => 'web',
         ]);
         $stationCaptain->givePermissionTo([
@@ -63,6 +74,6 @@ class RoleSeeder extends Seeder
             'manage-equipment',
         ]);
 
-        $this->command->info('Created 4 roles with permissions');
+        $this->command->info('Created or updated 4 roles with permissions');
     }
 }

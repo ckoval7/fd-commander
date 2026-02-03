@@ -79,9 +79,7 @@
                         <x-menu-item title="Stations" icon="o-signal" link="/stations" />
                     @endcan
 
-                    @can('manage-equipment')
-                        <x-menu-item title="Equipment" icon="o-wrench-screwdriver" link="/equipment" />
-                    @endcan
+                    <x-menu-item title="Equipment" icon="o-wrench-screwdriver" link="{{ route('equipment.index') }}" />
 
                     <x-menu-item title="Gallery" icon="o-photo" link="/gallery" />
 

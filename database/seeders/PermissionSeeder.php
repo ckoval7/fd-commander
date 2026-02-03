@@ -28,6 +28,12 @@ class PermissionSeeder extends Seeder
             ['name' => 'manage-stations', 'description' => 'Add and edit operating stations'],
             ['name' => 'manage-equipment', 'description' => 'Manage equipment inventory'],
 
+            // Equipment Management (New)
+            ['name' => 'manage-own-equipment', 'description' => 'Create, edit, and delete personal equipment in catalog'],
+            ['name' => 'view-all-equipment', 'description' => 'View everyone\'s equipment catalog'],
+            ['name' => 'manage-event-equipment', 'description' => 'Manage equipment assignments for events (change status, assign to stations)'],
+            ['name' => 'edit-any-equipment', 'description' => 'Edit equipment details for any user'],
+
             // User Administration
             ['name' => 'manage-users', 'description' => 'Create, edit, and delete user accounts'],
             ['name' => 'manage-roles', 'description' => 'Create roles and assign permissions'],
@@ -51,6 +57,6 @@ class PermissionSeeder extends Seeder
             );
         }
 
-        $this->command->info('Created 19 permissions');
+        $this->command->info('Created 23 permissions');
     }
 }

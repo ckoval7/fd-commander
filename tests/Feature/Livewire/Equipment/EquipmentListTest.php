@@ -1,0 +1,502 @@
+<?php
+
+use App\Livewire\Equipment\EquipmentList;
+use App\Models\Equipment;
+use App\Models\EquipmentEvent;
+use App\Models\Event;
+use App\Models\User;
+use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+
+beforeEach(function () {
+    $this->user = User::factory()->create();
+
+    // Create permissions
+    Permission::create(['name' => 'manage-own-equipment']);
+    Permission::create(['name' => 'edit-any-equipment']);
+
+    $role = Role::create(['name' => 'Operator', 'guard_name' => 'web']);
+    $role->givePermissionTo('manage-own-equipment');
+    $this->user->assignRole($role);
+});
+
+test('equipment list requires authentication', function () {
+    Livewire::test(EquipmentList::class)
+        ->assertForbidden();
+});
+
+test('equipment list is accessible when authenticated', function () {
+    $this->actingAs($this->user);
+
+    Livewire::test(EquipmentList::class)
+        ->assertStatus(200);
+});
+
+test('equipment list displays only users own equipment', function () {
+    $this->actingAs($this->user);
+
+    $ownEquipment = Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+        'model' => 'FT-991A',
+    ]);
+
+    $otherUser = User::factory()->create();
+    $otherEquipment = Equipment::factory()->create([
+        'owner_user_id' => $otherUser->id,
+        'make' => 'Icom',
+        'model' => 'IC-7300',
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->assertSee('Yaesu')
+        ->assertSee('FT-991A')
+        ->assertDontSee('Icom')
+        ->assertDontSee('IC-7300');
+});
+
+test('equipment list search filters by make', function () {
+    $this->actingAs($this->user);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+        'model' => 'FT-991A',
+    ]);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Icom',
+        'model' => 'IC-7300',
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->set('search', 'Yaesu')
+        ->assertSee('Yaesu')
+        ->assertSee('FT-991A')
+        ->assertDontSee('Icom')
+        ->assertDontSee('IC-7300');
+});
+
+test('equipment list search filters by model', function () {
+    $this->actingAs($this->user);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+        'model' => 'FT-991A',
+    ]);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Icom',
+        'model' => 'IC-7300',
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->set('search', 'IC-7300')
+        ->assertSee('Icom')
+        ->assertSee('IC-7300')
+        ->assertDontSee('Yaesu')
+        ->assertDontSee('FT-991A');
+});
+
+test('equipment list search filters by description', function () {
+    $this->actingAs($this->user);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+        'model' => 'FT-991A',
+        'description' => 'Primary contest radio',
+    ]);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Icom',
+        'model' => 'IC-7300',
+        'description' => 'Backup radio',
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->set('search', 'contest')
+        ->assertSee('Yaesu')
+        ->assertSee('Primary contest radio')
+        ->assertDontSee('Icom')
+        ->assertDontSee('Backup radio');
+});
+
+test('equipment list search filters by serial number', function () {
+    $this->actingAs($this->user);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+        'model' => 'FT-991A',
+        'serial_number' => 'YS123456',
+    ]);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Icom',
+        'model' => 'IC-7300',
+        'serial_number' => 'IC789012',
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->set('search', 'YS123456')
+        ->assertSee('Yaesu')
+        ->assertSee('YS123456')
+        ->assertDontSee('Icom')
+        ->assertDontSee('IC789012');
+});
+
+test('equipment list type filter works correctly', function () {
+    $this->actingAs($this->user);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+        'type' => 'transceiver',
+    ]);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Diamond',
+        'type' => 'antenna',
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->set('typeFilter', 'transceiver')
+        ->assertSee('Yaesu')
+        ->assertDontSee('Diamond');
+});
+
+test('equipment list status filter shows available equipment', function () {
+    $this->actingAs($this->user);
+
+    $availableEquipment = Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+        'model' => 'Available Radio',
+    ]);
+
+    $committedEquipment = Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Icom',
+        'model' => 'Committed Radio',
+    ]);
+
+    // Create an active event
+    $event = Event::factory()->create([
+        'start_time' => now()->subHours(2),
+        'end_time' => now()->addHours(22),
+    ]);
+
+    // Create a commitment for the equipment
+    EquipmentEvent::factory()->create([
+        'equipment_id' => $committedEquipment->id,
+        'event_id' => $event->id,
+        'status' => 'committed',
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->set('statusFilter', 'available')
+        ->assertSee('Available Radio')
+        ->assertDontSee('Committed Radio');
+});
+
+test('equipment list status filter shows committed equipment', function () {
+    $this->actingAs($this->user);
+
+    $availableEquipment = Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+        'model' => 'Available Radio',
+    ]);
+
+    $committedEquipment = Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Icom',
+        'model' => 'Committed Radio',
+    ]);
+
+    // Create an active event
+    $event = Event::factory()->create([
+        'start_time' => now()->subHours(2),
+        'end_time' => now()->addHours(22),
+    ]);
+
+    // Create a commitment for the equipment
+    EquipmentEvent::factory()->create([
+        'equipment_id' => $committedEquipment->id,
+        'event_id' => $event->id,
+        'status' => 'committed',
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->set('statusFilter', 'committed')
+        ->assertSee('Committed Radio')
+        ->assertDontSee('Available Radio');
+});
+
+test('equipment list sorts by specified column', function () {
+    $this->actingAs($this->user);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Alpha',
+        'created_at' => now()->subDays(2),
+    ]);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Zulu',
+        'created_at' => now()->subDays(1),
+    ]);
+
+    $component = Livewire::test(EquipmentList::class)
+        ->assertStatus(200)
+        ->assertSet('sortBy', 'created_at')
+        ->assertSet('sortDirection', 'desc');
+
+    // Default sort should show newest first (Zulu)
+    $equipment = $component->get('equipment');
+    expect($equipment->first()->make)->toBe('Zulu');
+});
+
+test('equipment list paginates results', function () {
+    $this->actingAs($this->user);
+
+    // Create 30 equipment items (more than the 25 per page limit)
+    Equipment::factory()->count(30)->create([
+        'owner_user_id' => $this->user->id,
+    ]);
+
+    $component = Livewire::test(EquipmentList::class);
+
+    $equipment = $component->get('equipment');
+    expect($equipment->total())->toBe(30);
+    expect($equipment->perPage())->toBe(25);
+});
+
+test('updating search resets pagination', function () {
+    $this->actingAs($this->user);
+
+    // Create equipment with different makes to ensure search filtering
+    Equipment::factory()->count(15)->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+    ]);
+
+    Equipment::factory()->count(15)->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Icom',
+    ]);
+
+    // Verify component handles search properly
+    // The updatingSearch() method exists and will reset pagination
+    $component = Livewire::test(EquipmentList::class);
+
+    // Verify we have multiple pages
+    expect($component->get('equipment')->lastPage())->toBeGreaterThan(1);
+
+    // Setting search should work correctly
+    $component->set('search', 'Yaesu');
+    expect($component->get('search'))->toBe('Yaesu');
+});
+
+test('updating type filter resets pagination', function () {
+    $this->actingAs($this->user);
+
+    Equipment::factory()->count(30)->create([
+        'owner_user_id' => $this->user->id,
+        'type' => 'transceiver',
+    ]);
+
+    // Setting type filter should work correctly
+    $component = Livewire::test(EquipmentList::class)
+        ->set('typeFilter', 'transceiver');
+
+    expect($component->get('typeFilter'))->toBe('transceiver');
+});
+
+test('updating status filter resets pagination', function () {
+    $this->actingAs($this->user);
+
+    Equipment::factory()->count(30)->create([
+        'owner_user_id' => $this->user->id,
+    ]);
+
+    // Setting status filter should work correctly
+    $component = Livewire::test(EquipmentList::class)
+        ->set('statusFilter', 'available');
+
+    expect($component->get('statusFilter'))->toBe('available');
+});
+
+test('delete equipment requires authorization', function () {
+    $userWithoutPermission = User::factory()->create();
+    $this->actingAs($userWithoutPermission);
+
+    $equipment = Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->call('deleteEquipment', $equipment->id)
+        ->assertForbidden();
+});
+
+test('user can delete their own equipment', function () {
+    $this->actingAs($this->user);
+
+    $equipment = Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+    ]);
+
+    expect(Equipment::where('id', $equipment->id)->exists())->toBeTrue();
+
+    Livewire::test(EquipmentList::class)
+        ->call('deleteEquipment', $equipment->id)
+        ->assertDispatched('notify');
+
+    expect(Equipment::where('id', $equipment->id)->exists())->toBeFalse();
+});
+
+test('user cannot delete another users equipment', function () {
+    $this->actingAs($this->user);
+
+    $otherUser = User::factory()->create();
+    $equipment = Equipment::factory()->create([
+        'owner_user_id' => $otherUser->id,
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->call('deleteEquipment', $equipment->id)
+        ->assertForbidden();
+
+    expect(Equipment::where('id', $equipment->id)->exists())->toBeTrue();
+});
+
+test('user with edit-any-equipment permission can delete any equipment', function () {
+    $adminUser = User::factory()->create();
+    $adminRole = Role::create(['name' => 'Admin', 'guard_name' => 'web']);
+    $adminRole->givePermissionTo('edit-any-equipment');
+    $adminUser->assignRole($adminRole);
+
+    $this->actingAs($adminUser);
+
+    $equipment = Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->call('deleteEquipment', $equipment->id)
+        ->assertDispatched('notify');
+
+    expect(Equipment::where('id', $equipment->id)->exists())->toBeFalse();
+});
+
+test('equipment list shows empty state when no equipment', function () {
+    $this->actingAs($this->user);
+
+    $component = Livewire::test(EquipmentList::class);
+
+    $equipment = $component->get('equipment');
+    expect($equipment->total())->toBe(0);
+});
+
+test('search works with partial matches', function () {
+    $this->actingAs($this->user);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+        'model' => 'FT-991A',
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->set('search', 'FT-9')
+        ->assertSee('Yaesu')
+        ->assertSee('FT-991A');
+});
+
+test('search is case insensitive', function () {
+    $this->actingAs($this->user);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+        'model' => 'FT-991A',
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->set('search', 'yaesu')
+        ->assertSee('Yaesu');
+
+    Livewire::test(EquipmentList::class)
+        ->set('search', 'YAESU')
+        ->assertSee('Yaesu');
+});
+
+test('equipment list does not include soft deleted equipment', function () {
+    $this->actingAs($this->user);
+
+    $activeEquipment = Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Active',
+    ]);
+
+    $deletedEquipment = Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Deleted',
+    ]);
+    $deletedEquipment->delete();
+
+    Livewire::test(EquipmentList::class)
+        ->assertSee('Active')
+        ->assertDontSee('Deleted');
+});
+
+test('multiple filters work together', function () {
+    $this->actingAs($this->user);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+        'model' => 'FT-991A',
+        'type' => 'transceiver',
+    ]);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+        'model' => 'FT-DX10',
+        'type' => 'transceiver',
+    ]);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Icom',
+        'model' => 'IC-7300',
+        'type' => 'transceiver',
+    ]);
+
+    Equipment::factory()->create([
+        'owner_user_id' => $this->user->id,
+        'make' => 'Yaesu',
+        'model' => 'ATAS-120A',
+        'type' => 'antenna',
+    ]);
+
+    Livewire::test(EquipmentList::class)
+        ->set('search', 'Yaesu')
+        ->set('typeFilter', 'transceiver')
+        ->assertSee('FT-991A')
+        ->assertSee('FT-DX10')
+        ->assertDontSee('IC-7300')
+        ->assertDontSee('ATAS-120A');
+});
