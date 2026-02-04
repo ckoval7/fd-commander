@@ -277,6 +277,23 @@ resources/views/components/layouts/app.blade.php
 - IMPORTANT: Always use `search-docs` tool for version-specific Tailwind CSS documentation and updated code examples. Never rely on training data.
 - IMPORTANT: Activate `tailwindcss-development` every time you're working with a Tailwind CSS or styling-related task.
 
+## Responsive Layout Patterns (CRITICAL)
+
+**Before writing any responsive layout code, read `docs/responsive-patterns.md`.**
+
+Key rules:
+- **Match child breakpoints to parent containers** - If a parent grid uses `lg:grid-cols-2`, children must use `lg:flex-row` (not `sm:flex-row`)
+- Use touch-friendly button heights on mobile: `min-h-[2.75rem] sm:min-h-[1.75rem]`
+- Always use `min-w-0` on flex children and `truncate` on text that might overflow
+- Test layouts at: 375px, 640px, 768px, 1024px, 1280px
+
+Quick reference:
+| Parent Grid | Child Flex Breakpoint |
+|-------------|----------------------|
+| `lg:grid-cols-2` | `lg:flex-row` |
+| `md:grid-cols-2` | `md:flex-row` |
+| `sm:grid-cols-2` | `sm:flex-row` |
+
 === maryui rules ===
 
 # MaryUI
