@@ -135,7 +135,7 @@
         @apply hover:bg-indigo-700 hover:border-indigo-700;
         @apply active:bg-indigo-800 active:border-indigo-800;
         @apply focus:ring-2 focus:ring-offset-2;
-        focus-ring-color: var(--color-focus);
+        --tw-ring-color: var(--color-focus);
         @apply disabled:bg-indigo-400 disabled:border-indigo-400 disabled:cursor-not-allowed;
         @apply transition-colors duration-150;
     }
@@ -145,7 +145,7 @@
         @apply hover:bg-indigo-600 hover:border-indigo-600;
         @apply active:bg-indigo-700 active:border-indigo-700;
         @apply focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900;
-        focus-ring-color: var(--color-focus);
+        --tw-ring-color: var(--color-focus);
         @apply disabled:bg-indigo-800 disabled:border-indigo-800 disabled:cursor-not-allowed;
     }
 
@@ -160,7 +160,7 @@
         @apply checked:border-blue-600;
         background-color: white;
         @apply focus:ring-2 focus:ring-offset-2;
-        focus-ring-color: var(--color-focus);
+        --tw-ring-color: var(--color-focus);
         @apply cursor-pointer transition-colors duration-150;
     }
 
@@ -172,7 +172,7 @@
         @apply border-gray-600 bg-gray-800;
         @apply checked:border-blue-500;
         @apply focus:ring-offset-gray-900;
-        focus-ring-color: var(--color-focus);
+        --tw-ring-color: var(--color-focus);
     }
 
     [data-theme="dark"] .checkbox:checked {
