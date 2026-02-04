@@ -103,7 +103,7 @@
             <div class="text-center">
                 <div class="text-3xl font-bold text-info">{{ $this->statsCards['committed'] }}</div>
                 <div class="text-sm text-base-content/60 flex items-center justify-center">
-                    <x-icon name="heroicon-o-clipboard-document-list" class="w-4 h-4 mr-2" />
+                    <x-icon name="o-clipboard-document-list" class="w-4 h-4 mr-2" />
                     Committed
                 </div>
             </div>
@@ -113,7 +113,7 @@
             <div class="text-center">
                 <div class="text-3xl font-bold text-success">{{ $this->statsCards['delivered'] }}</div>
                 <div class="text-sm text-base-content/60 flex items-center justify-center">
-                    <x-icon name="heroicon-o-truck" class="w-4 h-4 mr-2" />
+                    <x-icon name="o-truck" class="w-4 h-4 mr-2" />
                     Delivered
                 </div>
             </div>
@@ -123,7 +123,7 @@
             <div class="text-center">
                 <div class="text-3xl font-bold text-warning">{{ $this->statsCards['in_use'] }}</div>
                 <div class="text-sm text-base-content/60 flex items-center justify-center">
-                    <x-icon name="heroicon-o-bolt" class="w-4 h-4 mr-2" />
+                    <x-icon name="o-bolt" class="w-4 h-4 mr-2" />
                     In Use
                 </div>
             </div>
@@ -133,7 +133,7 @@
             <div class="text-center">
                 <div class="text-3xl font-bold text-neutral">{{ $this->statsCards['returned'] }}</div>
                 <div class="text-sm text-base-content/60 flex items-center justify-center">
-                    <x-icon name="heroicon-o-check-circle" class="w-4 h-4 mr-2" />
+                    <x-icon name="o-check-circle" class="w-4 h-4 mr-2" />
                     Returned
                 </div>
             </div>
@@ -274,14 +274,14 @@
                                                         default => 'badge-ghost'
                                                     };
                                                     $statusIcon = match($commitment->status) {
-                                                        'committed' => 'heroicon-o-clipboard-document-list',
-                                                        'delivered' => 'heroicon-o-truck',
-                                                        'in_use' => 'heroicon-o-bolt',
-                                                        'returned' => 'heroicon-o-check-circle',
-                                                        'cancelled' => 'heroicon-o-x-circle',
-                                                        'lost' => 'heroicon-o-exclamation-triangle',
-                                                        'damaged' => 'heroicon-o-exclamation-triangle',
-                                                        default => 'heroicon-o-question-mark-circle'
+                                                        'committed' => 'o-clipboard-document-list',
+                                                        'delivered' => 'o-truck',
+                                                        'in_use' => 'o-bolt',
+                                                        'returned' => 'o-check-circle',
+                                                        'cancelled' => 'o-x-circle',
+                                                        'lost' => 'o-exclamation-triangle',
+                                                        'damaged' => 'o-exclamation-triangle',
+                                                        default => 'o-question-mark-circle'
                                                     };
                                                 @endphp
                                                 <div class="flex items-center gap-2">
@@ -489,14 +489,14 @@
                                                             default => 'badge-ghost'
                                                         };
                                                         $statusIcon = match($commitment->status) {
-                                                            'committed' => 'heroicon-o-clipboard-document-list',
-                                                            'delivered' => 'heroicon-o-truck',
-                                                            'in_use' => 'heroicon-o-bolt',
-                                                            'returned' => 'heroicon-o-check-circle',
-                                                            'cancelled' => 'heroicon-o-x-circle',
-                                                            'lost' => 'heroicon-o-exclamation-triangle',
-                                                            'damaged' => 'heroicon-o-exclamation-triangle',
-                                                            default => 'heroicon-o-question-mark-circle'
+                                                            'committed' => 'o-clipboard-document-list',
+                                                            'delivered' => 'o-truck',
+                                                            'in_use' => 'o-bolt',
+                                                            'returned' => 'o-check-circle',
+                                                            'cancelled' => 'o-x-circle',
+                                                            'lost' => 'o-exclamation-triangle',
+                                                            'damaged' => 'o-exclamation-triangle',
+                                                            default => 'o-question-mark-circle'
                                                         };
                                                     @endphp
                                                     <div class="flex items-center gap-2">
@@ -577,14 +577,14 @@
                                                         default => 'badge-ghost'
                                                     };
                                                     $statusIcon = match($commitment->status) {
-                                                        'committed' => 'heroicon-o-clipboard-document-list',
-                                                        'delivered' => 'heroicon-o-truck',
-                                                        'in_use' => 'heroicon-o-bolt',
-                                                        'returned' => 'heroicon-o-check-circle',
-                                                        'cancelled' => 'heroicon-o-x-circle',
-                                                        'lost' => 'heroicon-o-exclamation-triangle',
-                                                        'damaged' => 'heroicon-o-exclamation-triangle',
-                                                        default => 'heroicon-o-question-mark-circle'
+                                                        'committed' => 'o-clipboard-document-list',
+                                                        'delivered' => 'o-truck',
+                                                        'in_use' => 'o-bolt',
+                                                        'returned' => 'o-check-circle',
+                                                        'cancelled' => 'o-x-circle',
+                                                        'lost' => 'o-exclamation-triangle',
+                                                        'damaged' => 'o-exclamation-triangle',
+                                                        default => 'o-question-mark-circle'
                                                     };
                                                 @endphp
                                                 <div class="flex items-center gap-2">
@@ -674,14 +674,14 @@
                                                             default => 'badge-ghost'
                                                         };
                                                         $statusIcon = match($commitment->status) {
-                                                            'committed' => 'heroicon-o-clipboard-document-list',
-                                                            'delivered' => 'heroicon-o-truck',
-                                                            'in_use' => 'heroicon-o-bolt',
-                                                            'returned' => 'heroicon-o-check-circle',
-                                                            'cancelled' => 'heroicon-o-x-circle',
-                                                            'lost' => 'heroicon-o-exclamation-triangle',
-                                                            'damaged' => 'heroicon-o-exclamation-triangle',
-                                                            default => 'heroicon-o-question-mark-circle'
+                                                            'committed' => 'o-clipboard-document-list',
+                                                            'delivered' => 'o-truck',
+                                                            'in_use' => 'o-bolt',
+                                                            'returned' => 'o-check-circle',
+                                                            'cancelled' => 'o-x-circle',
+                                                            'lost' => 'o-exclamation-triangle',
+                                                            'damaged' => 'o-exclamation-triangle',
+                                                            default => 'o-question-mark-circle'
                                                         };
                                                     @endphp
                                                     <div class="flex items-center gap-2">

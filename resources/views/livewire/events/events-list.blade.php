@@ -56,16 +56,16 @@
                                 <div class="flex flex-col gap-2">
                                     <div class="flex items-center gap-2">
                                         @if($event->status === 'active')
-                                            <span class="badge badge-success badge-sm"><x-icon name="heroicon-o-play-circle" class="w-4 h-4 mr-2" />Active</span>
+                                            <span class="badge badge-success badge-sm"><x-icon name="o-play-circle" class="w-4 h-4 mr-2" />Active</span>
                                         @elseif($event->status === 'upcoming')
-                                            <span class="badge badge-info badge-sm"><x-icon name="heroicon-o-calendar" class="w-4 h-4 mr-2" />Upcoming</span>
+                                            <span class="badge badge-info badge-sm"><x-icon name="o-calendar" class="w-4 h-4 mr-2" />Upcoming</span>
                                         @elseif($event->status === 'in_progress')
-                                            <span class="badge badge-warning badge-sm"><x-icon name="heroicon-o-clock" class="w-4 h-4 mr-2" />In Progress</span>
+                                            <span class="badge badge-warning badge-sm"><x-icon name="o-clock" class="w-4 h-4 mr-2" />In Progress</span>
                                         @else
-                                            <span class="badge badge-neutral badge-sm"><x-icon name="heroicon-o-check-badge" class="w-4 h-4 mr-2" />Completed</span>
+                                            <span class="badge badge-neutral badge-sm"><x-icon name="o-check-badge" class="w-4 h-4 mr-2" />Completed</span>
                                         @endif
                                         @if($event->deleted_at)
-                                            <span class="badge badge-error badge-sm"><x-icon name="heroicon-o-archive-box" class="w-4 h-4 mr-2" />Archived</span>
+                                            <span class="badge badge-error badge-sm"><x-icon name="o-archive-box" class="w-4 h-4 mr-2" />Archived</span>
                                         @endif
                                     </div>
                                     <span class="font-semibold">{{ $event->name }}</span>

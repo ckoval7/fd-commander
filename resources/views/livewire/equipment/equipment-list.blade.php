@@ -143,13 +143,13 @@
                                             default => 'badge-success badge-outline'  // Available = ready to use (positive)
                                         };
                                         $statusIcon = match($item->status ?? 'available') {
-                                            'committed' => 'heroicon-o-clipboard-document-list',
-                                            'delivered' => 'heroicon-o-truck',
-                                            'in_use' => 'heroicon-o-bolt',
-                                            'returned' => 'heroicon-o-check-circle',
-                                            'cancelled' => 'heroicon-o-x-circle',
-                                            'lost' => 'heroicon-o-exclamation-triangle',
-                                            'damaged' => 'heroicon-o-exclamation-triangle',
+                                            'committed' => 'o-clipboard-document-list',
+                                            'delivered' => 'o-truck',
+                                            'in_use' => 'o-bolt',
+                                            'returned' => 'o-check-circle',
+                                            'cancelled' => 'o-x-circle',
+                                            'lost' => 'o-exclamation-triangle',
+                                            'damaged' => 'o-exclamation-triangle',
                                             default => 'o-check-circle'  // Available = ready (checkmark)
                                         };
                                     @endphp
