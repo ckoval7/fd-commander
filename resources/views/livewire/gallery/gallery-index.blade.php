@@ -24,7 +24,7 @@
     </x-mary-header>
 
     @if($this->events->isEmpty())
-        <x-mary-card>
+        <x-mary-card class="shadow-md">
             <div class="text-center py-12">
                 <x-mary-icon name="o-photo" class="w-16 h-16 mx-auto text-base-content/30" />
                 <p class="mt-4 text-base-content/70">No photos have been uploaded yet.</p>
@@ -51,7 +51,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             @foreach($this->events as $eventConfig)
                 <a href="{{ route('gallery.show', $eventConfig) }}" class="block">
-                    <x-mary-card class="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                    <x-mary-card class="shadow-md hover:shadow-lg transition-shadow cursor-pointer h-full">
                         <div class="aspect-video bg-base-300 rounded-lg overflow-hidden mb-4">
                             @if($eventConfig->images->first())
                                 <img
