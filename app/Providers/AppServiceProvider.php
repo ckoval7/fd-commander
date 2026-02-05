@@ -23,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register policies
+        Gate::policy(\App\Models\Image::class, \App\Policies\ImagePolicy::class);
+
         // Register model observers
         EquipmentEvent::observe(EquipmentEventObserver::class);
 
