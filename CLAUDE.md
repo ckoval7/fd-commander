@@ -303,4 +303,23 @@ Quick reference:
 - Search MaryUI docs for component usage, props, slots, and examples. Example: `search_docs(library: "maryui", query: "button")`.
 - MaryUI components are Blade components prefixed with `<x-mary-*>` or `<x-*>` depending on configuration.
 - Check existing components in the codebase to see how MaryUI is being used before adding new patterns.
+
+=== alpinejs rules ===
+
+# Alpine.js
+
+- Alpine.js is used alongside Livewire for client-side interactivity that doesn't require server roundtrips.
+- CRITICAL: Always use `mcp__docs-mcp-server__search_docs` with `library: "alpinejs"` for Alpine.js documentation before implementing Alpine directives.
+- Search Alpine docs for directives, magics, and patterns. Example: `search_docs(library: "alpinejs", query: "x-data x-show")`.
+- Common directives: `x-data`, `x-show`, `x-if`, `x-for`, `x-on` (or `@`), `x-bind` (or `:`), `x-model`, `x-text`, `x-html`.
+- Alpine works seamlessly with Livewire - use `$wire` to access Livewire component from Alpine, and `@entangle` for two-way binding.
+
+=== heroicons rules ===
+
+# Heroicons
+
+- Heroicons is the official icon set from the Tailwind CSS team, providing beautiful hand-crafted SVG icons.
+- CRITICAL: Always use `mcp__docs-mcp-server__search_docs` with `library: "heroicons"` to look up available icons and usage patterns.
+- Icons are available in three styles: outline (24x24), solid (24x24), and mini (20x20).
+- In this project, use Blade Heroicons via MaryUI's icon component or direct SVG includes.
 </laravel-boost-guidelines>
