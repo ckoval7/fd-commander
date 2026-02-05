@@ -37,6 +37,7 @@ class RoleSeeder extends Seeder
             'activate-events',
             'manage-events',
             'manage-event-config',
+            'view-stations',
             'manage-stations',
             'manage-equipment',
             'verify-bonuses',
@@ -58,6 +59,7 @@ class RoleSeeder extends Seeder
         ]);
         $operator->givePermissionTo([
             'log-contacts',
+            'view-stations',
             'manage-own-equipment',
         ]);
 
@@ -70,6 +72,7 @@ class RoleSeeder extends Seeder
         $stationCaptain->givePermissionTo([
             'log-contacts',
             'edit-contacts',
+            'view-stations',
             'manage-stations',
             'manage-equipment',
         ]);

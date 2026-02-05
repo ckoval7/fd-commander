@@ -112,6 +112,26 @@ class Equipment extends Model
         return $this->hasMany(EquipmentEvent::class);
     }
 
+    /**
+     * Get all events this equipment is assigned to via the equipment_event pivot.
+     */
+    public function events(): BelongsToMany
+    {
+        return $this->belongsToMany(Event::class, 'equipment_event')
+            ->withPivot([
+                'station_id',
+                'assigned_by_user_id',
+                'status',
+                'committed_at',
+                'expected_delivery_at',
+                'delivery_notes',
+                'manager_notes',
+                'status_changed_at',
+                'status_changed_by_user_id',
+            ])
+            ->withTimestamps();
+    }
+
     // Scopes
 
     /**

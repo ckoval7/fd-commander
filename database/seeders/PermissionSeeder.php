@@ -25,6 +25,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'verify-bonuses', 'description' => 'Approve or reject bonus point claims'],
 
             // Station & Equipment
+            ['name' => 'view-stations', 'description' => 'View stations list and details'],
             ['name' => 'manage-stations', 'description' => 'Add and edit operating stations'],
             ['name' => 'manage-equipment', 'description' => 'Manage equipment inventory'],
 
@@ -57,6 +58,6 @@ class PermissionSeeder extends Seeder
             );
         }
 
-        $this->command->info('Created 23 permissions');
+        $this->command->info('Created 24 permissions');
     }
 }

@@ -75,8 +75,8 @@
                         <x-menu-item title="Bonuses" icon="o-star" link="/bonuses" />
                     @endcan
 
-                    @can('manage-stations')
-                        <x-menu-item title="Stations" icon="o-signal" link="/stations" />
+                    @can('view-stations')
+                        <x-menu-item title="Stations" icon="o-server-stack" link="{{ route('stations.index') }}" route="stations.index" />
                     @endcan
 
                     <x-menu-sub title="Equipment" icon="o-wrench-screwdriver">

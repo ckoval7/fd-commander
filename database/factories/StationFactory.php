@@ -16,15 +16,69 @@ class StationFactory extends Factory
      */
     public function definition(): array
     {
+        $stationNames = [
+            'Station 1',
+            '20m CW',
+            '40m SSB',
+            '80m Rig',
+            'Digital Station',
+            'VHF/UHF Rig',
+            'Emergency Net',
+        ];
+
+        $powerSources = [
+            'Solar + Battery',
+            'Generator',
+            'Commercial Power',
+            'Battery Pack',
+            'Solar Panel Array',
+            'Portable Generator',
+        ];
+
         return [
             'event_configuration_id' => \App\Models\EventConfiguration::factory(),
-            'radio_equipment_id' => null,
-            'name' => 'Station '.fake()->randomDigit(),
-            'power_source_description' => null,
+            'radio_equipment_id' => \App\Models\Equipment::factory()->state(function () {
+                return ['type' => 'radio'];
+            }),
+            'name' => fake()->randomElement($stationNames),
+            'power_source_description' => fake()->randomElement($powerSources),
             'is_gota' => false,
             'is_vhf_only' => false,
             'is_satellite' => false,
-            'max_power_watts' => 100,
+            'max_power_watts' => fake()->randomElement([5, 100, 150, 500, 1500]),
         ];
+    }
+
+    /**
+     * Indicate the station is a GOTA (Get On The Air) station.
+     */
+    public function gota(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_gota' => true,
+            'name' => 'GOTA Station',
+        ]);
+    }
+
+    /**
+     * Indicate the station is VHF only.
+     */
+    public function vhfOnly(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_vhf_only' => true,
+            'max_power_watts' => fake()->numberBetween(5, 100),
+        ]);
+    }
+
+    /**
+     * Indicate the station is a satellite station.
+     */
+    public function satellite(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_satellite' => true,
+            'name' => 'Satellite '.fake()->word(),
+        ]);
     }
 }

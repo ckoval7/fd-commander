@@ -1,0 +1,211 @@
+<?php
+
+namespace App\Livewire\Stations;
+
+use App\Models\Event;
+use App\Models\Setting;
+use App\Models\Station;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Livewire\Attributes\Computed;
+use Livewire\Component;
+use Livewire\WithPagination;
+
+class StationsList extends Component
+{
+    use AuthorizesRequests, WithPagination;
+
+    public ?int $eventFilter = null;
+
+    public function mount(): void
+    {
+        $this->authorize('viewAny', Station::class);
+
+        // Determine default event to show
+        $defaultEvent = $this->getDefaultEvent();
+        if ($defaultEvent) {
+            $this->eventFilter = $defaultEvent->id;
+        }
+    }
+
+    /**
+     * Get the default event to display (active, current, or next upcoming).
+     */
+    private function getDefaultEvent(): ?Event
+    {
+        // 1. Try active event (manually set)
+        $activeEventId = Setting::get('active_event_id');
+        if ($activeEventId) {
+            $event = Event::find($activeEventId);
+            if ($event) {
+                return $event;
+            }
+        }
+
+        // 2. Try current event (happening right now)
+        $currentEvent = Event::query()
+            ->where('start_time', '<=', now())
+            ->where('end_time', '>=', now())
+            ->first();
+        if ($currentEvent) {
+            return $currentEvent;
+        }
+
+        // 3. Try next upcoming event
+        $upcomingEvent = Event::query()
+            ->where('start_time', '>', now())
+            ->orderBy('start_time', 'asc')
+            ->first();
+        if ($upcomingEvent) {
+            return $upcomingEvent;
+        }
+
+        // 4. Fall back to most recent past event
+        return Event::query()
+            ->where('end_time', '<', now())
+            ->orderBy('end_time', 'desc')
+            ->first();
+    }
+
+    /**
+     * Reset to page 1 when event filter changes.
+     */
+    public function updatedEventFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    /**
+     * Get all events for the event filter dropdown.
+     */
+    #[Computed]
+    public function events()
+    {
+        return Event::query()
+            ->withoutTrashed()
+            ->with('eventType')
+            ->orderByDesc('start_time')
+            ->get();
+    }
+
+    /**
+     * Get quick stats for the selected event.
+     */
+    #[Computed]
+    public function stats()
+    {
+        if (! $this->eventFilter) {
+            return [
+                'total' => 0,
+                'active' => 0,
+                'equipment_count' => 0,
+            ];
+        }
+
+        // Find the EventConfiguration for the selected Event
+        $event = Event::find($this->eventFilter);
+        $eventConfigId = $event?->eventConfiguration?->id;
+
+        if (! $eventConfigId) {
+            return [
+                'total' => 0,
+                'active' => 0,
+                'equipment_count' => 0,
+            ];
+        }
+
+        $totalStations = Station::query()
+            ->where('event_configuration_id', $eventConfigId)
+            ->count();
+
+        $activeStations = Station::query()
+            ->where('event_configuration_id', $eventConfigId)
+            ->whereHas('operatingSessions', function (Builder $query) {
+                $query->whereNull('end_time');
+            })
+            ->count();
+
+        $equipmentCount = Station::query()
+            ->where('event_configuration_id', $eventConfigId)
+            ->withCount('additionalEquipment')
+            ->get()
+            ->sum('additional_equipment_count');
+
+        return [
+            'total' => $totalStations,
+            'active' => $activeStations,
+            'equipment_count' => $equipmentCount,
+        ];
+    }
+
+    /**
+     * Get the filtered and paginated stations.
+     */
+    #[Computed]
+    public function stations()
+    {
+        if (! $this->eventFilter) {
+            return collect();
+        }
+
+        // Find the EventConfiguration for the selected Event
+        $event = Event::find($this->eventFilter);
+        $eventConfigId = $event?->eventConfiguration?->id;
+
+        if (! $eventConfigId) {
+            return collect();
+        }
+
+        return Station::query()
+            ->where('event_configuration_id', $eventConfigId)
+            ->with([
+                'primaryRadio',
+                'additionalEquipment',
+                'operatingSessions' => function ($query) {
+                    $query->whereNull('end_time')->latest();
+                },
+            ])
+            ->withCount('additionalEquipment')
+            ->orderBy('name')
+            ->paginate(12);
+    }
+
+    /**
+     * Delete a station.
+     */
+    public function deleteStation(int $stationId): void
+    {
+        $station = Station::findOrFail($stationId);
+
+        $this->authorize('delete', $station);
+
+        // Check if station has contacts
+        $hasContacts = $station->contacts()->exists();
+
+        if ($hasContacts) {
+            // Soft delete if has contacts
+            $station->delete();
+            $this->dispatch('notify', title: 'Station Archived', description: "Station '{$station->name}' has been archived (soft deleted) because it has logged contacts.");
+        } else {
+            // Hard delete if no contacts
+            $station->forceDelete();
+            $this->dispatch('notify', title: 'Station Deleted', description: "Station '{$station->name}' has been permanently deleted.");
+        }
+
+        // Reset pagination if needed
+        $this->resetPage();
+    }
+
+    /**
+     * Render the component view.
+     */
+    public function render(): View
+    {
+        return view('livewire.stations.stations-list', [
+            'events' => $this->events,
+            'stations' => $this->stations,
+            'stats' => $this->stats,
+        ]);
+    }
+}
