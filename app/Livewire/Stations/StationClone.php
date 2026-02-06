@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Stations;
 
+use App\Models\Equipment;
 use App\Models\Event;
 use App\Models\EventConfiguration;
 use App\Models\Station;
@@ -336,16 +337,7 @@ class StationClone extends Component
      */
     public function getEquipmentIcon(string $type): string
     {
-        return match ($type) {
-            'radio' => 'o-radio',
-            'antenna' => 'o-signal',
-            'amplifier' => 'o-bolt',
-            'computer' => 'o-computer-desktop',
-            'power_supply' => 'o-battery-100',
-            'accessory', 'tool' => 'o-wrench-screwdriver',
-            'furniture' => 'o-home',
-            default => 'o-cube',
-        };
+        return Equipment::typeIcon($type);
     }
 
     /**

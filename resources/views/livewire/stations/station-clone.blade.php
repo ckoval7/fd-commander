@@ -207,20 +207,9 @@
                                             <div class="flex items-start gap-3 text-sm">
                                                 {{-- Equipment Icon --}}
                                                 @php
-                                                    $iconName = 'o-cube';
-                                                    // Try to extract type from conflict data if available
-                                                    if (isset($conflict['equipment_type'])) {
-                                                        $iconName = match($conflict['equipment_type']) {
-                                                            'radio' => 'o-radio',
-                                                            'antenna' => 'o-signal',
-                                                            'amplifier' => 'o-bolt',
-                                                            'computer' => 'o-computer-desktop',
-                                                            'power_supply' => 'o-battery-100',
-                                                            'accessory', 'tool' => 'o-wrench-screwdriver',
-                                                            'furniture' => 'o-home',
-                                                            default => 'o-cube',
-                                                        };
-                                                    }
+                                                    $iconName = isset($conflict['equipment_type'])
+                                                        ? \App\Models\Equipment::typeIcon($conflict['equipment_type'])
+                                                        : 'o-cube';
                                                 @endphp
                                                 <x-icon name="{{ $iconName }}" class="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
 

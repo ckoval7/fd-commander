@@ -26,18 +26,10 @@
             <x-select
                 label="Type"
                 wire:model.live="typeFilter"
-                :options="[
-                    ['value' => null, 'label' => 'All Types'],
-                    ['value' => 'radio', 'label' => 'Radio'],
-                    ['value' => 'antenna', 'label' => 'Antenna'],
-                    ['value' => 'amplifier', 'label' => 'Amplifier'],
-                    ['value' => 'computer', 'label' => 'Computer'],
-                    ['value' => 'power_supply', 'label' => 'Power Supply'],
-                    ['value' => 'accessory', 'label' => 'Accessory'],
-                    ['value' => 'tool', 'label' => 'Tool'],
-                    ['value' => 'furniture', 'label' => 'Furniture'],
-                    ['value' => 'other', 'label' => 'Other'],
-                ]"
+                :options="array_merge(
+                    [['value' => null, 'label' => 'All Types']],
+                    \App\Models\Equipment::typeOptions()
+                )"
                 option-value="value"
                 option-label="label"
             />

@@ -20,7 +20,7 @@ class EquipmentFactory extends Factory
             'owner_user_id' => \App\Models\User::factory(),
             'make' => ucfirst(fake()->word()),
             'model' => ucfirst(fake()->word()),
-            'type' => fake()->randomElement(['radio', 'antenna', 'amplifier', 'computer', 'power_supply', 'accessory', 'tool', 'furniture', 'other']),
+            'type' => fake()->randomElement(\App\Models\Equipment::typeKeys()),
             'description' => fake()->sentence(),
             'serial_number' => fake()->unique()->bothify('??-####-??'),
             'emergency_contact_phone' => fake()->phoneNumber(),

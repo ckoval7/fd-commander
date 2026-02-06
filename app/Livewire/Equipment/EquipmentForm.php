@@ -100,6 +100,11 @@ class EquipmentForm extends Component
         $this->managed_by_user_id = $equipment->managed_by_user_id;
     }
 
+    public function updatedPhoto(): void
+    {
+        $this->validateOnly('photo');
+    }
+
     #[Computed]
     public function bands()
     {
@@ -109,17 +114,7 @@ class EquipmentForm extends Component
     #[Computed]
     public function equipmentTypes(): array
     {
-        return [
-            ['value' => 'radio', 'label' => 'Radio'],
-            ['value' => 'antenna', 'label' => 'Antenna'],
-            ['value' => 'amplifier', 'label' => 'Amplifier'],
-            ['value' => 'computer', 'label' => 'Computer'],
-            ['value' => 'power_supply', 'label' => 'Power Supply'],
-            ['value' => 'accessory', 'label' => 'Accessory'],
-            ['value' => 'tool', 'label' => 'Tool'],
-            ['value' => 'furniture', 'label' => 'Furniture'],
-            ['value' => 'other', 'label' => 'Other'],
-        ];
+        return Equipment::typeOptions();
     }
 
     #[Computed]
@@ -251,7 +246,7 @@ class EquipmentForm extends Component
         return [
             'make' => ['required', 'string', 'max:255'],
             'model' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'in:radio,antenna,amplifier,computer,power_supply,accessory,tool,furniture,other'],
+            'type' => ['required', 'in:'.implode(',', Equipment::typeKeys())],
             'description' => ['nullable', 'string'],
             'serial_number' => ['nullable', 'string', 'max:100'],
             'value_usd' => ['nullable', 'numeric', 'min:0'],

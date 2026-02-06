@@ -41,6 +41,75 @@ class Equipment extends Model
     /** @use HasFactory<\Database\Factories\EquipmentFactory> */
     use HasFactory, SoftDeletes;
 
+    /**
+     * All valid equipment types with display metadata.
+     *
+     * @var array<string, array{label: string, icon: string}>
+     */
+    public const TYPES = [
+        'radio' => ['label' => 'Radio', 'icon' => 'o-radio'],
+        'antenna' => ['label' => 'Antenna', 'icon' => 'o-signal'],
+        'amplifier' => ['label' => 'Amplifier', 'icon' => 'o-bolt'],
+        'computer' => ['label' => 'Computer', 'icon' => 'o-computer-desktop'],
+        'power_supply' => ['label' => 'Power Supply', 'icon' => 'o-battery-100'],
+        'accessory' => ['label' => 'Accessory', 'icon' => 'o-wrench-screwdriver'],
+        'tool' => ['label' => 'Tool', 'icon' => 'o-wrench'],
+        'furniture' => ['label' => 'Furniture', 'icon' => 'o-home'],
+        'other' => ['label' => 'Other', 'icon' => 'o-cube'],
+    ];
+
+    /**
+     * Get the list of valid type keys.
+     *
+     * @return array<int, string>
+     */
+    public static function typeKeys(): array
+    {
+        return array_keys(self::TYPES);
+    }
+
+    /**
+     * Get types formatted for select dropdowns (value/label pairs).
+     *
+     * @return array<int, array{value: string, label: string}>
+     */
+    public static function typeOptions(): array
+    {
+        return collect(self::TYPES)
+            ->map(fn (array $meta, string $key) => ['value' => $key, 'label' => $meta['label']])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Get types formatted for filter dropdowns (id/name/icon).
+     *
+     * @return array<int, array{id: string, name: string, icon: string}>
+     */
+    public static function typeFilters(): array
+    {
+        return collect(self::TYPES)
+            ->map(fn (array $meta, string $key) => ['id' => $key, 'name' => $meta['label'], 'icon' => $meta['icon']])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Get the icon for a given equipment type.
+     */
+    public static function typeIcon(string $type): string
+    {
+        return self::TYPES[$type]['icon'] ?? 'o-cube';
+    }
+
+    /**
+     * Get the display label for a given equipment type.
+     */
+    public static function typeLabel(string $type): string
+    {
+        return self::TYPES[$type]['label'] ?? ucfirst(str_replace('_', ' ', $type));
+    }
+
     protected $fillable = [
         'owner_user_id',
         'owner_organization_id',

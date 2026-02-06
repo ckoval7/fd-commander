@@ -18,53 +18,58 @@
     </x-header>
 
     @if($stationId)
-        {{-- Tabbed Interface for Editing --}}
-        <x-tabs wire:model="activeTab">
-            {{-- Configuration Tab --}}
-            <x-tab name="configuration" label="Configuration" icon="o-cog-6-tooth">
-                <form wire:submit="save" class="space-y-6 mt-6">
-                    @include('livewire.stations.partials.configuration-form')
+        <form wire:submit="save" class="space-y-6">
+            {{-- Tabbed Interface for Editing --}}
+            <x-tabs wire:model="activeTab">
+                {{-- Configuration Tab --}}
+                <x-tab name="configuration" label="Configuration" icon="o-cog-6-tooth">
+                    <div class="space-y-6 mt-6">
+                        @include('livewire.stations.partials.configuration-form')
+                    </div>
+                </x-tab>
 
-                    {{-- Form Actions --}}
-                    <div class="flex gap-3">
-                        <x-button
-                            label="Cancel"
-                            icon="o-x-mark"
-                            class="btn-ghost"
-                            link="{{ route('stations.index') }}"
-                            wire:navigate
-                        />
-                        <x-button
-                            label="Update Station"
-                            type="submit"
-                            class="btn-primary"
-                            icon="o-check"
-                            spinner="save"
+                {{-- Equipment Tab --}}
+                <x-tab name="equipment" label="Equipment" icon="o-wrench-screwdriver">
+                    <div class="mt-6">
+                        <livewire:stations.equipment-assignment
+                            :station-id="$stationId"
+                            :key="'equipment-assignment-'.$stationId"
                         />
                     </div>
-                </form>
-            </x-tab>
+                </x-tab>
 
-            {{-- Equipment Tab --}}
-            <x-tab name="equipment" label="Equipment" icon="o-wrench-screwdriver">
-                <div class="mt-6">
-                    <livewire:stations.equipment-assignment :station-id="$stationId" :key="'equipment-'.$stationId" />
-                </div>
-            </x-tab>
+                {{-- Activity Tab (Future) --}}
+                <x-tab name="activity" label="Activity" icon="o-chart-bar">
+                    <div class="mt-6">
+                        <x-card>
+                            <div class="text-center py-12 text-base-content/60">
+                                <x-icon name="o-chart-bar" class="w-16 h-16 mx-auto mb-4 opacity-50" />
+                                <p class="text-lg font-semibold mb-2">Operating Sessions & Contacts</p>
+                                <p class="text-sm">Activity tracking coming soon...</p>
+                            </div>
+                        </x-card>
+                    </div>
+                </x-tab>
+            </x-tabs>
 
-            {{-- Activity Tab (Future) --}}
-            <x-tab name="activity" label="Activity" icon="o-chart-bar">
-                <div class="mt-6">
-                    <x-card>
-                        <div class="text-center py-12 text-base-content/60">
-                            <x-icon name="o-chart-bar" class="w-16 h-16 mx-auto mb-4 opacity-50" />
-                            <p class="text-lg font-semibold mb-2">Operating Sessions & Contacts</p>
-                            <p class="text-sm">Activity tracking coming soon...</p>
-                        </div>
-                    </x-card>
-                </div>
-            </x-tab>
-        </x-tabs>
+            {{-- Form Actions (visible on all tabs) --}}
+            <div class="flex gap-3">
+                <x-button
+                    label="Cancel"
+                    icon="o-x-mark"
+                    class="btn-ghost"
+                    link="{{ route('stations.index') }}"
+                    wire:navigate
+                />
+                <x-button
+                    label="Update Station"
+                    type="submit"
+                    class="btn-primary"
+                    icon="o-check"
+                    spinner="save"
+                />
+            </div>
+        </form>
     @else
         {{-- Simple Form for Creation --}}
         <form wire:submit="save" class="space-y-6">

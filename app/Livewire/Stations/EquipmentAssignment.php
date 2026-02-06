@@ -104,14 +104,15 @@ class EquipmentAssignment extends Component
      *
      * @var array<int, array{id: string, name: string, icon: string}>
      */
-    protected array $equipmentTypes = [
-        ['id' => 'radio', 'name' => 'Radio', 'icon' => 'o-radio'],
-        ['id' => 'antenna', 'name' => 'Antenna', 'icon' => 'o-signal'],
-        ['id' => 'amplifier', 'name' => 'Amplifier', 'icon' => 'o-bolt'],
-        ['id' => 'computer', 'name' => 'Computer', 'icon' => 'o-computer-desktop'],
-        ['id' => 'accessory', 'name' => 'Accessory', 'icon' => 'o-wrench-screwdriver'],
-        ['id' => 'other', 'name' => 'Other', 'icon' => 'o-cube'],
-    ];
+    /**
+     * Equipment types for filtering - sourced from Equipment::TYPES.
+     *
+     * @return array<int, array{id: string, name: string, icon: string}>
+     */
+    protected function equipmentTypes(): array
+    {
+        return Equipment::typeFilters();
+    }
 
     /**
      * Mount the component with a station.
@@ -184,7 +185,7 @@ class EquipmentAssignment extends Component
             ->get();
 
         // Group by equipment type in display order
-        $typeOrder = ['radio', 'antenna', 'amplifier', 'computer', 'accessory', 'other'];
+        $typeOrder = Equipment::typeKeys();
         $grouped = collect();
 
         foreach ($typeOrder as $type) {
@@ -276,7 +277,7 @@ class EquipmentAssignment extends Component
     #[Computed]
     public function availableTypes(): array
     {
-        return $this->equipmentTypes;
+        return $this->equipmentTypes();
     }
 
     /**
@@ -513,8 +514,7 @@ class EquipmentAssignment extends Component
         }
 
         // Validate equipment type is in allowed list
-        $allowedTypes = ['radio', 'antenna', 'amplifier', 'computer', 'accessory', 'other'];
-        if (! in_array($equipment->type, $allowedTypes, true)) {
+        if (! in_array($equipment->type, Equipment::typeKeys(), true)) {
             return [
                 'valid' => false,
                 'error_message' => "Invalid equipment type: {$equipment->type}",
