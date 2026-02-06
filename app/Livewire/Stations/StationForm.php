@@ -5,7 +5,6 @@ namespace App\Livewire\Stations;
 use App\Models\Equipment;
 use App\Models\Event;
 use App\Models\EventConfiguration;
-use App\Models\Setting;
 use App\Models\Station;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -58,10 +57,9 @@ class StationForm extends Component
         } else {
             $this->authorize('create', Station::class);
             // Default to active event
-            $activeEventId = Setting::get('active_event_id');
-            if ($activeEventId) {
-                $event = Event::with('eventConfiguration')->find($activeEventId);
-                $this->event_configuration_id = $event?->eventConfiguration?->id;
+            $activeEvent = Event::active()->with('eventConfiguration')->first();
+            if ($activeEvent) {
+                $this->event_configuration_id = $activeEvent->eventConfiguration?->id;
             }
         }
 
@@ -282,10 +280,9 @@ class StationForm extends Component
         ]);
 
         // Reset to active event
-        $activeEventId = Setting::get('active_event_id');
-        if ($activeEventId) {
-            $event = Event::with('eventConfiguration')->find($activeEventId);
-            $this->event_configuration_id = $event?->eventConfiguration?->id;
+        $activeEvent = Event::active()->with('eventConfiguration')->first();
+        if ($activeEvent) {
+            $this->event_configuration_id = $activeEvent->eventConfiguration?->id;
         }
     }
 

@@ -90,9 +90,9 @@
                     </x-menu-sub>
 
                     @can('view-guestbook')
-                        @php $activeEventId = \App\Models\Setting::get('active_event_id'); @endphp
-                        @if($activeEventId)
-                            <x-menu-item title="Guestbook" icon="o-book-open" link="{{ route('events.guestbook', $activeEventId) }}" :active="request()->routeIs('events.guestbook')" />
+                        @php $activeEvent = \App\Models\Event::active()->first(); @endphp
+                        @if($activeEvent)
+                            <x-menu-item title="Guestbook" icon="o-book-open" link="{{ route('events.guestbook', $activeEvent->id) }}" :active="request()->routeIs('events.guestbook')" />
                         @endif
                     @endcan
 

@@ -3,7 +3,7 @@
 namespace App\Livewire\Events;
 
 use App\Models\Event;
-use App\Models\Setting;
+use App\Models\GuestbookEntry;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Computed;
@@ -30,12 +30,6 @@ class EventDashboard extends Component
     }
 
     #[Computed]
-    public function isActive(): bool
-    {
-        return $this->event->id == Setting::get('active_event_id');
-    }
-
-    #[Computed]
     public function qsoBreakdown(): array
     {
         // Placeholder: Will be populated when Contact model is fully implemented
@@ -54,13 +48,33 @@ class EventDashboard extends Component
         return [];
     }
 
-    public function activate(): void
+    #[Computed]
+    public function guestbookStats(): array
     {
-        $this->authorize('activate-events');
+        if (! $this->event->eventConfiguration?->guestbook_enabled) {
+            return [
+                'total' => 0,
+                'verified_bonus_eligible' => 0,
+                'bonus_points' => 0,
+            ];
+        }
 
-        Setting::set('active_event_id', $this->event->id);
+        $configId = $this->event->eventConfiguration->id;
 
-        $this->dispatch('notify', title: 'Success', description: "Event '{$this->event->name}' is now active.");
+        $total = GuestbookEntry::where('event_configuration_id', $configId)->count();
+
+        $verifiedBonusEligible = GuestbookEntry::where('event_configuration_id', $configId)
+            ->where('is_verified', true)
+            ->bonusEligible()
+            ->count();
+
+        $bonusPoints = min($verifiedBonusEligible, 10) * 100;
+
+        return [
+            'total' => $total,
+            'verified_bonus_eligible' => $verifiedBonusEligible,
+            'bonus_points' => $bonusPoints,
+        ];
     }
 
     public function render(): View

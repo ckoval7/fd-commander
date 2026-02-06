@@ -4,6 +4,7 @@ use App\Livewire\Events\EventDashboard;
 use App\Models\Event;
 use App\Models\EventConfiguration;
 use App\Models\EventType;
+use App\Models\GuestbookEntry;
 use App\Models\OperatingClass;
 use App\Models\Section;
 use App\Models\User;
@@ -122,37 +123,6 @@ test('event dashboard shows scoring summary', function () {
         ->assertSee('0'); // Should appear in contacts/points display
 });
 
-test('activate action requires activate-events permission', function () {
-    $userWithoutPermission = User::factory()->create();
-    $viewRole = Role::create(['name' => 'Viewer', 'guard_name' => 'web']);
-    $viewRole->givePermissionTo('view-events');
-    $userWithoutPermission->assignRole($viewRole);
-
-    $this->actingAs($userWithoutPermission);
-
-    $event = Event::factory()->create();
-
-    Livewire::test(EventDashboard::class, ['event' => $event])
-        ->call('activate')
-        ->assertForbidden();
-});
-
-test('activate action sets event as active', function () {
-    $this->actingAs($this->user);
-
-    $event = Event::factory()->create();
-    $oldActiveEvent = Event::factory()->create();
-
-    // Set old active event in settings
-    \App\Models\Setting::set('active_event_id', $oldActiveEvent->id);
-
-    Livewire::test(EventDashboard::class, ['event' => $event])
-        ->call('activate')
-        ->assertDispatched('notify');
-
-    expect(\App\Models\Setting::get('active_event_id'))->toBe($event->id);
-});
-
 test('event dashboard shows correct status badge', function () {
     $this->actingAs($this->user);
 
@@ -166,15 +136,15 @@ test('event dashboard shows correct status badge', function () {
     Livewire::test(EventDashboard::class, ['event' => $upcomingEvent])
         ->assertSee('Upcoming');
 
-    // Test in progress event
-    $inProgressEvent = Event::factory()->create([
-        'name' => 'In Progress Event',
+    // Test active event (within date range)
+    $activeEvent = Event::factory()->create([
+        'name' => 'Active Event',
         'start_time' => now()->subHours(2),
         'end_time' => now()->addHours(22),
     ]);
 
-    Livewire::test(EventDashboard::class, ['event' => $inProgressEvent])
-        ->assertSee('In Progress');
+    Livewire::test(EventDashboard::class, ['event' => $activeEvent])
+        ->assertSee('Active');
 
     // Test completed event
     $completedEvent = Event::factory()->create([
@@ -185,19 +155,6 @@ test('event dashboard shows correct status badge', function () {
 
     Livewire::test(EventDashboard::class, ['event' => $completedEvent])
         ->assertSee('Completed');
-});
-
-test('event dashboard hides activate button if event is already active', function () {
-    $this->actingAs($this->user);
-
-    $event = Event::factory()->create(['name' => 'Active Event']);
-    \App\Models\Setting::set('active_event_id', $event->id);
-
-    $component = Livewire::test(EventDashboard::class, ['event' => $event])
-        ->assertStatus(200);
-
-    // The isActive computed property should be true
-    expect($component->get('isActive'))->toBeTrue();
 });
 
 test('event dashboard eager loads relationships', function () {
@@ -217,4 +174,138 @@ test('event dashboard eager loads relationships', function () {
     // Expect: main event query with eager loads, setting query for active_event_id
     // With all the relationships and computed properties, expect fewer than 20 queries
     expect(count($queries))->toBeLessThan(20);
+});
+
+test('event dashboard displays guestbook stats when guestbook is enabled', function () {
+    $this->actingAs($this->user);
+
+    $event = Event::factory()->create();
+    $config = EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+        'callsign' => 'W1AW',
+        'guestbook_enabled' => true,
+    ]);
+
+    // Create some guestbook entries
+    GuestbookEntry::factory()->create([
+        'event_configuration_id' => $config->id,
+        'visitor_category' => GuestbookEntry::VISITOR_CATEGORY_GENERAL_PUBLIC,
+        'is_verified' => false,
+    ]);
+    GuestbookEntry::factory()->create([
+        'event_configuration_id' => $config->id,
+        'visitor_category' => GuestbookEntry::VISITOR_CATEGORY_ELECTED_OFFICIAL,
+        'is_verified' => true,
+    ]);
+    GuestbookEntry::factory()->create([
+        'event_configuration_id' => $config->id,
+        'visitor_category' => GuestbookEntry::VISITOR_CATEGORY_MEDIA,
+        'is_verified' => true,
+    ]);
+
+    Livewire::test(EventDashboard::class, ['event' => $event])
+        ->assertStatus(200)
+        ->assertSee('Guestbook Visitors')
+        ->assertSee('Total Visitors')
+        ->assertSee('3') // Total visitors
+        ->assertSee('Verified Bonus Eligible')
+        ->assertSee('2 / 10') // 2 verified bonus-eligible
+        ->assertSee('PR Bonus')
+        ->assertSee('200 pts'); // 2 × 100 = 200 points
+});
+
+test('event dashboard hides guestbook stats when guestbook is disabled', function () {
+    $this->actingAs($this->user);
+
+    $event = Event::factory()->create();
+    EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+        'callsign' => 'W1AW',
+        'guestbook_enabled' => false,
+    ]);
+
+    // Refresh event to ensure relationships are loaded
+    $event = $event->fresh();
+
+    Livewire::test(EventDashboard::class, ['event' => $event])
+        ->assertStatus(200)
+        ->assertDontSee('Guestbook Visitors');
+});
+
+test('event dashboard calculates correct bonus points with max cap', function () {
+    $this->actingAs($this->user);
+
+    $event = Event::factory()->create();
+    $config = EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+        'callsign' => 'W1AW',
+        'guestbook_enabled' => true,
+    ]);
+
+    // Create 15 verified bonus-eligible entries (more than the 10 cap)
+    for ($i = 0; $i < 15; $i++) {
+        GuestbookEntry::factory()->create([
+            'event_configuration_id' => $config->id,
+            'visitor_category' => GuestbookEntry::VISITOR_CATEGORY_ELECTED_OFFICIAL,
+            'is_verified' => true,
+        ]);
+    }
+
+    $component = Livewire::test(EventDashboard::class, ['event' => $event]);
+
+    $stats = $component->get('guestbookStats');
+    expect($stats['total'])->toBe(15);
+    expect($stats['verified_bonus_eligible'])->toBe(15);
+    expect($stats['bonus_points'])->toBe(1000); // Capped at 10 × 100 = 1000
+});
+
+test('event dashboard guestbook stats returns zeros when guestbook is disabled', function () {
+    $this->actingAs($this->user);
+
+    $event = Event::factory()->create();
+    EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+        'callsign' => 'W1AW',
+        'guestbook_enabled' => false,
+    ]);
+
+    $component = Livewire::test(EventDashboard::class, ['event' => $event]);
+
+    $stats = $component->get('guestbookStats');
+    expect($stats['total'])->toBe(0);
+    expect($stats['verified_bonus_eligible'])->toBe(0);
+    expect($stats['bonus_points'])->toBe(0);
+});
+
+test('event dashboard shows manage guestbook button with permission', function () {
+    Permission::create(['name' => 'manage-guestbook']);
+    $this->user->givePermissionTo('manage-guestbook');
+
+    $this->actingAs($this->user);
+
+    $event = Event::factory()->create();
+    EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+        'callsign' => 'W1AW',
+        'guestbook_enabled' => true,
+    ]);
+
+    Livewire::test(EventDashboard::class, ['event' => $event])
+        ->assertStatus(200)
+        ->assertSee('Manage Guestbook');
+});
+
+test('event dashboard hides manage guestbook button without permission', function () {
+    $this->actingAs($this->user);
+
+    $event = Event::factory()->create();
+    EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+        'callsign' => 'W1AW',
+        'guestbook_enabled' => true,
+    ]);
+
+    Livewire::test(EventDashboard::class, ['event' => $event])
+        ->assertStatus(200)
+        ->assertDontSee('Manage Guestbook');
 });

@@ -4,7 +4,6 @@ namespace App\Livewire\Stations;
 
 use App\Models\Event;
 use App\Models\EventConfiguration;
-use App\Models\Setting;
 use App\Models\Station;
 use App\Services\StationCloneService;
 use Illuminate\Contracts\View\View;
@@ -50,9 +49,9 @@ class StationClone extends Component
         $this->availableStations = collect();
 
         // Default target to active event
-        $activeEventId = Setting::get('active_event_id');
-        if ($activeEventId) {
-            $this->targetEventId = $activeEventId;
+        $activeEvent = Event::active()->first();
+        if ($activeEvent) {
+            $this->targetEventId = $activeEvent->id;
         }
     }
 
@@ -368,9 +367,9 @@ class StationClone extends Component
         $this->copyEquipmentAssignments = true;
 
         // Reset to active event
-        $activeEventId = Setting::get('active_event_id');
-        if ($activeEventId) {
-            $this->targetEventId = $activeEventId;
+        $activeEvent = Event::active()->first();
+        if ($activeEvent) {
+            $this->targetEventId = $activeEvent->id;
         }
     }
 

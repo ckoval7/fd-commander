@@ -3,7 +3,6 @@
 namespace App\Livewire\Stations;
 
 use App\Models\Event;
-use App\Models\Setting;
 use App\Models\Station;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,40 +29,26 @@ class StationsList extends Component
     }
 
     /**
-     * Get the default event to display (active, current, or next upcoming).
+     * Get the default event to display (active, upcoming, or most recent).
      */
     private function getDefaultEvent(): ?Event
     {
-        // 1. Try active event (manually set)
-        $activeEventId = Setting::get('active_event_id');
-        if ($activeEventId) {
-            $event = Event::find($activeEventId);
-            if ($event) {
-                return $event;
-            }
+        // 1. Try active event (currently in progress by date range)
+        $activeEvent = Event::active()->first();
+        if ($activeEvent) {
+            return $activeEvent;
         }
 
-        // 2. Try current event (happening right now)
-        $currentEvent = Event::query()
-            ->where('start_time', '<=', now())
-            ->where('end_time', '>=', now())
-            ->first();
-        if ($currentEvent) {
-            return $currentEvent;
-        }
-
-        // 3. Try next upcoming event
-        $upcomingEvent = Event::query()
-            ->where('start_time', '>', now())
+        // 2. Try next upcoming event
+        $upcomingEvent = Event::upcoming()
             ->orderBy('start_time', 'asc')
             ->first();
         if ($upcomingEvent) {
             return $upcomingEvent;
         }
 
-        // 4. Fall back to most recent past event
-        return Event::query()
-            ->where('end_time', '<', now())
+        // 3. Fall back to most recent past event
+        return Event::completed()
             ->orderBy('end_time', 'desc')
             ->first();
     }

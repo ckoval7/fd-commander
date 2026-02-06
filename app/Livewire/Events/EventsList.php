@@ -3,7 +3,6 @@
 namespace App\Livewire\Events;
 
 use App\Models\Event;
-use App\Models\Setting;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -57,29 +56,6 @@ class EventsList extends Component
         }
 
         $this->resetPage();
-    }
-
-    public function activate(int $eventId): void
-    {
-        $this->authorize('activate-events');
-
-        $event = Event::findOrFail($eventId);
-
-        // STRICT VALIDATION: Event must be within date range
-        if (! $event->start_time || ! $event->end_time || now() < $event->start_time || now() > $event->end_time) {
-            $this->dispatch('notify', title: 'Cannot Activate Event', description: sprintf(
-                'Event can only be activated during its date range (%s to %s).',
-                $event->start_time?->format('M j, Y H:i T') ?? 'Not set',
-                $event->end_time?->format('M j, Y H:i T') ?? 'Not set'
-            ), type: 'error');
-
-            return;
-        }
-
-        Setting::set('active_event_id', $event->id);
-        Setting::set('manual_activation', true);
-
-        $this->dispatch('notify', title: 'Success', description: "Event '{$event->name}' is now active.");
     }
 
     public function delete(int $eventId): void

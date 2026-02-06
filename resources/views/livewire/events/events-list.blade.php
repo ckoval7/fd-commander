@@ -59,8 +59,6 @@
                                             <span class="badge badge-success badge-sm"><x-icon name="o-play-circle" class="w-4 h-4 mr-2" />Active</span>
                                         @elseif($event->status === 'upcoming')
                                             <span class="badge badge-info badge-sm"><x-icon name="o-calendar" class="w-4 h-4 mr-2" />Upcoming</span>
-                                        @elseif($event->status === 'in_progress')
-                                            <span class="badge badge-warning badge-sm"><x-icon name="o-clock" class="w-4 h-4 mr-2" />In Progress</span>
                                         @else
                                             <span class="badge badge-neutral badge-sm"><x-icon name="o-check-badge" class="w-4 h-4 mr-2" />Completed</span>
                                         @endif
@@ -115,25 +113,6 @@
                                             @endif
                                         @endcan
 
-                                        @can('activate-events')
-                                            @if(!$event->deleted_at && $event->status !== 'active')
-                                                @php
-                                                    $canActivate = $event->start_time && $event->end_time
-                                                        && now() >= $event->start_time
-                                                        && now() <= $event->end_time;
-                                                @endphp
-                                                <li class="{{ !$canActivate ? 'disabled' : '' }}">
-                                                    <a wire:click.prevent="activate({{ $event->id }})"
-                                                       wire:confirm="Are you sure you want to set '{{ $event->name }}' as the active event?"
-                                                       class="cursor-pointer {{ !$canActivate ? 'opacity-50 cursor-not-allowed' : '' }}"
-                                                       title="{{ !$canActivate ? 'Can only activate during event dates (' . ($event->start_time?->format('M j, Y') ?? 'Not set') . ' to ' . ($event->end_time?->format('M j, Y') ?? 'Not set') . ')' : '' }}">
-                                                        <x-icon name="o-check-circle" class="w-4 h-4" />
-                                                        Set as Active
-                                                    </a>
-                                                </li>
-                                            @endif
-                                        @endcan
-
                                         @can('create-events')
                                             @if(!$event->deleted_at)
                                                 <li>
@@ -147,9 +126,6 @@
 
                                         @can('delete-events')
                                             @if(!$event->deleted_at)
-                                                @can('activate-events')
-                                                    <div class="divider my-1"></div>
-                                                @endcan
                                                 <li>
                                                     <a wire:click.prevent="delete({{ $event->id }})"
                                                        wire:confirm="Are you sure you want to delete '{{ $event->name }}'? {{ $event->eventConfiguration?->hasContacts() ? 'This event has contacts and will be archived (soft deleted).' : 'This event will be permanently deleted.' }}"

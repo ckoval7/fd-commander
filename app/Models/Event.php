@@ -60,39 +60,38 @@ class Event extends Model
     // Scopes
     public function scopeActive($query)
     {
-        $activeEventId = Setting::get('active_event_id');
-
-        return $query->where('id', $activeEventId);
+        return $query->where('start_time', '<=', appNow())
+            ->where('end_time', '>=', appNow());
     }
 
     public function scopeUpcoming($query)
     {
-        return $query->where('start_time', '>', now());
+        return $query->where('start_time', '>', appNow());
     }
 
     public function scopeCompleted($query)
     {
-        return $query->where('end_time', '<', now());
+        return $query->where('end_time', '<', appNow());
     }
 
     public function scopeInProgress($query)
     {
-        return $query->where('start_time', '<=', now())
-            ->where('end_time', '>=', now());
+        return $this->scopeActive($query);
     }
 
     // Accessors
     public function getStatusAttribute(): string
     {
-        if ($this->id == Setting::get('active_event_id')) {
-            return 'active';
-        } elseif ($this->start_time && $this->start_time > appNow()) {
+        if ($this->start_time && $this->start_time > appNow()) {
             return 'upcoming';
         } elseif ($this->end_time && $this->end_time < appNow()) {
             return 'completed';
-        } else {
-            return 'in_progress';
+        } elseif ($this->start_time && $this->end_time
+            && $this->start_time <= appNow() && $this->end_time >= appNow()) {
+            return 'active';
         }
+
+        return 'upcoming';
     }
 
     public function getStatusBadgeColorAttribute(): string
@@ -100,7 +99,6 @@ class Event extends Model
         return match ($this->status) {
             'active' => 'success',
             'upcoming' => 'info',
-            'in_progress' => 'warning',
             'completed' => 'neutral',
         };
     }

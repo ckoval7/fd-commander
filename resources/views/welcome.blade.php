@@ -113,6 +113,22 @@
                             </span>
                         </li>
                     </ul>
+
+                    @php
+                        $activeEvent = \App\Models\Event::active()->with('eventConfiguration')->first();
+                        $guestbookEnabled = $activeEvent?->eventConfiguration?->guestbook_enabled ?? false;
+                    @endphp
+
+                    @if($guestbookEnabled)
+                        <div class="mb-4 lg:mb-6 p-4 rounded-lg border" style="background-color: var(--color-surface-elevated); border-color: var(--color-border);">
+                            <h2 class="font-medium mb-1">Sign Our Guestbook</h2>
+                            <p class="text-sm mb-3" style="color: var(--color-text-secondary);">Let us know you stopped by!</p>
+                            <a href="{{ route('guestbook.index') }}" class="inline-block px-5 py-2 rounded-sm text-sm font-medium" style="background-color: var(--color-text-primary); color: var(--color-text-inverse); border: 1px solid var(--color-text-primary);">
+                                Visit Guestbook
+                            </a>
+                        </div>
+                    @endif
+
                     <ul class="flex gap-3 text-sm leading-normal">
                         <li>
                             <a href="https://cloud.laravel.com" target="_blank" class="inline-block px-5 py-1.5 rounded-sm border text-sm leading-normal" style="background-color: var(--color-text-primary); color: var(--color-text-inverse); border-color: var(--color-text-primary);">

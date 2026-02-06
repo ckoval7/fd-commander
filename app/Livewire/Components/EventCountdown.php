@@ -51,10 +51,10 @@ class EventCountdown extends Component
 
     protected function getRelevantEvent(): ?Event
     {
-        // Priority 1: Active event in progress
-        $inProgress = Event::inProgress()->first();
-        if ($inProgress) {
-            return $inProgress;
+        // Priority 1: Active event (currently in date range)
+        $activeEvent = Event::active()->first();
+        if ($activeEvent) {
+            return $activeEvent;
         }
 
         // Check for recently completed event (within 4 weeks)

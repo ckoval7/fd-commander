@@ -3,7 +3,6 @@
 use App\Models\Event;
 use App\Models\EventConfiguration;
 use App\Models\EventType;
-use App\Models\Setting;
 
 beforeEach(function () {
     // Ensure required data is seeded
@@ -26,9 +25,11 @@ test('event has event configuration relationship', function () {
     expect($event->eventConfiguration->id)->toBe($config->id);
 });
 
-test('event status is active when set as active_event_id in settings', function () {
-    $event = Event::factory()->create();
-    Setting::set('active_event_id', $event->id);
+test('event status is active when within date range', function () {
+    $event = Event::factory()->create([
+        'start_time' => now()->subHours(12),
+        'end_time' => now()->addHours(12),
+    ]);
 
     expect($event->fresh()->status)->toBe('active');
 });
@@ -42,13 +43,13 @@ test('event status is upcoming when start time is in future', function () {
     expect($event->status)->toBe('upcoming');
 });
 
-test('event status is in progress when within time range but not active', function () {
+test('event status is active when within time range', function () {
     $event = Event::factory()->create([
         'start_time' => now()->subHours(12),
         'end_time' => now()->addHours(12),
     ]);
 
-    expect($event->status)->toBe('in_progress');
+    expect($event->status)->toBe('active');
 });
 
 test('event status is completed when end time is past', function () {
@@ -67,8 +68,6 @@ test('event scopes filter correctly', function () {
     ]);
     $upcoming = Event::factory()->create(['start_time' => now()->addDays(7), 'end_time' => now()->addDays(8)]);
     $completed = Event::factory()->create(['start_time' => now()->subDays(8), 'end_time' => now()->subDays(7)]);
-
-    Setting::set('active_event_id', $active->id);
 
     expect(Event::active()->count())->toBe(1);
     expect(Event::upcoming()->count())->toBe(1);

@@ -7,7 +7,6 @@ use App\Models\EventConfiguration;
 use App\Models\EventType;
 use App\Models\OperatingClass;
 use App\Models\Section;
-use App\Models\Setting;
 use App\Models\Station;
 use App\Models\User;
 use Livewire\Livewire;
@@ -49,6 +48,8 @@ beforeEach(function () {
     $this->event = Event::factory()->create([
         'event_type_id' => $eventType->id,
         'is_active' => true,
+        'start_time' => now()->subHours(12),
+        'end_time' => now()->addHours(12),
     ]);
 
     $this->eventConfig = EventConfiguration::factory()->create([
@@ -56,8 +57,6 @@ beforeEach(function () {
         'section_id' => $section->id,
         'operating_class_id' => $operatingClass->id,
     ]);
-
-    Setting::set('active_event_id', $this->event->id);
 
     // Create radio equipment
     $this->radio = Equipment::factory()->create([

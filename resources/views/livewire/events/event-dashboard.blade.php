@@ -9,8 +9,6 @@
                     <x-badge value="Active" class="badge-success" />
                 @elseif($event->status === 'upcoming')
                     <x-badge value="Upcoming" class="badge-info" />
-                @elseif($event->status === 'in_progress')
-                    <x-badge value="In Progress" class="badge-warning" />
                 @else
                     <x-badge value="Completed" class="badge-neutral" />
                 @endif
@@ -24,19 +22,6 @@
 
         <!-- Quick Actions -->
         <div class="flex flex-wrap gap-2">
-            @can('activate-events')
-                @if(!$this->isActive)
-                    <x-button
-                        label="Set as Active"
-                        icon="o-check-circle"
-                        class="btn-primary"
-                        wire:click="activate"
-                        wire:confirm="Are you sure you want to set '{{ $event->name }}' as the active event?"
-                        spinner="activate"
-                    />
-                @endif
-            @endcan
-
             @can('edit-events')
                 <x-button
                     label="Edit"
@@ -212,6 +197,44 @@
                         </div>
                     @endif
                 </x-card>
+
+                @if($event->eventConfiguration && $event->eventConfiguration->guestbook_enabled)
+                    <!-- Guestbook Visitors Card -->
+                    <x-card title="Guestbook Visitors" shadow>
+                        <div class="space-y-4">
+                            <!-- Total Visitors -->
+                            <div>
+                                <div class="text-sm text-base-content/60">Total Visitors</div>
+                                <div class="text-2xl font-bold">{{ number_format($this->guestbookStats['total']) }}</div>
+                            </div>
+
+                            <!-- Bonus Eligible -->
+                            <div>
+                                <div class="text-sm text-base-content/60">Verified Bonus Eligible</div>
+                                <div class="text-2xl font-bold">{{ $this->guestbookStats['verified_bonus_eligible'] }} / 10</div>
+                            </div>
+
+                            <!-- Bonus Points -->
+                            <div>
+                                <div class="text-sm text-base-content/60">PR Bonus</div>
+                                <div class="text-2xl font-bold text-success">{{ number_format($this->guestbookStats['bonus_points']) }} pts</div>
+                            </div>
+
+                            <!-- Link to Guestbook Manager -->
+                            @can('manage-guestbook')
+                                <div class="mt-4 pt-4 border-t border-base-300">
+                                    <x-button
+                                        label="Manage Guestbook"
+                                        icon="o-book-open"
+                                        class="btn-outline btn-sm w-full"
+                                        link="{{ route('events.guestbook', ['event' => $event->id]) }}"
+                                        wire:navigate
+                                    />
+                                </div>
+                            @endcan
+                        </div>
+                    </x-card>
+                @endif
             </div>
         </x-tab>
 
