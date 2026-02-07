@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Event;
+use App\Services\ContactExporter;
+use App\Services\LogbookQueryBuilder;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+class LogbookController extends Controller
+{
+    public function __construct(
+        protected LogbookQueryBuilder $queryBuilder,
+        protected ContactExporter $exporter
+    ) {}
+
+    /**
+     * Display the logbook browser.
+     */
+    public function index(): View
+    {
+        // Get active event for context
+        $activeEvent = Event::active()->with('eventConfiguration')->first();
+
+        return view('logbook.index', [
+            'activeEvent' => $activeEvent,
+        ]);
+    }
+
+    /**
+     * Export filtered contacts to CSV.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        // Get active event
+        $activeEvent = Event::active()->with('eventConfiguration')->first();
+
+        if (! $activeEvent || ! $activeEvent->eventConfiguration) {
+            abort(404, 'No active event found');
+        }
+
+        // Build filters from request
+        $filters = [
+            'event_configuration_id' => $activeEvent->eventConfiguration->id,
+            'band_id' => $request->input('band_id'),
+            'mode_id' => $request->input('mode_id'),
+            'station_id' => $request->input('station_id'),
+            'operator_id' => $request->input('operator_id'),
+            'time_from' => $request->input('time_from'),
+            'time_to' => $request->input('time_to'),
+            'callsign' => $request->input('callsign'),
+            'section_id' => $request->input('section_id'),
+            'duplicate_filter' => $request->input('duplicate_filter'),
+        ];
+
+        // Get filtered contacts
+        $contacts = $this->queryBuilder
+            ->applyFilters($filters)
+            ->get();
+
+        return $this->exporter->exportCsv($contacts);
+    }
+}

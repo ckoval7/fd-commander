@@ -1,23 +1,23 @@
 <div>
-    <x-mary-header :title="$eventConfiguration->event->name" subtitle="Photo Gallery">
+    <x-header :title="$eventConfiguration->event->name" subtitle="Photo Gallery">
         <x-slot:actions>
-            <x-mary-button label="Back to Gallery" icon="o-arrow-left" link="{{ route('gallery.index') }}" />
+            <x-button label="Back to Gallery" icon="o-arrow-left" link="{{ route('gallery.index') }}" />
             @auth
-                <x-mary-button label="Upload Photo" icon="o-arrow-up-tray" link="{{ route('gallery.upload', $eventConfiguration) }}" class="btn-primary" />
+                <x-button label="Upload Photo" icon="o-arrow-up-tray" link="{{ route('gallery.upload', $eventConfiguration) }}" class="btn-primary" />
             @endauth
         </x-slot:actions>
-    </x-mary-header>
+    </x-header>
 
     @if($this->images->isEmpty())
-        <x-mary-card>
+        <x-card>
             <div class="text-center py-12">
-                <x-mary-icon name="o-photo" class="w-16 h-16 mx-auto text-base-content/30" />
+                <x-icon name="o-photo" class="w-16 h-16 mx-auto text-base-content/30" />
                 <p class="mt-4 text-base-content/70">No photos have been uploaded for this event yet.</p>
                 @auth
-                    <x-mary-button label="Upload the first photo!" icon="o-arrow-up-tray" link="{{ route('gallery.upload', $eventConfiguration) }}" class="btn-primary mt-4" />
+                    <x-button label="Upload the first photo!" icon="o-arrow-up-tray" link="{{ route('gallery.upload', $eventConfiguration) }}" class="btn-primary mt-4" />
                 @endauth
             </div>
-        </x-mary-card>
+        </x-card>
     @else
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
             @foreach($this->images as $image)
@@ -42,7 +42,7 @@
                             wire:confirm="Are you sure you want to delete this photo?"
                             class="absolute top-2 right-2 p-1.5 bg-error/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-error"
                         >
-                            <x-mary-icon name="o-trash" class="w-4 h-4" />
+                            <x-icon name="o-trash" class="w-4 h-4" />
                         </button>
                     @endcan
                 </div>
@@ -51,7 +51,7 @@
     @endif
 
     {{-- Lightbox Modal --}}
-    <x-mary-modal wire:model="lightboxImageId" box-class="max-w-5xl">
+    <x-modal wire:model="lightboxImageId" box-class="max-w-5xl">
         @if($lightboxImageId)
             @php $currentImage = $this->images->firstWhere('id', $lightboxImageId); @endphp
             @if($currentImage)
@@ -70,7 +70,7 @@
                             @endif
                         </div>
                         @can('delete', $currentImage)
-                            <x-mary-button
+                            <x-button
                                 label="Delete"
                                 icon="o-trash"
                                 class="btn-error btn-sm"
@@ -82,5 +82,5 @@
                 </div>
             @endif
         @endif
-    </x-mary-modal>
+    </x-modal>
 </div>

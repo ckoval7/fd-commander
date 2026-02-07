@@ -34,16 +34,15 @@ Route::middleware('auth')->group(function () {
 
 // Contact Logging
 Route::middleware(['auth', 'can:log-contacts'])->group(function () {
-    Route::get('/contacts/create', function () {
-        return view('contacts.create');
-    })->name('contacts.create');
     Route::get('/logging', \App\Livewire\Logging\StationSelect::class)->name('logging.station-select');
     Route::get('/logging/session/{operatingSession}', \App\Livewire\Logging\LoggingInterface::class)->name('logging.session');
 });
 
-Route::get('/contacts', function () {
-    return view('contacts.index');
-})->name('contacts.index');
+// Logbook Browser
+Route::middleware('auth')->group(function () {
+    Route::get('/logbook', [\App\Http\Controllers\LogbookController::class, 'index'])->name('logbook.index');
+    Route::get('/logbook/export', [\App\Http\Controllers\LogbookController::class, 'export'])->name('logbook.export');
+});
 
 // Event Management
 Route::middleware('auth')->group(function () {

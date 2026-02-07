@@ -1,10 +1,10 @@
 <div>
-    <x-mary-header title="Photo Gallery" subtitle="Field Day memories">
+    <x-header title="Photo Gallery" subtitle="Field Day memories">
         @auth
             <x-slot:actions>
                 @if($this->activeEventConfiguration)
                     {{-- Active event exists - direct link --}}
-                    <x-mary-button
+                    <x-button
                         label="Upload Photo"
                         icon="o-arrow-up-tray"
                         link="{{ route('gallery.upload', $this->activeEventConfiguration) }}"
@@ -12,7 +12,7 @@
                     />
                 @elseif($this->uploadableEvents->isNotEmpty())
                     {{-- No active event - show selector --}}
-                    <x-mary-button
+                    <x-button
                         label="Upload Photo"
                         icon="o-arrow-up-tray"
                         wire:click="$set('showEventSelector', true)"
@@ -21,23 +21,23 @@
                 @endif
             </x-slot:actions>
         @endauth
-    </x-mary-header>
+    </x-header>
 
     @if($this->events->isEmpty())
-        <x-mary-card class="shadow-md">
+        <x-card class="shadow-md">
             <div class="text-center py-12">
-                <x-mary-icon name="o-photo" class="w-16 h-16 mx-auto text-base-content/30" />
+                <x-icon name="o-photo" class="w-16 h-16 mx-auto text-base-content/30" />
                 <p class="mt-4 text-base-content/70">No photos have been uploaded yet.</p>
                 @auth
                     @if($this->activeEventConfiguration)
-                        <x-mary-button
+                        <x-button
                             label="Be the first to upload!"
                             icon="o-arrow-up-tray"
                             link="{{ route('gallery.upload', $this->activeEventConfiguration) }}"
                             class="btn-primary mt-4"
                         />
                     @elseif($this->uploadableEvents->isNotEmpty())
-                        <x-mary-button
+                        <x-button
                             label="Be the first to upload!"
                             icon="o-arrow-up-tray"
                             wire:click="$set('showEventSelector', true)"
@@ -46,12 +46,12 @@
                     @endif
                 @endauth
             </div>
-        </x-mary-card>
+        </x-card>
     @else
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             @foreach($this->events as $eventConfig)
                 <a wire:key="event-{{ $eventConfig->id }}" href="{{ route('gallery.show', $eventConfig) }}" class="block">
-                    <x-mary-card class="shadow-md hover:shadow-lg transition-shadow cursor-pointer h-full">
+                    <x-card class="shadow-md hover:shadow-lg transition-shadow cursor-pointer h-full">
                         <div class="aspect-video bg-base-300 rounded-lg overflow-hidden mb-4">
                             @if($eventConfig->images->first())
                                 <img
@@ -61,7 +61,7 @@
                                 >
                             @else
                                 <div class="w-full h-full flex items-center justify-center">
-                                    <x-mary-icon name="o-photo" class="w-12 h-12 text-base-content/30" />
+                                    <x-icon name="o-photo" class="w-12 h-12 text-base-content/30" />
                                 </div>
                             @endif
                         </div>
@@ -72,14 +72,14 @@
                         <p class="text-sm text-base-content/50 mt-1">
                             {{ $eventConfig->images_count }} {{ Str::plural('photo', $eventConfig->images_count) }}
                         </p>
-                    </x-mary-card>
+                    </x-card>
                 </a>
             @endforeach
         </div>
     @endif
 
     {{-- Event Selector Modal --}}
-    <x-mary-modal wire:model="showEventSelector" title="Select Event" box-class="max-w-md">
+    <x-modal wire:model="showEventSelector" title="Select Event" box-class="max-w-md">
         <p class="text-base-content/70 mb-4">Which event would you like to upload photos to?</p>
 
         <div class="space-y-2">
@@ -95,9 +95,9 @@
         </div>
 
         <x-slot:actions>
-            <x-mary-button label="Cancel" wire:click="$set('showEventSelector', false)" />
+            <x-button label="Cancel" wire:click="$set('showEventSelector', false)" />
             @if($selectedEventId)
-                <x-mary-button
+                <x-button
                     label="Continue"
                     icon="o-arrow-right"
                     class="btn-primary"
@@ -105,5 +105,5 @@
                 />
             @endif
         </x-slot:actions>
-    </x-mary-modal>
+    </x-modal>
 </div>
