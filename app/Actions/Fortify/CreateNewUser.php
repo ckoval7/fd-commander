@@ -19,6 +19,12 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        // Normalize callsign to uppercase before validation to ensure
+        // case-insensitive uniqueness check
+        if (isset($input['call_sign'])) {
+            $input['call_sign'] = mb_strtoupper($input['call_sign']);
+        }
+
         Validator::make($input, [
             'call_sign' => [
                 'required',

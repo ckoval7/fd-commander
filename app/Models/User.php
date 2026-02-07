@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\NotificationCategory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -74,6 +75,30 @@ class User extends Authenticatable
     }
 
     /**
+     * Override the roles relationship accessor to support dev mode role switching.
+     */
+    public function getRolesAttribute()
+    {
+        // In dev mode with role override, return the overridden role instead
+        if (config('developer.enabled') && session()->has('dev_role_override')) {
+            try {
+                $role = \Spatie\Permission\Models\Role::findByName(session('dev_role_override'), 'web');
+
+                return collect([$role]);
+            } catch (\Spatie\Permission\Exceptions\RoleDoesNotExist $e) {
+                // Invalid role, fall through to normal relationship
+            }
+        }
+
+        // Load the actual roles relationship
+        if (! $this->relationLoaded('roles')) {
+            $this->load('roles');
+        }
+
+        return $this->getRelation('roles');
+    }
+
+    /**
      * Check if the user is a system administrator.
      */
     public function isSystemAdmin(): bool
@@ -138,11 +163,34 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is subscribed to a notification category.
+     * Defaults to true if the category has not been explicitly configured.
+     */
+    public function isSubscribedTo(NotificationCategory $category): bool
+    {
+        $categories = $this->notification_preferences['categories'] ?? [];
+
+        return $categories[$category->value] ?? true;
+    }
+
+    /**
      * Get user's preferred timezone or system default.
      */
     public function getTimezone(): string
     {
         return $this->preferred_timezone ?? config('app.timezone');
+    }
+
+    /**
+     * Get the effective call sign, respecting dev mode session overrides.
+     */
+    public function effectiveCallSign(): string
+    {
+        if (config('developer.enabled') && session()->has('dev_callsign_override')) {
+            return session('dev_callsign_override');
+        }
+
+        return $this->call_sign;
     }
 
     /**
@@ -162,5 +210,13 @@ class User extends Authenticatable
         }
 
         return mb_strtoupper($initials);
+    }
+
+    /**
+     * Normalize call sign to uppercase.
+     */
+    protected function setCallSignAttribute(?string $value): void
+    {
+        $this->attributes['call_sign'] = $value ? mb_strtoupper($value) : null;
     }
 }

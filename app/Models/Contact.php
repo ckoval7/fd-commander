@@ -82,4 +82,41 @@ class Contact extends Model
     {
         return $this->belongsTo(Contact::class, 'duplicate_of_contact_id');
     }
+
+    // Scopes
+    public function scopeForEvent($query, $eventConfigId)
+    {
+        return $query->where('event_configuration_id', $eventConfigId);
+    }
+
+    public function scopeNotDuplicate($query)
+    {
+        return $query->where('is_duplicate', false);
+    }
+
+    public function scopeDuplicatesOnly($query)
+    {
+        return $query->where('is_duplicate', true);
+    }
+
+    public function scopeChronological($query)
+    {
+        return $query->orderBy('qso_time', 'desc');
+    }
+
+    /**
+     * Normalize callsign to uppercase.
+     */
+    protected function setCallsignAttribute(?string $value): void
+    {
+        $this->attributes['callsign'] = $value ? mb_strtoupper($value) : null;
+    }
+
+    /**
+     * Normalize GOTA operator callsign to uppercase.
+     */
+    protected function setGotaOperatorCallsignAttribute(?string $value): void
+    {
+        $this->attributes['gota_operator_callsign'] = $value ? mb_strtoupper($value) : null;
+    }
 }
