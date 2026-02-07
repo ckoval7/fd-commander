@@ -180,8 +180,8 @@
             <x-slot:title>Equipment Photo</x-slot:title>
 
             <div class="space-y-4">
-                {{-- Photo Preview (existing) --}}
-                @if($existingPhotoPath)
+                {{-- Current Photo (when editing with existing photo) --}}
+                @if($existingPhotoPath && !$photo)
                     <div class="space-y-2">
                         <p class="text-sm text-base-content/70">Current Photo:</p>
                         <img
@@ -193,32 +193,65 @@
                 @endif
 
                 {{-- Photo Upload --}}
-                <x-file
-                    wire:model="photo"
-                    label="Upload Photo"
-                    accept="image/png, image/jpeg"
-                    hint="Max 5MB. Formats: PNG, JPEG"
-                >
+                <div>
+                    <label class="block text-sm font-medium mb-2">
+                        {{ $photo ? 'New Photo' : ($existingPhotoPath ? 'Replace Photo' : 'Upload Photo') }}
+                    </label>
+
+                    <input
+                        type="file"
+                        wire:model="photo"
+                        accept="image/png,image/jpeg,image/jpg"
+                        class="hidden"
+                        id="photo-input"
+                        x-ref="photoInput"
+                    >
+
                     @if($photo)
-                        <img
-                            src="{{ $photo->temporaryUrl() }}"
-                            alt="New equipment photo"
-                            class="h-40 rounded-lg border border-base-300"
-                        />
-                    @elseif($existingPhotoPath)
-                        <img
-                            src="{{ asset('storage/' . $existingPhotoPath) }}"
-                            alt="Equipment photo"
-                            class="h-40 rounded-lg border border-base-300"
-                        />
+                        {{-- Preview for newly uploaded photo --}}
+                        <div class="space-y-3">
+                            @if(in_array($photo->getMimeType(), ['image/jpeg', 'image/png', 'image/jpg']))
+                                <img
+                                    src="{{ $photo->temporaryUrl() }}"
+                                    alt="New equipment photo"
+                                    class="h-40 rounded-lg border border-base-300"
+                                />
+                            @endif
+                            <div class="flex items-center gap-2 text-sm">
+                                <x-icon name="o-check-circle" class="w-5 h-5 text-success" />
+                                <span class="text-base-content/70">{{ $photo->getClientOriginalName() }}</span>
+                            </div>
+                            <x-button
+                                label="Choose Different Photo"
+                                icon="o-arrow-path"
+                                class="btn-sm"
+                                x-on:click="$refs.photoInput.click()"
+                            />
+                        </div>
                     @else
-                        <div class="flex flex-col items-center justify-center py-12 px-6 border-2 border-dashed border-base-300 rounded-lg bg-base-200/30 hover:bg-base-200/50 hover:border-primary/50 transition-colors cursor-pointer">
-                            <x-icon name="o-photo" class="w-12 h-12 text-base-content/40 mb-3" />
-                            <p class="text-base font-medium text-base-content mb-1">Click to upload photo</p>
-                            <p class="text-sm text-base-content/60">PNG or JPEG up to 5MB</p>
+                        {{-- Upload placeholder --}}
+                        <div
+                            class="flex flex-col items-center justify-center py-12 px-6 border-2 border-dashed border-base-300 rounded-lg bg-base-200/30 hover:bg-base-200/50 hover:border-primary/50 transition-colors cursor-pointer"
+                            x-on:click="$refs.photoInput.click()"
+                        >
+                            <div wire:loading.remove wire:target="photo">
+                                <x-icon name="o-photo" class="w-12 h-12 text-base-content/40 mb-3" />
+                                <p class="text-base font-medium text-base-content mb-1">Click to upload photo</p>
+                                <p class="text-sm text-base-content/60">PNG or JPEG up to 5MB</p>
+                            </div>
+                            <div wire:loading wire:target="photo" class="flex items-center gap-2">
+                                <span class="loading loading-spinner loading-md"></span>
+                                <span class="text-base-content/70">Uploading...</span>
+                            </div>
                         </div>
                     @endif
-                </x-file>
+
+                    @error('photo')
+                        <p class="mt-2 text-sm text-error">{{ $message }}</p>
+                    @enderror
+
+                    <p class="mt-2 text-xs text-base-content/50">Max 5MB. Formats: PNG, JPEG</p>
+                </div>
             </div>
         </x-card>
 
