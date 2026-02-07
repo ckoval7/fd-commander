@@ -30,6 +30,8 @@ class RoleSeeder extends Seeder
             'guard_name' => 'web',
         ]);
         $eventManager->givePermissionTo([
+            'log-contacts',
+            'edit-contacts',
             'view-events',
             'create-events',
             'edit-events',

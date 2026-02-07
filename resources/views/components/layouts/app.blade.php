@@ -16,6 +16,9 @@
             <x-app-brand />
         </x-slot:brand>
         <x-slot:actions>
+            @auth
+                <livewire:components.notification-bell />
+            @endauth
             <x-theme-toggle class="me-2" />
             <x-user-menu class="me-2" />
             <label for="main-drawer" class="lg:hidden me-3">
@@ -37,8 +40,11 @@
                 <livewire:components.event-countdown />
             </div>
 
-            {{-- Right: Theme toggle and User menu --}}
+            {{-- Right: Notifications, Theme toggle and User menu --}}
             <div class="flex items-center gap-3">
+                @auth
+                    <livewire:components.notification-bell />
+                @endauth
                 <x-theme-toggle />
                 <x-user-menu />
             </div>
@@ -53,6 +59,9 @@
     {{-- Developer Mode Banner --}}
     @if(config('developer.enabled'))
         <livewire:components.developer-banner />
+        @auth
+            <livewire:components.dev-role-switcher />
+        @endauth
     @endif
 
     {{-- MAIN --}}
@@ -70,7 +79,7 @@
                         <x-menu-item title="Log Contact" icon="o-pencil-square" link="{{ route('logging.station-select') }}" />
                     @endcan
 
-                    <x-menu-item title="View Log" icon="o-queue-list" link="/contacts" />
+                    <x-menu-item title="View Log" icon="o-queue-list" link="{{ route('logbook.index') }}" />
 
                     <x-menu-separator title="EVENT MANAGEMENT" />
 
@@ -130,7 +139,7 @@
                     @endcanany
                 @else
                     <x-menu-item title="Home" icon="o-home" link="/" />
-                    <x-menu-item title="View Log" icon="o-queue-list" link="/contacts" />
+                    <x-menu-item title="View Log" icon="o-queue-list" link="{{ route('logbook.index') }}" />
                     <x-menu-item title="Gallery" icon="o-photo" link="/gallery" />
                     <x-menu-item title="Guestbook" icon="o-book-open" link="/guestbook" />
                 @endauth

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Logging;
 
+use App\Events\ContactLogged;
 use App\Models\Contact;
 use App\Models\OperatingSession;
 use App\Services\DuplicateCheckService;
@@ -114,7 +115,7 @@ class LoggingInterface extends Component
 
         $mode = $this->operatingSession->mode;
 
-        Contact::create([
+        $contact = Contact::create([
             'event_configuration_id' => $this->operatingSession->station->event_configuration_id,
             'operating_session_id' => $this->operatingSession->id,
             'logger_user_id' => auth()->id(),
@@ -131,6 +132,10 @@ class LoggingInterface extends Component
         ]);
 
         $this->operatingSession->increment('qso_count');
+
+        // Broadcast for real-time dashboard updates
+        $event = $this->operatingSession->station->eventConfiguration->event;
+        ContactLogged::dispatch($contact->load(['band', 'mode', 'section']), $event);
 
         $this->exchangeInput = '';
         $this->isDuplicate = false;

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Profile;
 
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 class UserProfile extends Component
@@ -24,6 +25,19 @@ class UserProfile extends Component
     public bool $event_notifications = true;
 
     public bool $system_announcements = true;
+
+    // Notification category preferences
+    public bool $notify_new_section = true;
+
+    public bool $notify_guestbook = true;
+
+    public bool $notify_photos = true;
+
+    public bool $notify_station_status = true;
+
+    public bool $notify_qso_milestone = true;
+
+    public bool $notify_equipment = true;
 
     // Security tab properties
     public string $current_password = '';
@@ -48,6 +62,15 @@ class UserProfile extends Component
         $preferences = $user->notification_preferences ?? [];
         $this->event_notifications = $preferences['event_notifications'] ?? true;
         $this->system_announcements = $preferences['system_announcements'] ?? true;
+
+        // Load category preferences
+        $categories = $preferences['categories'] ?? [];
+        $this->notify_new_section = $categories['new_section'] ?? true;
+        $this->notify_guestbook = $categories['guestbook'] ?? true;
+        $this->notify_photos = $categories['photos'] ?? true;
+        $this->notify_station_status = $categories['station_status'] ?? true;
+        $this->notify_qso_milestone = $categories['qso_milestone'] ?? true;
+        $this->notify_equipment = $categories['equipment'] ?? true;
     }
 
     public function saveProfile(): void
@@ -74,11 +97,40 @@ class UserProfile extends Component
                 'notification_preferences' => [
                     'event_notifications' => $this->event_notifications,
                     'system_announcements' => $this->system_announcements,
+                    'categories' => [
+                        'new_section' => $this->notify_new_section,
+                        'guestbook' => $this->notify_guestbook,
+                        'photos' => $this->notify_photos,
+                        'station_status' => $this->notify_station_status,
+                        'qso_milestone' => $this->notify_qso_milestone,
+                        'equipment' => $this->notify_equipment,
+                    ],
                 ],
             ]
         );
 
         $this->dispatch('toast', type: 'success', message: 'Profile updated successfully.');
+    }
+
+    public function toggleAllCategories(bool $enabled): void
+    {
+        $this->notify_new_section = $enabled;
+        $this->notify_guestbook = $enabled;
+        $this->notify_photos = $enabled;
+        $this->notify_station_status = $enabled;
+        $this->notify_qso_milestone = $enabled;
+        $this->notify_equipment = $enabled;
+    }
+
+    #[Computed]
+    public function allCategoriesEnabled(): bool
+    {
+        return $this->notify_new_section
+            && $this->notify_guestbook
+            && $this->notify_photos
+            && $this->notify_station_status
+            && $this->notify_qso_milestone
+            && $this->notify_equipment;
     }
 
     public function changePassword(): void

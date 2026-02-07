@@ -32,6 +32,8 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             'notification_preferences' => ['nullable', 'array'],
             'notification_preferences.event_notifications' => ['boolean'],
             'notification_preferences.system_announcements' => ['boolean'],
+            'notification_preferences.categories' => ['nullable', 'array'],
+            'notification_preferences.categories.*' => ['boolean'],
         ])->validateWithBag('updateProfileInformation');
 
         if ($input['email'] !== $user->email &&

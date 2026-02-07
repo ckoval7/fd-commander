@@ -80,8 +80,9 @@
                         <div class="flex items-center gap-2">
                             <x-checkbox checked disabled />
                             <span>Security Alerts <span class="text-xs text-base-content/60">(always enabled)</span></span>
-                            <x-icon name="o-information-circle" class="w-4 h-4 text-base-content/40 cursor-help"
-                                title="Security notifications cannot be disabled for your protection" />
+                            <div class="tooltip" data-tip="Security notifications cannot be disabled for your protection">
+                                <x-icon name="o-information-circle" class="w-4 h-4 text-base-content/40 cursor-help" />
+                            </div>
                         </div>
 
                         {{-- Event Notifications --}}
@@ -97,6 +98,111 @@
                             wire:model="system_announcements"
                             hint="System maintenance and important updates"
                         />
+                    </div>
+                </div>
+
+                <div class="card-actions justify-end mt-4">
+                    <x-button type="submit" spinner="saveProfile" class="btn-primary">
+                        Save Changes
+                    </x-button>
+                </div>
+            </div>
+        </div>
+
+        {{-- In-App Notification Categories --}}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="card-title">In-App Notification Categories</h3>
+                        <p class="text-sm text-base-content/60 mt-1">Choose which types of activity notifications you receive</p>
+                    </div>
+                    <div>
+                        @if($this->allCategoriesEnabled)
+                            <x-button wire:click="toggleAllCategories(false)" class="btn-sm btn-ghost" icon="o-x-mark">
+                                Disable All
+                            </x-button>
+                        @else
+                            <x-button wire:click="toggleAllCategories(true)" class="btn-sm btn-ghost" icon="o-check">
+                                Enable All
+                            </x-button>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="divider my-1"></div>
+
+                <div class="space-y-4">
+                    {{-- New Section Worked --}}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <x-icon name="o-globe-americas" class="w-5 h-5 text-primary shrink-0" />
+                            <div class="min-w-0">
+                                <div class="font-medium">New Section Worked</div>
+                                <div class="text-sm text-base-content/60">When a new ARRL/RAC section is worked for the first time</div>
+                            </div>
+                        </div>
+                        <x-toggle wire:model="notify_new_section" />
+                    </div>
+
+                    {{-- Guestbook Entries --}}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <x-icon name="o-book-open" class="w-5 h-5 text-primary shrink-0" />
+                            <div class="min-w-0">
+                                <div class="font-medium">Guestbook Entries</div>
+                                <div class="text-sm text-base-content/60">When visitors sign the guestbook</div>
+                            </div>
+                        </div>
+                        <x-toggle wire:model="notify_guestbook" />
+                    </div>
+
+                    {{-- Photo Uploads --}}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <x-icon name="o-photo" class="w-5 h-5 text-primary shrink-0" />
+                            <div class="min-w-0">
+                                <div class="font-medium">Photo Uploads</div>
+                                <div class="text-sm text-base-content/60">When new photos are uploaded to the gallery</div>
+                            </div>
+                        </div>
+                        <x-toggle wire:model="notify_photos" />
+                    </div>
+
+                    {{-- Station Status --}}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <x-icon name="o-signal" class="w-5 h-5 text-primary shrink-0" />
+                            <div class="min-w-0">
+                                <div class="font-medium">Station Status</div>
+                                <div class="text-sm text-base-content/60">When a station becomes available or occupied</div>
+                            </div>
+                        </div>
+                        <x-toggle wire:model="notify_station_status" />
+                    </div>
+
+                    {{-- QSO Milestones --}}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <x-icon name="o-trophy" class="w-5 h-5 text-primary shrink-0" />
+                            <div class="min-w-0">
+                                <div class="font-medium">QSO Milestones</div>
+                                <div class="text-sm text-base-content/60">When the event reaches QSO count milestones</div>
+                            </div>
+                        </div>
+                        <x-toggle wire:model="notify_qso_milestone" />
+                    </div>
+
+                    {{-- Equipment Changes --}}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <x-icon name="o-wrench-screwdriver" class="w-5 h-5 text-primary shrink-0" />
+                            <div class="min-w-0">
+                                <div class="font-medium">Equipment Changes</div>
+                                <div class="text-sm text-base-content/60">When equipment status changes</div>
+                            </div>
+                        </div>
+                        <x-toggle wire:model="notify_equipment" />
                     </div>
                 </div>
 
