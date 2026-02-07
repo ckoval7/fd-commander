@@ -143,6 +143,19 @@
         </x-slot:content>
     </x-main>
 
+    {{-- FOOTER --}}
+    <footer class="border-t border-base-300 bg-base-100 py-4 px-6 text-sm text-base-content/60">
+        @php $footerText = \App\Models\Setting::get('site_footer_text'); @endphp
+        @if($footerText)
+            <p class="text-center mb-2">{{ $footerText }}</p>
+        @endif
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-x-3 gap-y-1">
+            <span>FD Log DB v{{ config('app.version') }}</span>
+            <span class="hidden sm:inline text-base-content/30">&middot;</span>
+            <span>Powered by Laravel {{ app()->version() }}</span>
+        </div>
+    </footer>
+
     {{--  TOAST area --}}
     <x-toast />
 

@@ -90,9 +90,7 @@ class SiteBranding extends Component
         Setting::set('primary_color', $this->primary_color);
         Setting::set('secondary_color', $this->secondary_color);
 
-        if ($this->footer_text) {
-            Setting::set('site_footer_text', $this->footer_text);
-        }
+        Setting::set('site_footer_text', $this->footer_text ?? '');
 
         Setting::clearCache();
 

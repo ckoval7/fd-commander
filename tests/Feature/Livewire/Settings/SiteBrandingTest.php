@@ -68,6 +68,50 @@ test('uploads and saves logo', function () {
     Storage::disk('public')->assertExists($logoPath);
 });
 
+test('saves and clears footer text', function () {
+    Livewire::test(SiteBranding::class)
+        ->set('site_name', 'Test Site')
+        ->set('footer_text', 'Copyright 2026 My Club')
+        ->call('save')
+        ->assertDispatched('notify');
+
+    expect(Setting::get('site_footer_text'))->toBe('Copyright 2026 My Club');
+
+    Livewire::test(SiteBranding::class)
+        ->set('site_name', 'Test Site')
+        ->set('footer_text', '')
+        ->call('save');
+
+    expect(Setting::get('site_footer_text'))->toBe('');
+});
+
+test('footer renders custom text when set', function () {
+    Setting::set('setup_completed', 'true');
+    Setting::set('site_footer_text', 'W1AW Field Day 2026');
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('W1AW Field Day 2026');
+});
+
+test('footer hides custom text when empty', function () {
+    Setting::set('setup_completed', 'true');
+    Setting::set('site_footer_text', '');
+
+    $this->get('/')
+        ->assertOk()
+        ->assertDontSee('W1AW Field Day 2026');
+});
+
+test('footer always shows project info', function () {
+    Setting::set('setup_completed', 'true');
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('FD Log DB v'.config('app.version'))
+        ->assertSee('Powered by Laravel');
+});
+
 test('removes logo', function () {
     $logo = UploadedFile::fake()->image('logo.png');
     $path = $logo->storeAs('branding', 'test-logo.png', 'public');
