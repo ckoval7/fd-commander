@@ -7,7 +7,6 @@ use App\Models\EventConfiguration;
 use App\Models\EventType;
 use App\Models\OperatingClass;
 use App\Models\Section;
-use App\Models\Setting;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
@@ -71,6 +70,17 @@ class EventForm extends Component
     public bool $has_gota_station = false;
 
     public ?string $gota_callsign = null;
+
+    // Section 5: Guestbook Settings
+    public bool $guestbook_enabled = false;
+
+    public ?float $guestbook_latitude = null;
+
+    public ?float $guestbook_longitude = null;
+
+    public ?int $guestbook_detection_radius = 500;
+
+    public ?string $guestbook_local_subnets = null;
 
     // State tracking
     public bool $isLocked = false;
@@ -159,6 +169,16 @@ class EventForm extends Component
             $this->uses_other_power = $this->configuration->uses_other_power;
             $this->has_gota_station = $this->configuration->has_gota_station;
             $this->gota_callsign = $this->configuration->gota_callsign;
+
+            // Load guestbook settings
+            $this->guestbook_enabled = $this->configuration->guestbook_enabled;
+            $this->guestbook_latitude = $this->configuration->guestbook_latitude;
+            $this->guestbook_longitude = $this->configuration->guestbook_longitude;
+            $this->guestbook_detection_radius = $this->configuration->guestbook_detection_radius ?? 500;
+            // Convert array to string for textarea (one CIDR per line)
+            $this->guestbook_local_subnets = is_array($this->configuration->guestbook_local_subnets)
+                ? implode("\n", $this->configuration->guestbook_local_subnets)
+                : $this->configuration->guestbook_local_subnets;
 
             // Check if locked
             $this->isLocked = $this->configuration->isLocked();
@@ -338,8 +358,8 @@ class EventForm extends Component
 
         // STRICT VALIDATION: If editing currently active event, ensure new dates still include NOW()
         if ($this->mode === 'edit' && $this->eventId) {
-            $activeEventId = Setting::get('active_event_id');
-            if ($activeEventId && $this->eventId == $activeEventId) {
+            $isCurrentlyActive = Event::active()->where('id', $this->eventId)->exists();
+            if ($isCurrentlyActive) {
                 $newStartTime = \Carbon\Carbon::parse($validated['start_time']);
                 $newEndTime = \Carbon\Carbon::parse($validated['end_time']);
 
@@ -374,6 +394,15 @@ class EventForm extends Component
             'is_active' => true,
         ]);
 
+        // Convert subnets string to array
+        $subnets = null;
+        if (! empty($validated['guestbook_local_subnets'])) {
+            $subnets = array_filter(
+                array_map('trim', explode("\n", $validated['guestbook_local_subnets'])),
+                fn ($line) => ! empty($line)
+            );
+        }
+
         EventConfiguration::create([
             'event_id' => $event->id,
             'created_by_user_id' => auth()->id(),
@@ -394,6 +423,11 @@ class EventForm extends Component
             'uses_water' => $validated['uses_water'] ?? false,
             'uses_methane' => $validated['uses_methane'] ?? false,
             'uses_other_power' => $validated['uses_other_power'] ?? null,
+            'guestbook_enabled' => $validated['guestbook_enabled'] ?? false,
+            'guestbook_latitude' => $validated['guestbook_latitude'] ?? null,
+            'guestbook_longitude' => $validated['guestbook_longitude'] ?? null,
+            'guestbook_detection_radius' => $validated['guestbook_detection_radius'] ?? 500,
+            'guestbook_local_subnets' => $subnets,
         ]);
     }
 
@@ -413,11 +447,25 @@ class EventForm extends Component
             'end_time' => $validated['end_time'],
         ]);
 
+        // Convert subnets string to array
+        $subnets = null;
+        if (! empty($validated['guestbook_local_subnets'])) {
+            $subnets = array_filter(
+                array_map('trim', explode("\n", $validated['guestbook_local_subnets'])),
+                fn ($line) => ! empty($line)
+            );
+        }
+
         $configData = [
             'callsign' => $validated['callsign'],
             'club_name' => $validated['club_name'] ?? null,
             'section_id' => $validated['section_id'],
             'power_multiplier' => $this->powerMultiplier,
+            'guestbook_enabled' => $validated['guestbook_enabled'] ?? false,
+            'guestbook_latitude' => $validated['guestbook_latitude'] ?? null,
+            'guestbook_longitude' => $validated['guestbook_longitude'] ?? null,
+            'guestbook_detection_radius' => $validated['guestbook_detection_radius'] ?? 500,
+            'guestbook_local_subnets' => $subnets,
         ];
 
         // Only update locked fields if not locked
@@ -444,7 +492,7 @@ class EventForm extends Component
 
     protected function rules(): array
     {
-        return [
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'event_type_id' => ['required', 'exists:event_types,id'],
             'start_time' => ['required', 'date'],
@@ -505,7 +553,72 @@ class EventForm extends Component
                 'max:20',
                 'regex:/^[A-Z0-9\/]+$/i',
             ],
+            'guestbook_enabled' => ['boolean'],
+            'guestbook_detection_radius' => [
+                'nullable',
+                'integer',
+                'min:100',
+                'max:2000',
+            ],
+            'guestbook_local_subnets' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (empty($value)) {
+                        return;
+                    }
+
+                    $lines = array_filter(
+                        array_map('trim', explode("\n", $value)),
+                        fn ($line) => ! empty($line)
+                    );
+
+                    foreach ($lines as $line) {
+                        // Validate CIDR notation (e.g., 192.168.1.0/24)
+                        if (! preg_match('/^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/', $line)) {
+                            $fail("The line '{$line}' is not a valid CIDR notation. Expected format: 192.168.1.0/24");
+
+                            return;
+                        }
+
+                        // Validate IP address part
+                        [$ip, $prefix] = explode('/', $line);
+                        $octets = explode('.', $ip);
+
+                        foreach ($octets as $octet) {
+                            if ((int) $octet > 255) {
+                                $fail("The line '{$line}' contains an invalid IP address.");
+
+                                return;
+                            }
+                        }
+
+                        // Validate prefix length
+                        if ((int) $prefix > 32) {
+                            $fail("The line '{$line}' contains an invalid prefix length. Must be 0-32.");
+
+                            return;
+                        }
+                    }
+                },
+            ],
         ];
+
+        // Lat/lon are optional but validated if provided
+        $rules['guestbook_latitude'] = [
+            'nullable',
+            'numeric',
+            'min:-90',
+            'max:90',
+        ];
+        $rules['guestbook_longitude'] = [
+            'nullable',
+            'numeric',
+            'min:-180',
+            'max:180',
+        ];
+
+        return $rules;
     }
 
     protected function messages(): array
@@ -523,6 +636,12 @@ class EventForm extends Component
             'transmitter_count.required' => 'Please specify the number of transmitters.',
             'max_power_watts.required' => 'Please specify the maximum power.',
             'gota_callsign.regex' => 'The GOTA callsign format is invalid. Use only letters, numbers, and forward slashes.',
+            'guestbook_latitude.min' => 'Latitude must be between -90 and 90 degrees.',
+            'guestbook_latitude.max' => 'Latitude must be between -90 and 90 degrees.',
+            'guestbook_longitude.min' => 'Longitude must be between -180 and 180 degrees.',
+            'guestbook_longitude.max' => 'Longitude must be between -180 and 180 degrees.',
+            'guestbook_detection_radius.min' => 'Detection radius must be at least 100 meters.',
+            'guestbook_detection_radius.max' => 'Detection radius cannot exceed 2000 meters.',
         ];
     }
 

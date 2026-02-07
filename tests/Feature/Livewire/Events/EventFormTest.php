@@ -453,3 +453,296 @@ test('event form requires at least one power source', function () {
         ->call('save')
         ->assertHasNoErrors();
 });
+
+// Guestbook Settings Tests
+
+test('can create event with guestbook enabled', function () {
+    $this->actingAs($this->user);
+
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Field Day 2025')
+        ->set('event_type_id', $this->eventType->id)
+        ->set('operating_class_id', $this->operatingClassA->id)
+        ->set('start_time', '2025-06-28 18:00:00')
+        ->set('end_time', '2025-06-29 20:59:00')
+        ->set('callsign', 'W1AW')
+        ->set('section_id', $this->section->id)
+        ->set('transmitter_count', 1)
+        ->set('max_power_watts', 100)
+        ->set('uses_battery', true)
+        ->set('guestbook_enabled', true)
+        ->set('guestbook_latitude', 39.7392)
+        ->set('guestbook_longitude', -104.9903)
+        ->set('guestbook_detection_radius', 500)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $event = Event::where('name', 'Field Day 2025')->first();
+    expect($event->eventConfiguration->guestbook_enabled)->toBeTrue();
+    expect($event->eventConfiguration->guestbook_latitude)->toBe('39.7392000');
+    expect($event->eventConfiguration->guestbook_longitude)->toBe('-104.9903000');
+    expect($event->eventConfiguration->guestbook_detection_radius)->toBe(500);
+});
+
+test('can create event with guestbook and local subnets', function () {
+    $this->actingAs($this->user);
+
+    $subnets = "192.168.1.0/24\n10.0.0.0/8\n172.16.0.0/12";
+
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Field Day 2025')
+        ->set('event_type_id', $this->eventType->id)
+        ->set('operating_class_id', $this->operatingClassA->id)
+        ->set('start_time', '2025-06-28 18:00:00')
+        ->set('end_time', '2025-06-29 20:59:00')
+        ->set('callsign', 'W1AW')
+        ->set('section_id', $this->section->id)
+        ->set('transmitter_count', 1)
+        ->set('max_power_watts', 100)
+        ->set('uses_battery', true)
+        ->set('guestbook_enabled', true)
+        ->set('guestbook_latitude', 39.7392)
+        ->set('guestbook_longitude', -104.9903)
+        ->set('guestbook_detection_radius', 500)
+        ->set('guestbook_local_subnets', $subnets)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $event = Event::where('name', 'Field Day 2025')->first();
+    expect($event->eventConfiguration->guestbook_local_subnets)->toBe([
+        '192.168.1.0/24',
+        '10.0.0.0/8',
+        '172.16.0.0/12',
+    ]);
+});
+
+test('validates latitude range', function () {
+    $this->actingAs($this->user);
+
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Field Day 2025')
+        ->set('event_type_id', $this->eventType->id)
+        ->set('operating_class_id', $this->operatingClassA->id)
+        ->set('start_time', '2025-06-28 18:00:00')
+        ->set('end_time', '2025-06-29 20:59:00')
+        ->set('callsign', 'W1AW')
+        ->set('section_id', $this->section->id)
+        ->set('transmitter_count', 1)
+        ->set('max_power_watts', 100)
+        ->set('uses_battery', true)
+        ->set('guestbook_enabled', true)
+        ->set('guestbook_latitude', 91.0)
+        ->set('guestbook_longitude', -104.9903)
+        ->call('save')
+        ->assertHasErrors(['guestbook_latitude']);
+
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Field Day 2025')
+        ->set('event_type_id', $this->eventType->id)
+        ->set('operating_class_id', $this->operatingClassA->id)
+        ->set('start_time', '2025-06-28 18:00:00')
+        ->set('end_time', '2025-06-29 20:59:00')
+        ->set('callsign', 'W1AW')
+        ->set('section_id', $this->section->id)
+        ->set('transmitter_count', 1)
+        ->set('max_power_watts', 100)
+        ->set('uses_battery', true)
+        ->set('guestbook_enabled', true)
+        ->set('guestbook_latitude', -91.0)
+        ->set('guestbook_longitude', -104.9903)
+        ->call('save')
+        ->assertHasErrors(['guestbook_latitude']);
+});
+
+test('validates longitude range', function () {
+    $this->actingAs($this->user);
+
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Field Day 2025')
+        ->set('event_type_id', $this->eventType->id)
+        ->set('operating_class_id', $this->operatingClassA->id)
+        ->set('start_time', '2025-06-28 18:00:00')
+        ->set('end_time', '2025-06-29 20:59:00')
+        ->set('callsign', 'W1AW')
+        ->set('section_id', $this->section->id)
+        ->set('transmitter_count', 1)
+        ->set('max_power_watts', 100)
+        ->set('uses_battery', true)
+        ->set('guestbook_enabled', true)
+        ->set('guestbook_latitude', 39.7392)
+        ->set('guestbook_longitude', 181.0)
+        ->call('save')
+        ->assertHasErrors(['guestbook_longitude']);
+});
+
+test('validates detection radius range', function () {
+    $this->actingAs($this->user);
+
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Field Day 2025')
+        ->set('event_type_id', $this->eventType->id)
+        ->set('operating_class_id', $this->operatingClassA->id)
+        ->set('start_time', '2025-06-28 18:00:00')
+        ->set('end_time', '2025-06-29 20:59:00')
+        ->set('callsign', 'W1AW')
+        ->set('section_id', $this->section->id)
+        ->set('transmitter_count', 1)
+        ->set('max_power_watts', 100)
+        ->set('uses_battery', true)
+        ->set('guestbook_enabled', true)
+        ->set('guestbook_latitude', 39.7392)
+        ->set('guestbook_longitude', -104.9903)
+        ->set('guestbook_detection_radius', 50)
+        ->call('save')
+        ->assertHasErrors(['guestbook_detection_radius']);
+
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Field Day 2025')
+        ->set('event_type_id', $this->eventType->id)
+        ->set('operating_class_id', $this->operatingClassA->id)
+        ->set('start_time', '2025-06-28 18:00:00')
+        ->set('end_time', '2025-06-29 20:59:00')
+        ->set('callsign', 'W1AW')
+        ->set('section_id', $this->section->id)
+        ->set('transmitter_count', 1)
+        ->set('max_power_watts', 100)
+        ->set('uses_battery', true)
+        ->set('guestbook_enabled', true)
+        ->set('guestbook_latitude', 39.7392)
+        ->set('guestbook_longitude', -104.9903)
+        ->set('guestbook_detection_radius', 3000)
+        ->call('save')
+        ->assertHasErrors(['guestbook_detection_radius']);
+});
+
+test('validates CIDR notation format', function () {
+    $this->actingAs($this->user);
+
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Field Day 2025')
+        ->set('event_type_id', $this->eventType->id)
+        ->set('operating_class_id', $this->operatingClassA->id)
+        ->set('start_time', '2025-06-28 18:00:00')
+        ->set('end_time', '2025-06-29 20:59:00')
+        ->set('callsign', 'W1AW')
+        ->set('section_id', $this->section->id)
+        ->set('transmitter_count', 1)
+        ->set('max_power_watts', 100)
+        ->set('uses_battery', true)
+        ->set('guestbook_enabled', true)
+        ->set('guestbook_latitude', 39.7392)
+        ->set('guestbook_longitude', -104.9903)
+        ->set('guestbook_local_subnets', 'not-a-valid-cidr')
+        ->call('save')
+        ->assertHasErrors(['guestbook_local_subnets']);
+});
+
+test('validates CIDR IP octets', function () {
+    $this->actingAs($this->user);
+
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Field Day 2025')
+        ->set('event_type_id', $this->eventType->id)
+        ->set('operating_class_id', $this->operatingClassA->id)
+        ->set('start_time', '2025-06-28 18:00:00')
+        ->set('end_time', '2025-06-29 20:59:00')
+        ->set('callsign', 'W1AW')
+        ->set('section_id', $this->section->id)
+        ->set('transmitter_count', 1)
+        ->set('max_power_watts', 100)
+        ->set('uses_battery', true)
+        ->set('guestbook_enabled', true)
+        ->set('guestbook_latitude', 39.7392)
+        ->set('guestbook_longitude', -104.9903)
+        ->set('guestbook_local_subnets', '192.168.256.0/24')
+        ->call('save')
+        ->assertHasErrors(['guestbook_local_subnets']);
+});
+
+test('validates CIDR prefix length', function () {
+    $this->actingAs($this->user);
+
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Field Day 2025')
+        ->set('event_type_id', $this->eventType->id)
+        ->set('operating_class_id', $this->operatingClassA->id)
+        ->set('start_time', '2025-06-28 18:00:00')
+        ->set('end_time', '2025-06-29 20:59:00')
+        ->set('callsign', 'W1AW')
+        ->set('section_id', $this->section->id)
+        ->set('transmitter_count', 1)
+        ->set('max_power_watts', 100)
+        ->set('uses_battery', true)
+        ->set('guestbook_enabled', true)
+        ->set('guestbook_latitude', 39.7392)
+        ->set('guestbook_longitude', -104.9903)
+        ->set('guestbook_local_subnets', '192.168.1.0/33')
+        ->call('save')
+        ->assertHasErrors(['guestbook_local_subnets']);
+});
+
+test('allows guestbook to be enabled without coordinates', function () {
+    $this->actingAs($this->user);
+
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Field Day 2025')
+        ->set('event_type_id', $this->eventType->id)
+        ->set('operating_class_id', $this->operatingClassA->id)
+        ->set('start_time', '2025-06-28 18:00:00')
+        ->set('end_time', '2025-06-29 20:59:00')
+        ->set('callsign', 'W1AW')
+        ->set('section_id', $this->section->id)
+        ->set('transmitter_count', 1)
+        ->set('max_power_watts', 100)
+        ->set('uses_battery', true)
+        ->set('guestbook_enabled', true)
+        // No lat/lon provided - should still save successfully
+        ->call('save')
+        ->assertHasNoErrors(['guestbook_latitude', 'guestbook_longitude'])
+        ->assertRedirect(route('events.index'));
+
+    // Verify event was created with guestbook enabled but no coordinates
+    $event = Event::where('name', 'Field Day 2025')->first();
+    expect($event)->not->toBeNull();
+    expect($event->eventConfiguration->guestbook_enabled)->toBeTrue();
+    expect($event->eventConfiguration->guestbook_latitude)->toBeNull();
+    expect($event->eventConfiguration->guestbook_longitude)->toBeNull();
+});
+
+test('loads guestbook settings when editing event', function () {
+    $this->actingAs($this->user);
+
+    $event = Event::create([
+        'name' => 'Test Event',
+        'event_type_id' => $this->eventType->id,
+        'year' => 2025,
+        'start_time' => '2025-06-28 18:00:00',
+        'end_time' => '2025-06-29 20:59:00',
+        'is_active' => true,
+    ]);
+
+    EventConfiguration::create([
+        'event_id' => $event->id,
+        'created_by_user_id' => $this->user->id,
+        'callsign' => 'W1AW',
+        'section_id' => $this->section->id,
+        'operating_class_id' => $this->operatingClassA->id,
+        'transmitter_count' => 1,
+        'max_power_watts' => 100,
+        'power_multiplier' => 2,
+        'uses_battery' => true,
+        'guestbook_enabled' => true,
+        'guestbook_latitude' => 39.7392,
+        'guestbook_longitude' => -104.9903,
+        'guestbook_detection_radius' => 750,
+        'guestbook_local_subnets' => ['192.168.1.0/24', '10.0.0.0/8'],
+    ]);
+
+    $component = Livewire::test(EventForm::class, ['eventId' => $event->id, 'mode' => 'edit']);
+
+    expect($component->guestbook_enabled)->toBeTrue();
+    expect($component->guestbook_latitude)->toBe(39.7392);
+    expect($component->guestbook_longitude)->toBe(-104.9903);
+    expect($component->guestbook_detection_radius)->toBe(750);
+    expect($component->guestbook_local_subnets)->toBe("192.168.1.0/24\n10.0.0.0/8");
+});

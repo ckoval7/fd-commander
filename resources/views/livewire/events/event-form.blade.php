@@ -24,6 +24,18 @@
         </x-alert>
     @endif
 
+    {{-- Validation Error Summary --}}
+    @if($errors->any())
+        <x-alert icon="o-exclamation-triangle" class="alert-error mb-4">
+            <x-slot:title>Please fix the following errors:</x-slot:title>
+            <ul class="list-disc list-inside text-sm">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </x-alert>
+    @endif
+
     <form wire:submit="save">
         <!-- Section 1: Event Information -->
         <x-card class="mb-6">
@@ -293,6 +305,89 @@
                 The selected operating class does not permit a GOTA station.
             </x-alert>
         @endif
+
+        <!-- Section 5: Guestbook Settings -->
+        <x-card class="mb-6">
+            <x-slot:title>Guestbook Settings</x-slot:title>
+
+            <div class="space-y-4">
+                <x-toggle
+                    label="Enable Guestbook"
+                    wire:model.live="guestbook_enabled"
+                    hint="Allow visitors to sign in when physically at your event location"
+                />
+
+                @if($guestbook_enabled)
+                    <x-alert icon="o-information-circle" class="alert-info">
+                        <div class="text-sm">
+                            <strong>Location-based Check-in:</strong>
+                            Visitors must be within the detection radius of your event location OR on a local subnet to sign the guestbook.
+                        </div>
+                    </x-alert>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <x-input
+                            label="Latitude"
+                            wire:model="guestbook_latitude"
+                            type="number"
+                            step="0.0000001"
+                            min="-90"
+                            max="90"
+                            icon="o-map-pin"
+                            placeholder="39.7392"
+                            hint="Optional - for browser location detection"
+                        />
+
+                        <x-input
+                            label="Longitude"
+                            wire:model="guestbook_longitude"
+                            type="number"
+                            step="0.0000001"
+                            min="-180"
+                            max="180"
+                            icon="o-map-pin"
+                            placeholder="-104.9903"
+                            hint="Optional - for browser location detection"
+                        />
+                    </div>
+
+                    <div>
+                        <x-input
+                            label="Detection Radius (meters)"
+                            wire:model.live="guestbook_detection_radius"
+                            type="number"
+                            min="100"
+                            max="2000"
+                            step="50"
+                            icon="o-signal"
+                            hint="How far from the event location visitors can check in (100-2000m)"
+                        />
+                        <div class="mt-2">
+                            <x-range
+                                wire:model.live="guestbook_detection_radius"
+                                min="100"
+                                max="2000"
+                                step="50"
+                                class="range-primary range-sm"
+                            />
+                            <div class="text-xs text-base-content/60 text-center mt-1">
+                                Current: {{ $guestbook_detection_radius }}m
+                                ({{ number_format($guestbook_detection_radius * 3.28084, 0) }} feet)
+                            </div>
+                        </div>
+                    </div>
+
+                    <x-textarea
+                        label="Local Subnets (Optional)"
+                        wire:model="guestbook_local_subnets"
+                        rows="4"
+                        icon="o-globe-alt"
+                        placeholder="192.168.1.0/24&#10;10.0.0.0/8"
+                        hint="One CIDR notation per line (e.g., 192.168.1.0/24). Visitors on these networks can sign in."
+                    />
+                @endif
+            </div>
+        </x-card>
 
         <!-- Submit Actions -->
         <div class="flex justify-end gap-3">

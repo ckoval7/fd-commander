@@ -64,6 +64,7 @@ class EventConfigurationFactory extends Factory
             'uses_water' => false,
             'uses_methane' => false,
             'uses_other_power' => null,
+            'guestbook_enabled' => false,
         ];
     }
 }

@@ -35,6 +35,11 @@ class EventConfiguration extends Model
         'uses_water',
         'uses_methane',
         'uses_other_power',
+        'guestbook_enabled',
+        'guestbook_latitude',
+        'guestbook_longitude',
+        'guestbook_detection_radius',
+        'guestbook_local_subnets',
     ];
 
     protected function casts(): array
@@ -49,6 +54,11 @@ class EventConfiguration extends Model
             'uses_wind' => 'boolean',
             'uses_water' => 'boolean',
             'uses_methane' => 'boolean',
+            'guestbook_enabled' => 'boolean',
+            'guestbook_latitude' => 'decimal:7',
+            'guestbook_longitude' => 'decimal:7',
+            'guestbook_detection_radius' => 'integer',
+            'guestbook_local_subnets' => 'array',
         ];
     }
 
@@ -90,6 +100,16 @@ class EventConfiguration extends Model
     public function images(): HasMany
     {
         return $this->hasMany(Image::class);
+    }
+
+    public function guestbookEntries(): HasMany
+    {
+        return $this->hasMany(GuestbookEntry::class);
+    }
+
+    public function getHasGuestbookLocationAttribute(): bool
+    {
+        return $this->guestbook_latitude !== null && $this->guestbook_longitude !== null;
     }
 
     /**
