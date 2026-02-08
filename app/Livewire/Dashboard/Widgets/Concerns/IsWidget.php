@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Dashboard\Widgets\Concerns;
 
-use App\Models\Event;
+use App\Services\ActiveEventService;
 
 /**
  * Foundation trait for all dashboard widgets.
@@ -143,7 +143,8 @@ trait IsWidget
     {
         $type = class_basename(get_class($this));
         $configHash = md5(json_encode($this->config));
-        $eventId = Event::active()->first()?->id ?? 'no-event';
+        $activeEventService = app(ActiveEventService::class);
+        $eventId = $activeEventService->getActiveEventId();
 
         return "dashboard:widget:{$type}:{$configHash}:{$eventId}";
     }

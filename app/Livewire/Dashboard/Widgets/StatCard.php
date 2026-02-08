@@ -5,6 +5,7 @@ namespace App\Livewire\Dashboard\Widgets;
 use App\Livewire\Dashboard\Widgets\Concerns\IsWidget;
 use App\Models\Contact;
 use App\Models\Event;
+use App\Services\ActiveEventService;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
 
@@ -63,7 +64,8 @@ class StatCard extends Component
     protected function calculateMetric(): array
     {
         $metric = $this->config['metric'] ?? 'qso_count';
-        $event = Event::active()->first();
+        $activeEventService = app(ActiveEventService::class);
+        $event = $activeEventService->getActiveEvent();
 
         if (! $event || ! $event->eventConfiguration) {
             return $this->emptyMetric($metric);

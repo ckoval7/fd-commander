@@ -1,6 +1,6 @@
 <div
     wire:key="{{ $widgetId }}"
-    wire:poll.visible.5s
+    wire:poll.visible.15s
     x-data="{
         chartInstance: null,
         chartData: @js($chartData),

@@ -25,7 +25,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register ActiveEventService as a singleton for request-scoped caching
+        $this->app->singleton(\App\Services\ActiveEventService::class);
     }
 
     /**

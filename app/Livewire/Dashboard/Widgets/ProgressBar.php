@@ -3,7 +3,7 @@
 namespace App\Livewire\Dashboard\Widgets;
 
 use App\Livewire\Dashboard\Widgets\Concerns\IsWidget;
-use App\Models\Event;
+use App\Services\ActiveEventService;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
 
@@ -29,7 +29,8 @@ class ProgressBar extends Component
             $this->cacheKey(),
             3,
             function () {
-                $event = Event::active()->first();
+                $activeEventService = app(ActiveEventService::class);
+                $event = $activeEventService->getActiveEvent();
 
                 if (! $event) {
                     return [

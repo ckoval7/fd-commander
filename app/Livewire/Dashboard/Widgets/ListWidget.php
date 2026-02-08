@@ -8,6 +8,7 @@ use App\Models\Equipment;
 use App\Models\Event;
 use App\Models\OperatingSession;
 use App\Models\Station;
+use App\Services\ActiveEventService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
@@ -76,7 +77,8 @@ class ListWidget extends Component
     protected function fetchListData(): array
     {
         $listType = $this->config['list_type'] ?? 'recent_contacts';
-        $event = Event::active()->first();
+        $activeEventService = app(ActiveEventService::class);
+        $event = $activeEventService->getActiveEvent();
 
         if (! $event || ! $event->eventConfiguration) {
             return [];

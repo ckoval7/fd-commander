@@ -3,7 +3,7 @@
 namespace App\Livewire\Dashboard\Widgets;
 
 use App\Livewire\Dashboard\Widgets\Concerns\IsWidget;
-use App\Models\Event;
+use App\Services\ActiveEventService;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
 
@@ -61,7 +61,8 @@ class InfoCard extends Component
      */
     protected function gatherEventInfo(): array
     {
-        $event = Event::active()->first();
+        $activeEventService = app(ActiveEventService::class);
+        $event = $activeEventService->getActiveEvent();
 
         if (! $event || ! $event->eventConfiguration) {
             return $this->emptyInfo();

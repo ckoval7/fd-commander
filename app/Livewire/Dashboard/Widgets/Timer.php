@@ -3,7 +3,7 @@
 namespace App\Livewire\Dashboard\Widgets;
 
 use App\Livewire\Dashboard\Widgets\Concerns\IsWidget;
-use App\Models\Event;
+use App\Services\ActiveEventService;
 use Livewire\Component;
 
 /**
@@ -34,7 +34,8 @@ class Timer extends Component
      */
     public function getData(): array
     {
-        $event = Event::active()->first();
+        $activeEventService = app(ActiveEventService::class);
+        $event = $activeEventService->getActiveEvent();
 
         if (! $event) {
             return $this->noEventData();
