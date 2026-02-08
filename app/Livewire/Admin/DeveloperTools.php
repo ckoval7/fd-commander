@@ -4,7 +4,6 @@ namespace App\Livewire\Admin;
 
 use App\Models\AuditLog;
 use App\Models\Contact;
-use App\Models\EventConfiguration;
 use App\Services\DatabaseSnapshotService;
 use App\Services\DeveloperClockService;
 use Carbon\Carbon;
@@ -122,13 +121,14 @@ class DeveloperTools extends Component
                 ? Carbon::parse("{$this->fakeDate} {$this->fakeTime}")
                 : Carbon::parse($this->fakeDate)->startOfDay();
 
-            // Find the active event configuration
-            $activeEvent = EventConfiguration::query()
-                ->where('is_active', true)
-                ->with('event')
+            // Find event that would be active at the selected time
+            $event = \App\Models\Event::query()
+                ->where('start_time', '<=', $selectedTime)
+                ->where('end_time', '>=', $selectedTime)
+                ->orderBy('created_at', 'asc')
                 ->first();
 
-            if ($activeEvent === null || $activeEvent->event === null) {
+            if ($event === null) {
                 return [
                     'status' => 'No Active Event',
                     'message' => 'No event is currently active.',
@@ -136,7 +136,6 @@ class DeveloperTools extends Component
                 ];
             }
 
-            $event = $activeEvent->event;
             $startTime = Carbon::parse($event->start_time);
             $endTime = Carbon::parse($event->end_time);
 
@@ -484,12 +483,19 @@ class DeveloperTools extends Component
     public function seedTestContacts(): void
     {
         try {
-            $activeEvent = EventConfiguration::query()
-                ->where('is_active', true)
-                ->first();
+            // Find active event using date-based scope, then get its configuration
+            $event = \App\Models\Event::active()->first();
 
-            if ($activeEvent === null) {
-                $this->error('No active event', 'Please activate an event first.');
+            if ($event === null) {
+                $this->error('No active event', 'No event is currently in progress based on date range.');
+
+                return;
+            }
+
+            $eventConfig = $event->eventConfiguration;
+
+            if ($eventConfig === null) {
+                $this->error('No event configuration', 'The active event does not have a configuration yet.');
 
                 return;
             }
@@ -498,7 +504,7 @@ class DeveloperTools extends Component
             Contact::factory()
                 ->count(50)
                 ->create([
-                    'event_configuration_id' => $activeEvent->id,
+                    'event_configuration_id' => $eventConfig->id,
                 ]);
 
             AuditLog::log(
@@ -506,7 +512,7 @@ class DeveloperTools extends Component
                 userId: auth()->id(),
                 newValues: [
                     'count' => 50,
-                    'event_configuration_id' => $activeEvent->id,
+                    'event_configuration_id' => $eventConfig->id,
                 ]
             );
 

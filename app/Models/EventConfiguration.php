@@ -225,7 +225,7 @@ class EventConfiguration extends Model
         }
 
         // If event has started, it's locked
-        if ($this->event && $this->event->start_time <= now()) {
+        if ($this->event && $this->event->start_time <= appNow()) {
             return true;
         }
 

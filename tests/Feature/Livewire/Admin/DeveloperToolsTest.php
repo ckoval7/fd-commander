@@ -410,9 +410,14 @@ test('deleteSnapshot deletes via service', function () {
 test('seedTestContacts creates 50 contacts for active event', function () {
     $this->actingAs($this->adminUser);
 
-    // Create an active event
+    // Create an active event (within date range)
+    $event = \App\Models\Event::factory()->create([
+        'start_time' => now()->subHours(12),
+        'end_time' => now()->addHours(12),
+    ]);
+
     $activeEvent = EventConfiguration::factory()->create([
-        'is_active' => true,
+        'event_id' => $event->id,
     ]);
 
     Livewire::test(DeveloperTools::class)
@@ -624,7 +629,13 @@ test('createSnapshot logs audit entry', function () {
 test('quick actions log audit entries', function () {
     $this->actingAs($this->adminUser);
 
-    $activeEvent = EventConfiguration::factory()->create(['is_active' => true]);
+    // Set up active event for seedTestContacts (within date range)
+    $event = \App\Models\Event::factory()->create([
+        'start_time' => now()->subHours(12),
+        'end_time' => now()->addHours(12),
+    ]);
+
+    $activeEvent = EventConfiguration::factory()->create(['event_id' => $event->id]);
 
     Livewire::test(DeveloperTools::class)
         ->call('seedTestContacts');

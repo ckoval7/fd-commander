@@ -35,7 +35,7 @@ class ActivateEventByDate extends Command
             $activeEvent = Event::find($currentActiveEventId);
 
             // If active event exists but is outside its date range, deactivate it
-            if ($activeEvent && ($activeEvent->start_time > now() || $activeEvent->end_time < now())) {
+            if ($activeEvent && ($activeEvent->start_time > appNow() || $activeEvent->end_time < appNow())) {
                 Setting::set('active_event_id', null);
                 Setting::set('manual_activation', false);
                 $this->info("Auto-deactivated event (outside date range): {$activeEvent->name}");
@@ -52,8 +52,8 @@ class ActivateEventByDate extends Command
 
         // Find events that are currently in progress
         $event = Event::query()
-            ->where('start_time', '<=', now())
-            ->where('end_time', '>=', now())
+            ->where('start_time', '<=', appNow())
+            ->where('end_time', '>=', appNow())
             ->orderBy('created_at', 'asc')
             ->first();
 
