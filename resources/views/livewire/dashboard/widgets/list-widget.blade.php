@@ -1,7 +1,7 @@
 {{--
 ListWidget View
 
-Displays scrollable lists of data in three formats:
+Displays scrollable lists of data in three formats with slide-down animations for new items:
 - recent_contacts: Recent QSOs with time, callsign, band, mode
 - active_stations: Active stations with operator, band, status
 - equipment_status: Equipment with status and assignment
@@ -11,19 +11,67 @@ Size variants:
 - tv: 10 items, larger text, max-h-[600px]
 --}}
 
-<div class="flex flex-col h-full">
+<div
+    class="flex flex-col h-full"
+    x-data="{
+        itemIds: @js(array_map(fn($item) => $item['type'] . '-' . ($item['callsign'] ?? $item['station_name'] ?? $item['equipment_name'] ?? 'unknown'), $data)),
+        newItems: new Set(),
+
+        init() {
+            // Track initial items as seen
+            this.itemIds.forEach(id => this.newItems.add(id));
+
+            // Remove highlight after delay
+            setTimeout(() => {
+                this.newItems.clear();
+            }, @js($size === 'tv' ? 1500 : 1000));
+        },
+
+        checkNewItems(currentIds) {
+            const previous = new Set(this.itemIds);
+            const current = new Set(currentIds);
+
+            // Find items that are in current but not in previous
+            current.forEach(id => {
+                if (!previous.has(id)) {
+                    this.newItems.add(id);
+
+                    // Remove highlight after delay
+                    setTimeout(() => {
+                        this.newItems.delete(id);
+                    }, @js($size === 'tv' ? 1500 : 1000));
+                }
+            });
+
+            this.itemIds = currentIds;
+        }
+    }"
+    x-effect="checkNewItems(@js(array_map(fn($item) => $item['type'] . '-' . ($item['callsign'] ?? $item['station_name'] ?? $item['equipment_name'] ?? 'unknown'), $data)))"
+>
     @if(count($data) > 0)
         {{-- Scrollable List Container --}}
         <div class="overflow-y-auto @if($size === 'tv') max-h-[600px] @else max-h-96 @endif">
             <div class="@if($size === 'tv') space-y-4 @else space-y-3 @endif">
                 @foreach($data as $item)
+                    @php
+                        $itemKey = $item['type'] . '-' . ($item['callsign'] ?? $item['station_name'] ?? $item['equipment_name'] ?? 'unknown');
+                    @endphp
+
                     @if($item['type'] === 'recent_contact')
                         {{-- Recent Contact Item --}}
-                        <div class="@if($size === 'tv') p-4 @else p-3 @endif bg-base-200 rounded-lg">
+                        <div
+                            x-data="{ itemId: '{{ $itemKey }}' }"
+                            class="@if($size === 'tv') p-4 @else p-3 @endif bg-base-200 rounded-lg transition-all duration-200"
+                            ::class="{
+                                'animate-slide-down': newItems.has(itemId),
+                                'bg-primary/20 shadow-md shadow-primary/20': newItems.has(itemId)
+                            }"
+                        >
                             <div class="flex flex-col gap-2">
                                 {{-- Time and Callsign Row --}}
                                 <div class="flex items-baseline justify-between gap-3">
-                                    <div class="@if($size === 'tv') text-2xl @else text-lg @endif font-bold text-primary">
+                                    <div class="@if($size === 'tv') text-2xl @else text-lg @endif font-bold text-primary transition-all duration-200"
+                                         ::class="{ 'scale-105': newItems.has(itemId) }">
                                         {{ $item['callsign'] }}
                                     </div>
                                     <div class="@if($size === 'tv') text-base @else text-xs @endif text-base-content/70 flex-shrink-0">
@@ -43,10 +91,18 @@ Size variants:
 
                     @elseif($item['type'] === 'active_station')
                         {{-- Active Station Item --}}
-                        <div class="@if($size === 'tv') p-4 @else p-3 @endif bg-base-200 rounded-lg">
+                        <div
+                            x-data="{ itemId: '{{ $itemKey }}' }"
+                            class="@if($size === 'tv') p-4 @else p-3 @endif bg-base-200 rounded-lg transition-all duration-200"
+                            ::class="{
+                                'animate-slide-down': newItems.has(itemId),
+                                'bg-success/20 shadow-md shadow-success/20': newItems.has(itemId)
+                            }"
+                        >
                             <div class="flex flex-col gap-2">
                                 {{-- Station Name --}}
-                                <div class="@if($size === 'tv') text-2xl @else text-lg @endif font-bold">
+                                <div class="@if($size === 'tv') text-2xl @else text-lg @endif font-bold transition-all duration-200"
+                                     ::class="{ 'scale-105': newItems.has(itemId) }">
                                     {{ $item['station_name'] }}
                                 </div>
                                 {{-- Operator and Band Row --}}
@@ -68,10 +124,18 @@ Size variants:
 
                     @elseif($item['type'] === 'equipment')
                         {{-- Equipment Status Item --}}
-                        <div class="@if($size === 'tv') p-4 @else p-3 @endif bg-base-200 rounded-lg">
+                        <div
+                            x-data="{ itemId: '{{ $itemKey }}' }"
+                            class="@if($size === 'tv') p-4 @else p-3 @endif bg-base-200 rounded-lg transition-all duration-200"
+                            ::class="{
+                                'animate-slide-down': newItems.has(itemId),
+                                'bg-info/20 shadow-md shadow-info/20': newItems.has(itemId)
+                            }"
+                        >
                             <div class="flex flex-col gap-2">
                                 {{-- Equipment Name --}}
-                                <div class="@if($size === 'tv') text-2xl @else text-lg @endif font-bold">
+                                <div class="@if($size === 'tv') text-2xl @else text-lg @endif font-bold transition-all duration-200"
+                                     ::class="{ 'scale-105': newItems.has(itemId) }">
                                     {{ $item['equipment_name'] }}
                                 </div>
                                 {{-- Status and Assignment Row --}}
@@ -107,3 +171,22 @@ Size variants:
         </div>
     @endif
 </div>
+
+<style>
+    @keyframes slide-down {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+            max-height: 0;
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 500px;
+        }
+    }
+
+    .animate-slide-down {
+        animation: slide-down 0.4s ease-out;
+    }
+</style>
