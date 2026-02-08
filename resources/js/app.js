@@ -1,4 +1,5 @@
 import './bootstrap';
+import dashboardSortable from './components/dashboard-sortable';
 
 // Set initial theme on page load (this is redundant with inline script but kept for fallback)
 let theme = localStorage.getItem('theme');
@@ -7,3 +8,8 @@ if (!theme) {
     localStorage.setItem('theme', theme);
 }
 document.documentElement.setAttribute('data-theme', theme);
+
+// Register Alpine.js components before Alpine starts
+document.addEventListener('alpine:init', () => {
+    Alpine.data('dashboardSortable', dashboardSortable);
+});

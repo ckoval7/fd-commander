@@ -147,6 +147,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's dashboards.
+     */
+    public function dashboards(): HasMany
+    {
+        return $this->hasMany(Dashboard::class);
+    }
+
+    /**
+     * Get the user's default dashboard.
+     */
+    public function defaultDashboard(): HasOne
+    {
+        return $this->hasOne(Dashboard::class)->where('is_default', true);
+    }
+
+    /**
      * Check if user has event notifications enabled.
      */
     public function hasEventNotificationsEnabled(): bool
