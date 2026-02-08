@@ -19,7 +19,7 @@ Route::prefix('setup')->group(function () {
 Route::get('/register/invite/{token}', [InvitationController::class, 'show'])->name('invitation.show');
 Route::post('/register/invite/{token}', [InvitationController::class, 'accept'])->name('invitation.accept');
 
-// Dashboard Routes
+// Dashboard System Routes
 Route::get('/', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');

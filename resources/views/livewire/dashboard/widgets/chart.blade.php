@@ -31,16 +31,12 @@
                 this.chartInstance = null;
             }
 
-            // Use globally available Chart.js
-            if (!window.Chart) {
-                console.error('Chart.js is not loaded');
-                return;
-            }
+            const { Chart, registerables } = await import('chart.js/auto');
 
             const ctx = canvas.getContext('2d');
             const config = this.buildConfig();
 
-            this.chartInstance = new window.Chart(ctx, config);
+            this.chartInstance = new Chart(ctx, config);
         },
 
         buildConfig() {
@@ -155,6 +151,7 @@
             this.chartInstance.update('none');
         },
     }"
+    x-effect="updateChart(chartData)"
     class="h-full"
 >
     <x-card

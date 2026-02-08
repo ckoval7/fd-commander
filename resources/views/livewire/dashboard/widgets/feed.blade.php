@@ -151,7 +151,6 @@ Each item: id, icon, title, message, time_ago, read
     @endif
 </div>
 
-@push('styles')
 <style>
     @keyframes fade-in-down {
         from {
@@ -168,4 +167,3 @@ Each item: id, icon, title, message, time_ago, read
         animation: fade-in-down 0.3s ease-out;
     }
 </style>
-@endpush

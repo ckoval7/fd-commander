@@ -15,14 +15,14 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/prompts (PROMPTS) - v0
 - livewire/livewire (LIVEWIRE) - v4
 - laravel/breeze (BREEZE) - v2
+- laravel/dusk (DUSK) - v8
 - laravel/mcp (MCP) - v0
 - laravel/pint (PINT) - v1
 - laravel/sail (SAIL) - v1
 - pestphp/pest (PEST) - v4
 - phpunit/phpunit (PHPUNIT) - v12
 - alpinejs (ALPINEJS) - v3
-- tailwindcss (TAILWINDCSS) - v3
-- maryui (MARYUI) - Use `mcp__docs-mcp-server__search_docs` for documentation
+- tailwindcss (TAILWINDCSS) - v4
 
 ## Skills Activation
 
@@ -30,7 +30,7 @@ This project has domain-specific skills available. You MUST activate the relevan
 
 - `livewire-development` — Develops reactive Livewire 4 components. Activates when creating, updating, or modifying Livewire components; working with wire:model, wire:click, wire:loading, or any wire: directives; adding real-time updates, loading states, or reactivity; debugging component behavior; writing Livewire tests; or when the user mentions Livewire, component, counter, or reactive UI.
 - `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, browser testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
-- `tailwindcss-development` — Styles applications using Tailwind CSS v3 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
+- `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
 
 ## Conventions
 
@@ -230,28 +230,6 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - State lives on the server; the UI reflects it. Validate and authorize in actions (they're like HTTP requests).
 - IMPORTANT: Activate `livewire-development` every time you're working with Livewire-related tasks.
 
-## Livewire v4 Layout Structure
-
-This application maintains layouts in TWO locations due to Livewire v4 requirements:
-
-1. **`resources/views/layouts/`** - Livewire v4 default location (uses `layouts::` namespace)
-   - Required for full-page Livewire components
-   - Default layout: `layouts::app` points to `resources/views/layouts/app.blade.php`
-   - Guest layout: `layouts::guest` points to `resources/views/layouts/guest.blade.php`
-
-2. **`resources/views/components/layouts/`** - Original component-based location
-   - Used for Blade components with `<x-layouts.app>` syntax
-   - Maintained for backwards compatibility
-
-**CRITICAL: When modifying layouts, update BOTH locations to maintain consistency:**
-```bash
-# Update both files when making layout changes
-resources/views/layouts/app.blade.php
-resources/views/components/layouts/app.blade.php
-```
-
-**Alternative:** Consider consolidating to one location and updating Livewire config in the future if this becomes cumbersome.
-
 === pint/core rules ===
 
 # Laravel Pint Code Formatter
@@ -276,50 +254,4 @@ resources/views/components/layouts/app.blade.php
 - Always use existing Tailwind conventions; check project patterns before adding new ones.
 - IMPORTANT: Always use `search-docs` tool for version-specific Tailwind CSS documentation and updated code examples. Never rely on training data.
 - IMPORTANT: Activate `tailwindcss-development` every time you're working with a Tailwind CSS or styling-related task.
-
-## Responsive Layout Patterns (CRITICAL)
-
-**Before writing any responsive layout code, read `docs/responsive-patterns.md`.**
-
-Key rules:
-- **Match child breakpoints to parent containers** - If a parent grid uses `lg:grid-cols-2`, children must use `lg:flex-row` (not `sm:flex-row`)
-- Use touch-friendly button heights on mobile: `min-h-[2.75rem] sm:min-h-[1.75rem]`
-- Always use `min-w-0` on flex children and `truncate` on text that might overflow
-- Test layouts at: 375px, 640px, 768px, 1024px, 1280px
-
-Quick reference:
-| Parent Grid | Child Flex Breakpoint |
-|-------------|----------------------|
-| `lg:grid-cols-2` | `lg:flex-row` |
-| `md:grid-cols-2` | `md:flex-row` |
-| `sm:grid-cols-2` | `sm:flex-row` |
-
-=== maryui rules ===
-
-# MaryUI
-
-- This project uses MaryUI as the primary UI component library built on top of Livewire and Tailwind CSS.
-- CRITICAL: Always use the `mcp__docs-mcp-server__search_docs` tool with `library: "maryui"` for MaryUI documentation before implementing UI components.
-- Search MaryUI docs for component usage, props, slots, and examples. Example: `search_docs(library: "maryui", query: "button")`.
-- MaryUI components are Blade components prefixed with `<x-mary-*>` or `<x-*>` depending on configuration.
-- Check existing components in the codebase to see how MaryUI is being used before adding new patterns.
-
-=== alpinejs rules ===
-
-# Alpine.js
-
-- Alpine.js is used alongside Livewire for client-side interactivity that doesn't require server roundtrips.
-- CRITICAL: Always use `mcp__docs-mcp-server__search_docs` with `library: "alpinejs"` for Alpine.js documentation before implementing Alpine directives.
-- Search Alpine docs for directives, magics, and patterns. Example: `search_docs(library: "alpinejs", query: "x-data x-show")`.
-- Common directives: `x-data`, `x-show`, `x-if`, `x-for`, `x-on` (or `@`), `x-bind` (or `:`), `x-model`, `x-text`, `x-html`.
-- Alpine works seamlessly with Livewire - use `$wire` to access Livewire component from Alpine, and `@entangle` for two-way binding.
-
-=== heroicons rules ===
-
-# Heroicons
-
-- Heroicons is the official icon set from the Tailwind CSS team, providing beautiful hand-crafted SVG icons.
-- CRITICAL: Always use `mcp__docs-mcp-server__search_docs` with `library: "heroicons"` to look up available icons and usage patterns.
-- Icons are available in three styles: outline (24x24), solid (24x24), and mini (20x20).
-- In this project, use Blade Heroicons via MaryUI's icon component or direct SVG includes.
 </laravel-boost-guidelines>

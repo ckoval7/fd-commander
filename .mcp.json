@@ -13,6 +13,13 @@
 		            "url": "http://localhost:6280/sse",
 			          "disabled": false,
 				        "autoApprove": []
-					    }
+					    },
+        "playwright": {
+            "command": "npx",
+            "args": ["-y", "@playwright/mcp-server"],
+            "env": {
+                "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH": "/usr/bin/chromium-browser"
+            }
+        }
     }
 }
