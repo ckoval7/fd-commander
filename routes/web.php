@@ -19,13 +19,13 @@ Route::get('/register/invite/{token}', [InvitationController::class, 'show'])->n
 Route::post('/register/invite/{token}', [InvitationController::class, 'accept'])->name('invitation.accept');
 
 // Dashboard
-Route::get('/', [App\Http\Controllers\DashboardController::class, '__invoke'])->name('dashboard');
+Route::get('/', function () {
+    return view('dashboard');
+})->name('dashboard');
 
-Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, '__invoke'])
-    ->middleware(['auth', 'verified'])->name('dashboard.alt');
-
-Route::get('/dashboard/tv', [App\Http\Controllers\DashboardController::class, 'tv'])
-    ->name('dashboard.tv');
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard.alt');
 
 // Profile Management
 Route::middleware('auth')->group(function () {

@@ -621,6 +621,13 @@ class DeveloperTools extends Component
     public function seedTestContacts(): void
     {
         try {
+            // Check for test user pool existence
+            if (! $this->testUserPoolExists()) {
+                $this->error('Test user pool required', 'Please initialize the test user pool before seeding contacts.');
+
+                return;
+            }
+
             // Find active event using date-based scope, then get its configuration
             $event = \App\Models\Event::active()->first();
 
@@ -647,13 +654,22 @@ class DeveloperTools extends Component
                 return;
             }
 
-            // Create a random number of users (3-10) to spread the contacts across
-            $userCount = rand(3, 10);
-            $users = \App\Models\User::factory()->count($userCount)->create();
+            // Get all test users from the pool
+            $testUserPool = User::where('call_sign', 'LIKE', 'TEST%')->get();
+            $poolSize = $testUserPool->count();
+
+            // Calculate random subset: min(3, pool_size) to min(10, pool_size)
+            $minUsers = min(3, $poolSize);
+            $maxUsers = min(10, $poolSize);
+            $userCount = rand($minUsers, $maxUsers);
+
+            // Randomly select users from the pool
+            $users = $testUserPool->random($userCount);
 
             // Create one operating session per user, using random existing stations
             $sessions = $users->map(fn ($user) => \App\Models\OperatingSession::factory()->create([
                 'station_id' => $stations->random()->id,
+                'operator_user_id' => $user->id,
             ]));
 
             // Create 50 test contacts, distributed among the users/sessions
@@ -676,7 +692,7 @@ class DeveloperTools extends Component
                 action: 'developer.quick_action.seed_contacts',
                 userId: auth()->id(),
                 newValues: [
-                    'count' => 50,
+                    'contact_count' => 50,
                     'user_count' => $userCount,
                     'event_configuration_id' => $eventConfig->id,
                 ]

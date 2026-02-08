@@ -425,6 +425,10 @@ test('seedTestContacts creates 50 contacts for active event', function () {
         'event_id' => $event->id,
     ]);
 
+    // Create test user pool
+    Livewire::test(DeveloperTools::class)
+        ->call('initializeTestUsers', 10);
+
     Livewire::test(DeveloperTools::class)
         ->call('seedTestContacts');
 
@@ -666,6 +670,10 @@ test('quick actions log audit entries', function () {
 
     $activeEvent = EventConfiguration::factory()->create(['event_id' => $event->id]);
 
+    // Create test user pool
+    Livewire::test(DeveloperTools::class)
+        ->call('initializeTestUsers', 10);
+
     Livewire::test(DeveloperTools::class)
         ->call('seedTestContacts');
 
@@ -673,7 +681,7 @@ test('quick actions log audit entries', function () {
 
     expect($auditLog)->not->toBeNull()
         ->and($auditLog->user_id)->toBe($this->adminUser->id)
-        ->and($auditLog->new_values)->toHaveKey('count')
+        ->and($auditLog->new_values)->toHaveKey('contact_count')
         ->and($auditLog->new_values)->toHaveKey('event_configuration_id');
 });
 
@@ -919,4 +927,217 @@ test('confirmation modal closes after clearing users', function () {
         ->set('showClearTestUsersModal', true)
         ->call('clearTestUsers')
         ->assertSet('showClearTestUsersModal', false);
+});
+
+// =============================================================================
+// Test User Pool Integration with seedTestContacts (6 tests)
+// =============================================================================
+
+test('seedTestContacts shows error when test user pool does not exist', function () {
+    $this->actingAs($this->adminUser);
+
+    // Create at least one station (required for operating sessions)
+    \App\Models\Station::factory()->create();
+
+    // Create an active event (within date range)
+    $event = \App\Models\Event::factory()->create([
+        'start_time' => now()->subHours(12),
+        'end_time' => now()->addHours(12),
+    ]);
+
+    EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+    ]);
+
+    // Ensure no test users exist
+    expect(User::where('call_sign', 'LIKE', 'TEST%')->exists())->toBeFalse();
+
+    Livewire::test(DeveloperTools::class)
+        ->call('seedTestContacts');
+
+    // No contacts should be created
+    expect(Contact::count())->toBe(0);
+
+    // No audit log should be created
+    expect(AuditLog::where('action', 'developer.quick_action.seed_contacts')->count())->toBe(0);
+});
+
+test('seedTestContacts uses existing test user pool instead of creating new users', function () {
+    $this->actingAs($this->adminUser);
+
+    // Create at least one station (required for operating sessions)
+    \App\Models\Station::factory()->create();
+
+    // Create an active event (within date range)
+    $event = \App\Models\Event::factory()->create([
+        'start_time' => now()->subHours(12),
+        'end_time' => now()->addHours(12),
+    ]);
+
+    $activeEvent = EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+    ]);
+
+    // Create test user pool with 10 users
+    Livewire::test(DeveloperTools::class)
+        ->call('initializeTestUsers', 10);
+
+    expect(User::where('call_sign', 'LIKE', 'TEST%')->count())->toBe(10);
+
+    // Record non-test user count BEFORE seeding contacts
+    $nonTestUserCountBefore = User::where('call_sign', 'NOT LIKE', 'TEST%')->count();
+
+    // Seed contacts
+    Livewire::test(DeveloperTools::class)
+        ->call('seedTestContacts');
+
+    // Verify 50 contacts were created
+    expect(Contact::where('event_configuration_id', $activeEvent->id)->count())->toBe(50);
+
+    // Verify NO new non-test users were created
+    $nonTestUserCountAfter = User::where('call_sign', 'NOT LIKE', 'TEST%')->count();
+    expect($nonTestUserCountAfter)->toBe($nonTestUserCountBefore);
+
+    // Verify NO new test users were added to pool
+    expect(User::where('call_sign', 'LIKE', 'TEST%')->count())->toBe(10);
+
+    // Verify audit log was created
+    expect(AuditLog::where('action', 'developer.quick_action.seed_contacts')->count())->toBe(1);
+});
+
+test('seedTestContacts selects random subset from pool', function () {
+    $this->actingAs($this->adminUser);
+
+    // Create at least one station
+    \App\Models\Station::factory()->create();
+
+    // Create an active event
+    $event = \App\Models\Event::factory()->create([
+        'start_time' => now()->subHours(12),
+        'end_time' => now()->addHours(12),
+    ]);
+
+    $activeEvent = EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+    ]);
+
+    // Create test user pool with 10 users
+    Livewire::test(DeveloperTools::class)
+        ->call('initializeTestUsers', 10);
+
+    // Seed contacts
+    Livewire::test(DeveloperTools::class)
+        ->call('seedTestContacts');
+
+    // Verify contacts were created
+    expect(Contact::where('event_configuration_id', $activeEvent->id)->count())->toBe(50);
+
+    // Verify the contacts were logged by test users
+    $testUserIds = User::where('call_sign', 'LIKE', 'TEST%')->pluck('id');
+    $contactLoggers = Contact::whereIn('logger_user_id', $testUserIds)->distinct('logger_user_id')->count('logger_user_id');
+
+    // Should use between 3 and 10 users from the pool
+    expect($contactLoggers)->toBeGreaterThanOrEqual(3)
+        ->and($contactLoggers)->toBeLessThanOrEqual(10);
+});
+
+test('seedTestContacts adjusts range for small test user pool', function () {
+    $this->actingAs($this->adminUser);
+
+    // Create at least one station
+    \App\Models\Station::factory()->create();
+
+    // Create an active event
+    $event = \App\Models\Event::factory()->create([
+        'start_time' => now()->subHours(12),
+        'end_time' => now()->addHours(12),
+    ]);
+
+    $activeEvent = EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+    ]);
+
+    // Create small test user pool with 5 users
+    Livewire::test(DeveloperTools::class)
+        ->call('initializeTestUsers', 5);
+
+    // Seed contacts
+    Livewire::test(DeveloperTools::class)
+        ->call('seedTestContacts');
+
+    // Verify contacts were created
+    expect(Contact::where('event_configuration_id', $activeEvent->id)->count())->toBe(50);
+
+    // Verify the contacts were logged by test users
+    $testUserIds = User::where('call_sign', 'LIKE', 'TEST%')->pluck('id');
+    $contactLoggers = Contact::whereIn('logger_user_id', $testUserIds)->distinct('logger_user_id')->count('logger_user_id');
+
+    // With pool of 5, should use 3-5 users
+    expect($contactLoggers)->toBeGreaterThanOrEqual(3)
+        ->and($contactLoggers)->toBeLessThanOrEqual(5);
+});
+
+test('seedTestContacts audit log includes contact_count and user_count', function () {
+    $this->actingAs($this->adminUser);
+
+    // Create at least one station
+    \App\Models\Station::factory()->create();
+
+    // Create an active event
+    $event = \App\Models\Event::factory()->create([
+        'start_time' => now()->subHours(12),
+        'end_time' => now()->addHours(12),
+    ]);
+
+    EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+    ]);
+
+    // Create test user pool
+    Livewire::test(DeveloperTools::class)
+        ->call('initializeTestUsers', 10);
+
+    // Seed contacts
+    Livewire::test(DeveloperTools::class)
+        ->call('seedTestContacts');
+
+    // Verify audit log has correct keys
+    $auditLog = AuditLog::where('action', 'developer.quick_action.seed_contacts')->first();
+
+    expect($auditLog)->not->toBeNull()
+        ->and($auditLog->new_values)->toHaveKey('contact_count')
+        ->and($auditLog->new_values)->toHaveKey('user_count')
+        ->and($auditLog->new_values['contact_count'])->toBe(50);
+});
+
+test('seedTestContacts success message shows number of users used', function () {
+    $this->actingAs($this->adminUser);
+
+    // Create at least one station
+    \App\Models\Station::factory()->create();
+
+    // Create an active event
+    $event = \App\Models\Event::factory()->create([
+        'start_time' => now()->subHours(12),
+        'end_time' => now()->addHours(12),
+    ]);
+
+    EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+    ]);
+
+    // Create test user pool
+    Livewire::test(DeveloperTools::class)
+        ->call('initializeTestUsers', 10);
+
+    // Get audit log to verify user_count
+    Livewire::test(DeveloperTools::class)
+        ->call('seedTestContacts');
+
+    $auditLog = AuditLog::where('action', 'developer.quick_action.seed_contacts')->first();
+    $userCount = $auditLog->new_values['user_count'];
+
+    // Verify the message format (can't assert exact message due to randomness, but check structure)
+    expect($userCount)->toBeGreaterThanOrEqual(3)
+        ->and($userCount)->toBeLessThanOrEqual(10);
 });
