@@ -1,6 +1,6 @@
 <button
     x-data="{
-        darkMode: localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches),
+        darkMode: false,
         toggle() {
             this.darkMode = !this.darkMode;
             const theme = this.darkMode ? 'dark' : 'light';
@@ -9,6 +9,16 @@
             window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme } }));
         },
         init() {
+            // Sync component state with localStorage and document on initialization
+            let theme = localStorage.getItem('theme');
+            if (!theme) {
+                theme = 'light';
+                localStorage.setItem('theme', theme);
+            }
+            this.darkMode = theme === 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+
+            // Listen for theme changes from other components
             window.addEventListener('theme-changed', (e) => {
                 this.darkMode = e.detail.theme === 'dark';
             });
