@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\InvitationController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SetupController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,14 +19,17 @@ Route::prefix('setup')->group(function () {
 Route::get('/register/invite/{token}', [InvitationController::class, 'show'])->name('invitation.show');
 Route::post('/register/invite/{token}', [InvitationController::class, 'accept'])->name('invitation.accept');
 
-// Dashboard
-Route::get('/', function () {
-    return view('dashboard');
-})->name('dashboard');
+// Dashboard Routes
+Route::get('/', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard.alt');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.alt');
+
+Route::get('/dashboard/tv', [DashboardController::class, 'tv'])
+    ->name('dashboard.tv');
 
 // Profile Management
 Route::middleware('auth')->group(function () {
