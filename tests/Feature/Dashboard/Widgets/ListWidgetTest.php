@@ -745,7 +745,8 @@ describe('View Rendering', function () {
         Livewire::test(ListWidget::class, [
             'config' => ['list_type' => 'recent_contacts'],
         ])
-            ->assertSee('No data available');
+            ->assertSee('No contacts logged yet')
+            ->assertSee('Start making contacts to see them appear here');
     });
 
     it('applies tv size classes correctly', function () {

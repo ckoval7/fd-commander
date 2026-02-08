@@ -11,44 +11,61 @@ Size variants:
 - tv: 10 items, larger text, max-h-[600px]
 --}}
 
-<div
-    class="flex flex-col h-full"
-    x-data="{
-        itemIds: @js(array_map(fn($item) => $item['type'] . '-' . ($item['callsign'] ?? $item['station_name'] ?? $item['equipment_name'] ?? 'unknown'), $data)),
-        newItems: new Set(),
+@php
+    $titles = [
+        'recent_contacts' => 'Recent Contacts',
+        'active_stations' => 'Active Stations',
+        'equipment_status' => 'Equipment Status',
+    ];
+    $title = $titles[$listType] ?? 'List';
+    $titleSize = $size === 'tv' ? 'text-2xl' : 'text-lg';
+@endphp
 
-        init() {
-            // Track initial items as seen
-            this.itemIds.forEach(id => this.newItems.add(id));
+<div class="h-full">
+<x-card class="h-full flex flex-col">
+    {{-- Card Title --}}
+    <div class="@if($size === 'tv') mb-4 @else mb-3 @endif">
+        <h3 class="{{ $titleSize }} font-bold text-base-content">{{ $title }}</h3>
+    </div>
 
-            // Remove highlight after delay
-            setTimeout(() => {
-                this.newItems.clear();
-            }, @js($size === 'tv' ? 1500 : 1000));
-        },
+    <div
+        class="flex-1 min-h-0"
+        x-data="{
+            itemIds: @js(array_map(fn($item) => $item['type'] . '-' . ($item['callsign'] ?? $item['station_name'] ?? $item['equipment_name'] ?? 'unknown'), $data)),
+            newItems: new Set(),
 
-        checkNewItems(currentIds) {
-            const previous = new Set(this.itemIds);
-            const current = new Set(currentIds);
+            init() {
+                // Track initial items as seen
+                this.itemIds.forEach(id => this.newItems.add(id));
 
-            // Find items that are in current but not in previous
-            current.forEach(id => {
-                if (!previous.has(id)) {
-                    this.newItems.add(id);
+                // Remove highlight after delay
+                setTimeout(() => {
+                    this.newItems.clear();
+                }, @js($size === 'tv' ? 1500 : 1000));
+            },
 
-                    // Remove highlight after delay
-                    setTimeout(() => {
-                        this.newItems.delete(id);
-                    }, @js($size === 'tv' ? 1500 : 1000));
-                }
-            });
+            checkNewItems(currentIds) {
+                const previous = new Set(this.itemIds);
+                const current = new Set(currentIds);
 
-            this.itemIds = currentIds;
-        }
-    }"
-    x-effect="checkNewItems(@js(array_map(fn($item) => $item['type'] . '-' . ($item['callsign'] ?? $item['station_name'] ?? $item['equipment_name'] ?? 'unknown'), $data)))"
->
-    @if(count($data) > 0)
+                // Find items that are in current but not in previous
+                current.forEach(id => {
+                    if (!previous.has(id)) {
+                        this.newItems.add(id);
+
+                        // Remove highlight after delay
+                        setTimeout(() => {
+                            this.newItems.delete(id);
+                        }, @js($size === 'tv' ? 1500 : 1000));
+                    }
+                });
+
+                this.itemIds = currentIds;
+            }
+        }"
+        x-effect="checkNewItems(@js(array_map(fn($item) => $item['type'] . '-' . ($item['callsign'] ?? $item['station_name'] ?? $item['equipment_name'] ?? 'unknown'), $data)))"
+    >
+        @if(count($data) > 0)
         {{-- Scrollable List Container --}}
         <div class="overflow-y-auto @if($size === 'tv') max-h-[600px] @else max-h-96 @endif">
             <div class="@if($size === 'tv') space-y-4 @else space-y-3 @endif">
@@ -160,16 +177,51 @@ Size variants:
                 @endforeach
             </div>
         </div>
-    @else
-        {{-- Empty State --}}
-        <div class="flex items-center justify-center @if($size === 'tv') min-h-[400px] @else min-h-[300px] @endif">
-            <div class="text-center">
-                <div class="@if($size === 'tv') text-2xl @else text-lg @endif text-base-content/50">
-                    No data available
+        @else
+            {{-- Empty State - Contextual Messages --}}
+            <div class="flex items-center justify-center @if($size === 'tv') min-h-[400px] @else min-h-[200px] @endif">
+                <div class="text-center px-4">
+                    @php
+                        $emptyMessages = [
+                            'recent_contacts' => [
+                                'icon' => 'o-radio',
+                                'title' => 'No contacts logged yet',
+                                'message' => 'Start making contacts to see them appear here',
+                            ],
+                            'active_stations' => [
+                                'icon' => 'o-signal',
+                                'title' => 'No active stations',
+                                'message' => 'Ready to get on the air? Hop on a station and start making contacts!',
+                            ],
+                            'equipment_status' => [
+                                'icon' => 'o-wrench-screwdriver',
+                                'title' => 'No equipment status',
+                                'message' => 'Equipment assignments will appear here',
+                            ],
+                        ];
+                        $empty = $emptyMessages[$listType] ?? ['icon' => 'o-inbox', 'title' => 'No data available', 'message' => ''];
+                        $iconSize = $size === 'tv' ? 'w-16 h-16' : 'w-12 h-12';
+                        $titleSize = $size === 'tv' ? 'text-2xl' : 'text-base';
+                        $messageSize = $size === 'tv' ? 'text-lg' : 'text-sm';
+                    @endphp
+
+                    <x-icon
+                        :name="$empty['icon']"
+                        class="{{ $iconSize }} text-base-content/30 mx-auto mb-3"
+                    />
+                    <div class="{{ $titleSize }} font-semibold text-base-content/70 mb-1">
+                        {{ $empty['title'] }}
+                    </div>
+                    @if($empty['message'])
+                        <div class="{{ $messageSize }} text-base-content/50">
+                            {{ $empty['message'] }}
+                        </div>
+                    @endif
                 </div>
             </div>
-        </div>
-    @endif
+        @endif
+    </div>
+</x-card>
 
     <style>
         @keyframes slide-down {

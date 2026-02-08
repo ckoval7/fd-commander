@@ -244,6 +244,7 @@ class ListWidget extends Component
         return view('livewire.dashboard.widgets.list-widget', [
             'data' => $this->getData(),
             'listType' => $listType,
+            'size' => $this->size ?? 'normal',
         ]);
     }
 }
