@@ -10,46 +10,51 @@ Props from component:
 --}}
 
 <div class="h-full">
-    <x-card class="h-full flex flex-col items-center justify-center p-6 sm:p-8" shadow>
-        @if ($data['is_ended'])
-            {{-- Event has ended --}}
-            <div class="text-center">
-                <x-icon
-                    name="o-clock"
-                    class="w-12 h-12 sm:w-16 sm:h-16 {{ $size === 'tv' ? 'lg:w-24 lg:h-24' : '' }} text-base-content/50 mb-4"
-                />
-                <div class="text-2xl sm:text-3xl {{ $size === 'tv' ? 'lg:text-5xl' : '' }} font-bold text-base-content/70">
-                    {{ $data['label'] }}
-                </div>
-            </div>
-        @else
-            {{-- Active countdown timer --}}
-            <div
-                x-data="countdown(@js($data['end_time']), @js($data['now']))"
-                x-init="init()"
-                class="text-center w-full"
-            >
-                <x-icon
-                    name="o-clock"
-                    class="w-12 h-12 sm:w-16 sm:h-16 {{ $size === 'tv' ? 'lg:w-24 lg:h-24' : '' }} text-primary mb-4"
-                    ::class="{ 'text-warning': isWarning, 'text-error': isCritical }"
-                />
-
-                <div class="mb-2">
-                    <div
-                        class="text-3xl sm:text-4xl {{ $size === 'tv' ? 'lg:text-7xl' : '' }} font-mono font-bold text-primary"
-                        ::class="{ 'text-warning': isWarning, 'text-error': isCritical }"
-                        x-text="formattedTime"
-                    >
-                        --:--:--
+    <x-card class="h-full flex flex-col p-6 sm:p-8" shadow>
+        <div class="flex-1 flex flex-col items-center justify-center">
+            @if ($data['is_ended'])
+                {{-- Event has ended --}}
+                <div class="text-center">
+                    <x-icon
+                        name="o-clock"
+                        class="w-12 h-12 sm:w-16 sm:h-16 {{ $size === 'tv' ? 'lg:w-24 lg:h-24' : '' }} text-base-content/50 mb-4"
+                    />
+                    <div class="text-2xl sm:text-3xl {{ $size === 'tv' ? 'lg:text-5xl' : '' }} font-bold text-base-content/70">
+                        {{ $data['label'] }}
                     </div>
                 </div>
+            @else
+                {{-- Active countdown timer --}}
+                <div
+                    x-data="countdown(@js($data['end_time']), @js($data['now']))"
+                    x-init="init()"
+                    class="text-center w-full"
+                >
+                    <x-icon
+                        name="o-clock"
+                        class="w-12 h-12 sm:w-16 sm:h-16 {{ $size === 'tv' ? 'lg:w-24 lg:h-24' : '' }} text-primary mb-4"
+                        ::class="{ 'text-warning': isWarning, 'text-error': isCritical }"
+                    />
 
-                <div class="text-lg sm:text-xl {{ $size === 'tv' ? 'lg:text-3xl' : '' }} text-base-content/70">
-                    {{ $data['label'] }}
+                    <div class="mb-2">
+                        <div
+                            class="text-3xl sm:text-4xl xl:text-3xl 2xl:text-4xl {{ $size === 'tv' ? 'lg:text-7xl' : '' }} font-mono font-bold text-primary"
+                            ::class="{ 'text-warning': isWarning, 'text-error': isCritical }"
+                            x-text="formattedTime"
+                        >
+                            --:--:--
+                        </div>
+                    </div>
+
+                    <div class="text-lg sm:text-xl {{ $size === 'tv' ? 'lg:text-3xl' : '' }} text-base-content/70">
+                        {{ $data['label'] }}
+                    </div>
                 </div>
-            </div>
-        @endif
+            @endif
+        </div>
+
+        {{-- Last updated timestamp --}}
+        <div class="text-xs text-base-content/40 text-right mt-auto pt-2 border-t border-base-content/5">Updated {{ formatTimeAgo($data['last_updated_at'] ?? null) }}</div>
     </x-card>
 </div>
 
