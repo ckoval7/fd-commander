@@ -220,11 +220,11 @@ describe('WidgetCacheService', function () {
     });
 
     test('buildWidgetKey uses active event ID when not provided', function () {
-        // This test assumes Event::active() is available
-        // If no active event, should default to 0
+        // Uses EventContextService which returns event ID or 'no-event'
         $config = ['metric' => 'qso_count'];
         $key = $this->service->buildWidgetKey('stat_card', $config);
 
-        expect($key)->toMatch('/^stat_card:[a-f0-9]{32}:\d+$/');
+        // Should match either numeric ID or 'no-event' string
+        expect($key)->toMatch('/^stat_card:[a-f0-9]{32}:(\d+|no-event)$/');
     });
 });
