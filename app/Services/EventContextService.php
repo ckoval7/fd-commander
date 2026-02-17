@@ -95,7 +95,7 @@ class EventContextService extends ActiveEventService
 
         $activeId = $this->getActiveEvent()?->id;
 
-        return $overrideId !== $activeId;
+        return (int) $overrideId !== $activeId;
     }
 
     /**

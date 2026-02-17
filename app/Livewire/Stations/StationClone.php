@@ -49,10 +49,10 @@ class StationClone extends Component
         $this->authorize('create', Station::class);
         $this->availableStations = collect();
 
-        // Default target to active event
-        $activeEvent = Event::active()->first();
-        if ($activeEvent) {
-            $this->targetEventId = $activeEvent->id;
+        // Default target to context event
+        $contextEvent = app(\App\Services\EventContextService::class)->getContextEvent();
+        if ($contextEvent) {
+            $this->targetEventId = $contextEvent->id;
         }
     }
 

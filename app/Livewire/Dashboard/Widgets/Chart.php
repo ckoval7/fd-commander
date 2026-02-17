@@ -4,7 +4,7 @@ namespace App\Livewire\Dashboard\Widgets;
 
 use App\Livewire\Dashboard\Widgets\Concerns\IsWidget;
 use App\Models\Contact;
-use App\Services\ActiveEventService;
+use App\Services\EventContextService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -151,8 +151,8 @@ class Chart extends Component
      */
     protected function getQsosPerHour(): array
     {
-        $activeEventService = app(ActiveEventService::class);
-        $event = $activeEventService->getActiveEvent();
+        $service = app(EventContextService::class);
+        $event = $service->getContextEvent();
 
         if (! $event) {
             return [];
@@ -216,8 +216,8 @@ class Chart extends Component
      */
     protected function getQsosPerBand(): array
     {
-        $activeEventService = app(ActiveEventService::class);
-        $event = $activeEventService->getActiveEvent();
+        $service = app(EventContextService::class);
+        $event = $service->getContextEvent();
 
         if (! $event) {
             return [];
@@ -250,8 +250,8 @@ class Chart extends Component
      */
     protected function getQsosPerMode(): array
     {
-        $activeEventService = app(ActiveEventService::class);
-        $event = $activeEventService->getActiveEvent();
+        $service = app(EventContextService::class);
+        $event = $service->getContextEvent();
 
         if (! $event) {
             return [];

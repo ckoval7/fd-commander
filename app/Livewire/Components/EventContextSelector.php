@@ -14,6 +14,10 @@ class EventContextSelector extends Component
      */
     public function switchEvent(int $eventId): void
     {
+        if (! Event::where('id', $eventId)->exists()) {
+            return;
+        }
+
         $service = app(EventContextService::class);
         $service->setViewingEvent($eventId);
 

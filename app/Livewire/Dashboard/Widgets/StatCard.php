@@ -6,7 +6,7 @@ use App\Livewire\Dashboard\Widgets\Concerns\IsWidget;
 use App\Models\Contact;
 use App\Models\Event;
 use App\Models\EventBonus;
-use App\Services\ActiveEventService;
+use App\Services\EventContextService;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
 
@@ -38,8 +38,8 @@ class StatCard extends Component
      */
     public function getData(): array
     {
-        $activeEventService = app(ActiveEventService::class);
-        $event = $activeEventService->getActiveEvent();
+        $service = app(EventContextService::class);
+        $event = $service->getContextEvent();
 
         if ($this->shouldCache()) {
             $data = Cache::remember(
@@ -75,8 +75,8 @@ class StatCard extends Component
     protected function calculateMetric(): array
     {
         $metric = $this->config['metric'] ?? 'qso_count';
-        $activeEventService = app(ActiveEventService::class);
-        $event = $activeEventService->getActiveEvent();
+        $service = app(EventContextService::class);
+        $event = $service->getContextEvent();
 
         if (! $event || ! $event->eventConfiguration) {
             return $this->emptyMetric($metric);
