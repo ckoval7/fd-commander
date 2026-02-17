@@ -244,3 +244,48 @@ test('no stations message when event has no stations', function () {
     Livewire::test(StationSelect::class)
         ->assertSee('No Stations Configured');
 });
+
+test('station select allows logging during grace period', function () {
+    $this->actingAs($this->user);
+
+    \App\Models\Setting::set('post_event_grace_period_days', 30);
+
+    $event = Event::factory()->create([
+        'start_time' => now()->subDays(5),
+        'end_time' => now()->subDays(4),
+    ]);
+    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
+    $station = Station::factory()->create([
+        'event_configuration_id' => $config->id,
+        'name' => 'Grace Period Station',
+    ]);
+
+    session(['viewing_event_id' => $event->id]);
+
+    $service = app(\App\Services\EventContextService::class);
+    expect($service->getGracePeriodStatus($event))->toBe('grace');
+
+    Livewire::test(StationSelect::class)
+        ->assertSee('Grace Period Station')
+        ->assertSee('Available');
+});
+
+test('station select blocks logging for archived events', function () {
+    $this->actingAs($this->user);
+
+    \App\Models\Setting::set('post_event_grace_period_days', 7);
+
+    $event = Event::factory()->create([
+        'start_time' => now()->subDays(30),
+        'end_time' => now()->subDays(29),
+    ]);
+    EventConfiguration::factory()->create(['event_id' => $event->id]);
+
+    session(['viewing_event_id' => $event->id]);
+
+    $service = app(\App\Services\EventContextService::class);
+    expect($service->getGracePeriodStatus($event))->toBe('archived');
+
+    Livewire::test(StationSelect::class)
+        ->assertSee('No Active Event');
+});

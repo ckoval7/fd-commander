@@ -49,7 +49,21 @@ class StationSelect extends Component
     #[Computed]
     public function activeEvent(): ?Event
     {
-        return Event::active()->with('eventConfiguration.stations.operatingSessions.operator')->first();
+        $service = app(\App\Services\EventContextService::class);
+        $contextEvent = $service->getContextEvent();
+
+        if (! $contextEvent) {
+            return null;
+        }
+
+        $status = $service->getGracePeriodStatus($contextEvent);
+
+        // Allow logging during active and grace periods only
+        if (in_array($status, ['active', 'grace'])) {
+            return $contextEvent->load('eventConfiguration.stations.operatingSessions.operator');
+        }
+
+        return null;
     }
 
     #[Computed]
