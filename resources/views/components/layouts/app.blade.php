@@ -116,7 +116,7 @@
                     <x-menu-item title="Gallery" icon="o-photo" link="/gallery" />
 
                     @can('manage-guestbook')
-                        @php $activeEvent = \App\Models\Event::active()->first(); @endphp
+                        @php $activeEvent = app(\App\Services\EventContextService::class)->getContextEvent(); @endphp
                         @if($activeEvent)
                             <x-menu-item title="Manage Guestbook" icon="o-clipboard-document-list" link="{{ route('events.guestbook', $activeEvent->id) }}" :active="request()->routeIs('events.guestbook')" />
                         @endif

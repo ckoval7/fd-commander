@@ -64,7 +64,7 @@ class GuestbookForm extends Component
     public function mount(): void
     {
         // Get the active event's configuration (if guestbook is enabled)
-        $activeEvent = Event::active()->with('eventConfiguration')->first();
+        $activeEvent = app(\App\Services\EventContextService::class)->getContextEvent();
         $config = $activeEvent?->eventConfiguration;
         $this->eventConfig = ($config && $config->guestbook_enabled) ? $config : null;
 
