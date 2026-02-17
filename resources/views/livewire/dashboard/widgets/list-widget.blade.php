@@ -31,7 +31,7 @@ Size variants:
     <div
         class="flex-1 min-h-0"
         x-data="{
-            itemIds: @js(array_map(fn($item) => $item['type'] . '-' . ($item['callsign'] ?? $item['station_name'] ?? $item['equipment_name'] ?? 'unknown'), $data)),
+            itemIds: @js(array_map(fn($item) => $item['type'] . '-' . ($item['callsign'] ?? $item['station_name'] ?? $item['equipment_name'] ?? 'unknown'), $data['items'] ?? [])),
             newItems: new Set(),
 
             init() {
@@ -63,13 +63,13 @@ Size variants:
                 this.itemIds = currentIds;
             }
         }"
-        x-effect="checkNewItems(@js(array_map(fn($item) => $item['type'] . '-' . ($item['callsign'] ?? $item['station_name'] ?? $item['equipment_name'] ?? 'unknown'), $data)))"
+        x-effect="checkNewItems(@js(array_map(fn($item) => $item['type'] . '-' . ($item['callsign'] ?? $item['station_name'] ?? $item['equipment_name'] ?? 'unknown'), $data['items'] ?? [])))"
     >
-        @if(count($data) > 0)
+        @if(count($data['items'] ?? []) > 0)
         {{-- Scrollable List Container --}}
         <div class="overflow-y-auto @if($size === 'tv') max-h-[600px] @else max-h-96 @endif">
             <div class="@if($size === 'tv') space-y-4 @else space-y-3 @endif">
-                @foreach($data as $item)
+                @foreach($data['items'] ?? [] as $item)
                     @php
                         $itemKey = $item['type'] . '-' . ($item['callsign'] ?? $item['station_name'] ?? $item['equipment_name'] ?? 'unknown');
                     @endphp
@@ -221,6 +221,9 @@ Size variants:
             </div>
         @endif
     </div>
+
+    {{-- Last updated timestamp --}}
+    <div class="text-xs text-base-content/40 text-right mt-auto pt-2 border-t border-base-content/5">Updated {{ formatTimeAgo($data['last_updated_at'] ?? null) }}</div>
 </x-card>
 
     <style>

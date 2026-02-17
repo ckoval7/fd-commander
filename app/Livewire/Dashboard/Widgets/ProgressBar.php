@@ -38,6 +38,7 @@ class ProgressBar extends Component
                         'target' => 50,
                         'percentage' => 0,
                         'label' => '0/50 QSOs to next milestone',
+                        'last_updated_at' => appNow(),
                     ];
                 }
 
@@ -50,6 +51,8 @@ class ProgressBar extends Component
                     'target' => $target,
                     'percentage' => $percentage,
                     'label' => "{$current}/{$target} QSOs to next milestone",
+                    'is_milestone' => $current > 0 && $current % 50 === 0,
+                    'last_updated_at' => appNow(),
                 ];
             }
         );

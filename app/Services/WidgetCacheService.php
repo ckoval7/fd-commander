@@ -232,7 +232,7 @@ class WidgetCacheService
 
         // Use current active event ID if not provided
         if ($eventId === null) {
-            $eventId = \App\Models\Event::active()->value('id') ?? 0;
+            $eventId = app(\App\Services\EventContextService::class)->getContextEventId();
         }
 
         return "{$widgetType}:{$configHash}:{$eventId}";

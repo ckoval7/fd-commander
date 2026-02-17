@@ -31,6 +31,10 @@ return [
                         'stations_count' => 'Active Stations',
                         'points_per_hour' => 'Points Per Hour',
                         'qso_per_hour' => 'QSOs Per Hour',
+                        'avg_qso_rate_4h' => 'Avg QSO Rate (4h)',
+                        'contacts_last_hour' => 'Contacts Last Hour',
+                        'hours_remaining' => 'Hours Remaining',
+                        'bonus_points_earned' => 'Bonus Points Earned',
                         'multipliers' => 'Total Multipliers',
                     ],
                     'default' => 'total_score',
@@ -40,6 +44,20 @@ return [
                     'type' => 'toggle',
                     'label' => 'Show Trend Indicator',
                     'default' => true,
+                ],
+                'show_comparison' => [
+                    'type' => 'toggle',
+                    'label' => 'Show Comparison',
+                    'default' => true,
+                ],
+                'comparison_interval' => [
+                    'type' => 'select',
+                    'label' => 'Comparison Interval',
+                    'options' => [
+                        '1h' => '1 Hour Ago',
+                        '4h' => '4 Hours Ago',
+                    ],
+                    'default' => '1h',
                 ],
             ],
         ],
@@ -59,7 +77,7 @@ return [
                         'pie' => 'Pie Chart',
                         'doughnut' => 'Doughnut Chart',
                     ],
-                    'default' => 'bar',
+                    'default' => 'line',
                     'required' => true,
                 ],
                 'data_source' => [
@@ -82,7 +100,7 @@ return [
                         'last_12_hours' => 'Last 12 Hours',
                         'event' => 'Entire Event',
                     ],
-                    'default' => 'event',
+                    'default' => 'last_12_hours',
                 ],
             ],
         ],
@@ -278,32 +296,32 @@ return [
             'layout_type' => 'grid',
             'widgets' => [
                 [
-                    'id' => 'stat-total-score',
-                    'type' => 'stat_card',
-                    'config' => [
-                        'metric' => 'total_score',
-                        'show_trend' => true,
-                    ],
-                    'order' => 0,
-                    'visible' => true,
-                ],
-                [
-                    'id' => 'stat-qso-count',
-                    'type' => 'stat_card',
-                    'config' => [
-                        'metric' => 'qso_count',
-                        'show_trend' => true,
-                    ],
-                    'order' => 1,
-                    'visible' => true,
-                ],
-                [
                     'id' => 'timer-countdown',
                     'type' => 'timer',
                     'config' => [
                         'timer_type' => 'event_countdown',
                         'show_seconds' => true,
                         'alert_when_near' => 60,
+                    ],
+                    'order' => 0,
+                    'visible' => true,
+                ],
+                [
+                    'id' => 'stat-qso-rate',
+                    'type' => 'stat_card',
+                    'config' => [
+                        'metric' => 'qso_per_hour',
+                        'show_trend' => true,
+                    ],
+                    'order' => 1,
+                    'visible' => true,
+                ],
+                [
+                    'id' => 'stat-total-score',
+                    'type' => 'stat_card',
+                    'config' => [
+                        'metric' => 'total_score',
+                        'show_trend' => true,
                     ],
                     'order' => 2,
                     'visible' => true,
@@ -322,9 +340,9 @@ return [
                     'id' => 'chart-qsos-hour',
                     'type' => 'chart',
                     'config' => [
-                        'chart_type' => 'bar',
+                        'chart_type' => 'line',
                         'data_source' => 'qsos_per_hour',
-                        'time_range' => 'event',
+                        'time_range' => 'last_12_hours',
                     ],
                     'order' => 4,
                     'visible' => true,
@@ -340,24 +358,13 @@ return [
                     'visible' => true,
                 ],
                 [
-                    'id' => 'feed-activity',
-                    'type' => 'feed',
-                    'config' => [
-                        'feed_type' => 'all_activity',
-                        'item_count' => '20',
-                        'auto_scroll' => true,
-                    ],
-                    'order' => 6,
-                    'visible' => true,
-                ],
-                [
                     'id' => 'list-active-stations',
                     'type' => 'list_widget',
                     'config' => [
                         'list_type' => 'active_stations',
                         'item_count' => '10',
                     ],
-                    'order' => 7,
+                    'order' => 6,
                     'visible' => true,
                 ],
             ],
@@ -379,32 +386,32 @@ return [
             'layout_type' => 'grid',
             'widgets' => [
                 [
-                    'id' => 'stat-total-score',
-                    'type' => 'stat_card',
-                    'config' => [
-                        'metric' => 'total_score',
-                        'show_trend' => true,
-                    ],
-                    'order' => 0,
-                    'visible' => true,
-                ],
-                [
-                    'id' => 'stat-qso-count',
-                    'type' => 'stat_card',
-                    'config' => [
-                        'metric' => 'qso_count',
-                        'show_trend' => true,
-                    ],
-                    'order' => 1,
-                    'visible' => true,
-                ],
-                [
                     'id' => 'timer-countdown',
                     'type' => 'timer',
                     'config' => [
                         'timer_type' => 'event_countdown',
                         'show_seconds' => true,
                         'alert_when_near' => 60,
+                    ],
+                    'order' => 0,
+                    'visible' => true,
+                ],
+                [
+                    'id' => 'stat-qso-rate',
+                    'type' => 'stat_card',
+                    'config' => [
+                        'metric' => 'qso_per_hour',
+                        'show_trend' => true,
+                    ],
+                    'order' => 1,
+                    'visible' => true,
+                ],
+                [
+                    'id' => 'stat-total-score',
+                    'type' => 'stat_card',
+                    'config' => [
+                        'metric' => 'total_score',
+                        'show_trend' => true,
                     ],
                     'order' => 2,
                     'visible' => true,
@@ -423,9 +430,9 @@ return [
                     'id' => 'chart-qsos-hour',
                     'type' => 'chart',
                     'config' => [
-                        'chart_type' => 'bar',
+                        'chart_type' => 'line',
                         'data_source' => 'qsos_per_hour',
-                        'time_range' => 'event',
+                        'time_range' => 'last_12_hours',
                     ],
                     'order' => 4,
                     'visible' => true,
@@ -441,24 +448,13 @@ return [
                     'visible' => true,
                 ],
                 [
-                    'id' => 'feed-activity',
-                    'type' => 'feed',
-                    'config' => [
-                        'feed_type' => 'all_activity',
-                        'item_count' => '20',
-                        'auto_scroll' => true,
-                    ],
-                    'order' => 6,
-                    'visible' => true,
-                ],
-                [
                     'id' => 'list-active-stations',
                     'type' => 'list_widget',
                     'config' => [
                         'list_type' => 'active_stations',
                         'item_count' => '10',
                     ],
-                    'order' => 7,
+                    'order' => 6,
                     'visible' => true,
                 ],
             ],

@@ -166,12 +166,12 @@
     class="h-full"
 >
     <x-card
-        class="h-full {{ $size === 'tv' ? 'shadow-lg' : 'shadow-sm' }}"
+        class="h-full flex flex-col {{ $size === 'tv' ? 'shadow-lg' : 'shadow-sm' }}"
         :title="$chartData['title'] ?? 'Chart'"
     >
         {{-- Chart container --}}
         <div
-            class="relative {{ $size === 'tv' ? 'min-h-[280px]' : 'min-h-[200px]' }}"
+            class="relative flex-1 {{ $size === 'tv' ? 'min-h-[280px]' : 'min-h-[200px]' }}"
             role="img"
             :aria-label="chartData.description || 'Chart visualization'"
         >
@@ -208,5 +208,8 @@
                 </p>
             </div>
         @endif
+
+        {{-- Last updated timestamp --}}
+        <div class="text-xs text-base-content/40 text-right mt-auto pt-2 border-t border-base-content/5">Updated {{ formatTimeAgo($chartData['last_updated_at'] ?? null) }}</div>
     </x-card>
 </div>

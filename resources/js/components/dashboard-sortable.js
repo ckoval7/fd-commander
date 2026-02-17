@@ -59,6 +59,12 @@ export default (wire, initialOrder = []) => ({
     init() {
         this._boundTouchMove = this.touchMove.bind(this);
         this._boundTouchEnd = this.touchEnd.bind(this);
+
+        // Listen for edit mode changes from Livewire
+        this._boundEditModeChanged = ((event) => {
+            this.setEnabled(event.detail.enabled);
+        }).bind(this);
+        window.addEventListener('edit-mode-changed', this._boundEditModeChanged);
     },
 
     /**
@@ -69,6 +75,7 @@ export default (wire, initialOrder = []) => ({
         this.cleanupTouchClone();
         document.removeEventListener('touchmove', this._boundTouchMove);
         document.removeEventListener('touchend', this._boundTouchEnd);
+        window.removeEventListener('edit-mode-changed', this._boundEditModeChanged);
     },
 
     /**

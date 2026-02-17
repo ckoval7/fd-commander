@@ -59,3 +59,38 @@ test('preview updates with format changes', function () {
     // Check that preview is computed and contains expected format pattern
     expect($component->get('preview'))->toContain('-')->toContain(':');
 });
+
+test('grace period setting defaults to 30 on mount', function () {
+    Livewire::test(SystemPreferences::class)
+        ->assertSet('post_event_grace_period_days', 30);
+});
+
+test('grace period setting can be saved', function () {
+    Livewire::test(SystemPreferences::class)
+        ->set('post_event_grace_period_days', 14)
+        ->call('save')
+        ->assertDispatched('notify');
+
+    expect(Setting::get('post_event_grace_period_days'))->toBe(14);
+});
+
+test('grace period setting validates minimum of 0', function () {
+    Livewire::test(SystemPreferences::class)
+        ->set('post_event_grace_period_days', -1)
+        ->call('save')
+        ->assertHasErrors(['post_event_grace_period_days' => 'min']);
+});
+
+test('grace period setting validates maximum of 365', function () {
+    Livewire::test(SystemPreferences::class)
+        ->set('post_event_grace_period_days', 366)
+        ->call('save')
+        ->assertHasErrors(['post_event_grace_period_days' => 'max']);
+});
+
+test('grace period setting loads from database', function () {
+    Setting::set('post_event_grace_period_days', 7);
+
+    Livewire::test(SystemPreferences::class)
+        ->assertSet('post_event_grace_period_days', 7);
+});

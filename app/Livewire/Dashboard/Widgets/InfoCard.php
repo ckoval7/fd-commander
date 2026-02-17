@@ -75,6 +75,7 @@ class InfoCard extends Component
             'location' => $config->section?->name ?? 'N/A',
             'operating_class' => $config->operatingClass?->name ?? 'N/A',
             'call_sign' => $config->callsign ?? 'N/A',
+            'last_updated_at' => appNow(),
         ];
     }
 
@@ -90,6 +91,7 @@ class InfoCard extends Component
             'location' => 'N/A',
             'operating_class' => 'N/A',
             'call_sign' => 'N/A',
+            'last_updated_at' => appNow(),
         ];
     }
 

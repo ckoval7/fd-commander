@@ -12,9 +12,9 @@ Each item: id, icon, title, message, time_ago, read
 --}}
 
 <div class="h-full">
-<x-card class="h-full" shadow>
+<x-card class="h-full flex flex-col" shadow>
 <div
-    class="flex flex-col"
+    class="flex-1 flex flex-col"
     x-data="{
         itemIds: @js(array_column($data['items'], 'id')),
         newItems: new Set(),
@@ -152,6 +152,9 @@ Each item: id, icon, title, message, time_ago, read
         </div>
     @endif
 </div>
+
+    {{-- Last updated timestamp --}}
+    <div class="text-xs text-base-content/40 text-right mt-auto pt-2 border-t border-base-content/5">Updated {{ formatTimeAgo($data['last_updated_at'] ?? null) }}</div>
 </x-card>
 
     <style>

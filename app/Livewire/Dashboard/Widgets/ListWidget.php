@@ -81,15 +81,23 @@ class ListWidget extends Component
         $event = $activeEventService->getActiveEvent();
 
         if (! $event || ! $event->eventConfiguration) {
-            return [];
+            return [
+                'items' => [],
+                'last_updated_at' => appNow(),
+            ];
         }
 
-        return match ($listType) {
+        $items = match ($listType) {
             'recent_contacts' => $this->getRecentContacts($event),
             'active_stations' => $this->getActiveStations($event),
             'equipment_status' => $this->getEquipmentStatus($event),
             default => [],
         };
+
+        return [
+            'items' => $items,
+            'last_updated_at' => appNow(),
+        ];
     }
 
     /**
@@ -115,7 +123,7 @@ class ListWidget extends Component
                     'callsign' => $contact->callsign,
                     'band' => $contact->band?->name ?? 'Unknown',
                     'mode' => $contact->mode?->name ?? 'Unknown',
-                    'operator' => $contact->operatingSession?->operator?->callsign ?? 'Unknown',
+                    'operator' => $contact->operatingSession?->operator?->call_sign ?? 'Unknown',
                     'station' => $contact->operatingSession?->station?->name ?? 'Unknown',
                 ];
             })
@@ -145,7 +153,7 @@ class ListWidget extends Component
             return [
                 'type' => 'active_station',
                 'station_name' => $session->station?->name ?? 'Unknown',
-                'operator_name' => $session->operator?->callsign ?? 'Unknown',
+                'operator_name' => $session->operator?->call_sign ?? 'Unknown',
                 'band' => $session->band?->name ?? 'Unknown',
                 'mode' => $session->mode?->name ?? 'Unknown',
                 'status' => 'Active',
@@ -240,9 +248,11 @@ class ListWidget extends Component
     public function render()
     {
         $listType = $this->config['list_type'] ?? 'recent_contacts';
+        $data = $this->getData();
 
         return view('livewire.dashboard.widgets.list-widget', [
-            'data' => $this->getData(),
+            'data' => $data,
+            'items' => $data['items'] ?? [],
             'listType' => $listType,
             'size' => $this->size ?? 'normal',
         ]);

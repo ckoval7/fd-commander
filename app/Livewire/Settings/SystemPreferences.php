@@ -17,6 +17,8 @@ class SystemPreferences extends Component
 
     public ?string $api_key = null;
 
+    public int $post_event_grace_period_days = 30;
+
     public function mount(): void
     {
         $this->timezone = Setting::get('timezone', 'America/New_York');
@@ -24,6 +26,7 @@ class SystemPreferences extends Component
         $this->time_format = Setting::get('time_format', 'H:i:s');
         $this->contact_email = Setting::get('contact_email');
         $this->api_key = Setting::get('callsign_api_key');
+        $this->post_event_grace_period_days = (int) Setting::get('post_event_grace_period_days', 30);
     }
 
     public function save(): void
@@ -34,6 +37,7 @@ class SystemPreferences extends Component
             'time_format' => ['required', 'string', 'in:H:i:s,h:i:s A'],
             'contact_email' => ['nullable', 'email', 'max:255'],
             'api_key' => ['nullable', 'string', 'max:255'],
+            'post_event_grace_period_days' => ['required', 'integer', 'min:0', 'max:365'],
         ]);
 
         Setting::set('timezone', $this->timezone);
@@ -48,6 +52,8 @@ class SystemPreferences extends Component
         if ($this->api_key) {
             Setting::set('callsign_api_key', $this->api_key);
         }
+
+        Setting::set('post_event_grace_period_days', $this->post_event_grace_period_days);
 
         $this->dispatch('notify', title: 'Success', description: 'System preferences saved successfully.');
     }

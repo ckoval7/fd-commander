@@ -12,8 +12,8 @@ Props from component:
 <div class="h-full">
     @if ($size === 'tv')
         {{-- TV Mode: Large display for kiosk/TV dashboards --}}
-        <x-card class="h-full flex flex-col justify-center p-6 sm:p-8" shadow>
-            <div class="space-y-4 sm:space-y-6">
+        <x-card class="h-full flex flex-col p-6 sm:p-8" shadow>
+            <div class="flex-1 flex flex-col justify-center space-y-4 sm:space-y-6">
                 <div>
                     <div class="text-sm sm:text-base text-base-content/60 mb-1">
                         Event
@@ -50,13 +50,16 @@ Props from component:
                     </div>
                 </div>
             </div>
+
+            {{-- Last updated timestamp --}}
+            <div class="text-xs text-base-content/40 text-right mt-auto pt-2 border-t border-base-content/5">Updated {{ formatTimeAgo($data['last_updated_at'] ?? null) }}</div>
         </x-card>
     @else
         {{-- Normal Mode: Compact info display --}}
-        <x-card class="h-full" shadow>
+        <x-card class="h-full flex flex-col" shadow>
             <x-slot name="title">Event Info</x-slot>
 
-            <div class="space-y-3">
+            <div class="flex-1 space-y-3">
                 <div class="flex justify-between items-start min-w-0">
                     <span class="text-sm text-base-content/60 flex-shrink-0">Event:</span>
                     <span class="text-sm font-medium text-base-content truncate ml-2">
@@ -91,6 +94,9 @@ Props from component:
                     </span>
                 </div>
             </div>
+
+            {{-- Last updated timestamp --}}
+            <div class="text-xs text-base-content/40 text-right mt-auto pt-2 border-t border-base-content/5">Updated {{ formatTimeAgo($data['last_updated_at'] ?? null) }}</div>
         </x-card>
     @endif
 </div>

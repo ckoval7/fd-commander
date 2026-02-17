@@ -562,10 +562,13 @@ test('cached data is returned on subsequent calls', function () {
 // Widget listeners
 // ────────────────────────────────────────────────────────────────
 
-test('getWidgetListeners returns empty array', function () {
+test('getWidgetListeners returns correct listeners', function () {
     $feed = new Feed;
 
-    expect($feed->getWidgetListeners())->toBe([]);
+    expect($feed->getWidgetListeners())->toBe([
+        'echo:notifications,DatabaseNotificationCreated' => 'handleUpdate',
+        'notification.created' => 'handleUpdate',
+    ]);
 });
 
 // ────────────────────────────────────────────────────────────────

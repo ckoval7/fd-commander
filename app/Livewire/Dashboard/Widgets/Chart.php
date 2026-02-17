@@ -323,6 +323,7 @@ class Chart extends Component
             'title' => $title,
             'description' => $description,
             'data_source' => $dataSource,
+            'last_updated_at' => appNow(),
         ];
     }
 

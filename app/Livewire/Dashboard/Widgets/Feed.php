@@ -88,6 +88,7 @@ class Feed extends Component
                 'items' => $items,
                 'feed_type' => $feedType,
                 'feed_label' => self::FEED_TYPE_LABELS[$feedType] ?? 'Activity',
+                'last_updated_at' => appNow(),
             ];
         });
     }

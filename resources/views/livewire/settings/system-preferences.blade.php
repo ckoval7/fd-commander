@@ -45,6 +45,20 @@
     </x-card>
 
     <x-card>
+        <x-slot:title>Event Settings</x-slot:title>
+
+        <x-input
+            label="Post-Event Grace Period (days)"
+            type="number"
+            wire:model="post_event_grace_period_days"
+            icon="o-clock"
+            hint="Number of days after an event ends that operators can still enter late contacts (e.g., paper logs). Set to 0 to disable."
+            min="0"
+            max="365"
+        />
+    </x-card>
+
+    <x-card>
         <x-slot:title>Contact Information</x-slot:title>
 
         <x-input

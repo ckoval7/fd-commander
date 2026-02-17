@@ -126,6 +126,44 @@ describe('getData method', function () {
         $data3 = $widget->instance()->getData();
         expect($data3['current'])->toBe(15);
     });
+
+    it('detects milestone achievements', function () {
+        $event = Event::factory()->create([
+            'start_time' => now()->subHours(1),
+            'end_time' => now()->addHours(23),
+        ]);
+        $config = EventConfiguration::factory()->for($event)->create();
+
+        $widget = Livewire::test(ProgressBar::class);
+
+        // Not a milestone: 0 QSOs
+        $data = $widget->instance()->getData();
+        expect($data['is_milestone'])->toBe(false);
+
+        // Not a milestone: 37 QSOs
+        Cache::flush();
+        Contact::factory()->count(37)->for($config, 'eventConfiguration')->create();
+        $data = $widget->instance()->getData();
+        expect($data['is_milestone'])->toBe(false);
+
+        // Milestone: 50 QSOs
+        Cache::flush();
+        Contact::factory()->count(13)->for($config, 'eventConfiguration')->create();
+        $data = $widget->instance()->getData();
+        expect($data['is_milestone'])->toBe(true);
+
+        // Not a milestone: 75 QSOs
+        Cache::flush();
+        Contact::factory()->count(25)->for($config, 'eventConfiguration')->create();
+        $data = $widget->instance()->getData();
+        expect($data['is_milestone'])->toBe(false);
+
+        // Milestone: 100 QSOs
+        Cache::flush();
+        Contact::factory()->count(25)->for($config, 'eventConfiguration')->create();
+        $data = $widget->instance()->getData();
+        expect($data['is_milestone'])->toBe(true);
+    });
 });
 
 describe('milestone calculation logic', function () {
@@ -291,6 +329,25 @@ describe('rendering and display', function () {
         Livewire::test(ProgressBar::class)
             ->assertSeeHtml('text-2xl') // Standard numbers
             ->assertSeeHtml('h-4'); // Standard progress bar
+    });
+
+    it('includes celebration overlay elements', function () {
+        Livewire::test(ProgressBar::class)
+            ->assertSeeHtml('x-show="isCelebrating"') // Celebration overlay
+            ->assertSeeHtml('Milestone!') // Celebration message
+            ->assertSeeHtml('QSOs logged!'); // QSO count message
+    });
+
+    it('includes Alpine.js celebration logic', function () {
+        Livewire::test(ProgressBar::class)
+            ->assertSeeHtml('isCelebrating: false') // Alpine data
+            ->assertSeeHtml('lastMilestone: 0') // Milestone tracking
+            ->assertSeeHtml('celebrate(current)'); // Celebration function
+    });
+
+    it('includes pulse-glow animation class', function () {
+        Livewire::test(ProgressBar::class)
+            ->assertSeeHtml('animate-pulse-glow'); // CSS animation class
     });
 });
 

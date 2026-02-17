@@ -25,3 +25,38 @@ if (! function_exists('appNow')) {
         return app(DeveloperClockService::class)->now();
     }
 }
+
+if (! function_exists('formatTimeAgo')) {
+    /**
+     * Format a timestamp as a human-readable "time ago" string.
+     *
+     * @param  \Carbon\Carbon|string|null  $timestamp
+     */
+    function formatTimeAgo($timestamp): string
+    {
+        if (! $timestamp) {
+            return 'never';
+        }
+
+        $time = $timestamp instanceof Carbon ? $timestamp : Carbon::parse($timestamp);
+        $diffInSeconds = appNow()->diffInSeconds($time);
+
+        if ($diffInSeconds < 60) {
+            return 'just now';
+        }
+
+        $diffInMinutes = appNow()->diffInMinutes($time);
+        if ($diffInMinutes < 60) {
+            return $diffInMinutes.'m ago';
+        }
+
+        $diffInHours = appNow()->diffInHours($time);
+        if ($diffInHours < 24) {
+            return $diffInHours.'h ago';
+        }
+
+        $diffInDays = appNow()->diffInDays($time);
+
+        return $diffInDays.'d ago';
+    }
+}

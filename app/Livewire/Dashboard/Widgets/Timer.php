@@ -50,6 +50,7 @@ class Timer extends Component
             'now' => $now->toIso8601String(),
             'is_ended' => $isEnded,
             'label' => $isEnded ? 'Event Ended' : 'Time Remaining',
+            'last_updated_at' => appNow(),
         ];
     }
 
@@ -81,6 +82,7 @@ class Timer extends Component
             'now' => appNow()->toIso8601String(),
             'is_ended' => true,
             'label' => 'No Active Event',
+            'last_updated_at' => appNow(),
         ];
     }
 
