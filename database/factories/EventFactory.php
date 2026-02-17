@@ -26,10 +26,12 @@ class EventFactory extends Factory
             ]);
         }
 
+        $year = $this->faker->unique()->numberBetween(2000, 2099);
+
         return [
-            'name' => 'Field Day '.now()->year,
+            'name' => 'Field Day '.$year,
             'event_type_id' => $eventType->id,
-            'year' => now()->year,
+            'year' => $year,
             'start_time' => now()->addDays(30)->setTime(18, 0, 0),
             'end_time' => now()->addDays(31)->setTime(20, 59, 0),
             'setup_allowed_from' => now()->addDays(29)->setTime(18, 0, 0),
