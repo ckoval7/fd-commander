@@ -139,6 +139,20 @@ class LogbookQueryBuilder
     }
 
     /**
+     * Filter by transcription status.
+     *
+     * @param  string|null  $transcribedFilter  'only' = transcribed only, null = show all
+     */
+    public function forTranscribed(Builder $query, ?string $transcribedFilter): Builder
+    {
+        if ($transcribedFilter === 'only') {
+            return $query->where('is_transcribed', true);
+        }
+
+        return $query;
+    }
+
+    /**
      * Apply chronological ordering (most recent first).
      */
     public function chronological(Builder $query): Builder
@@ -159,7 +173,8 @@ class LogbookQueryBuilder
      *     time_to?: ?string,
      *     callsign?: ?string,
      *     section_id?: ?int,
-     *     duplicate_filter?: ?string
+     *     duplicate_filter?: ?string,
+     *     transcribed_filter?: ?string
      * }  $filters
      */
     public function applyFilters(array $filters): Builder
@@ -175,6 +190,7 @@ class LogbookQueryBuilder
         $query = $this->forCallsign($query, $filters['callsign'] ?? null);
         $query = $this->forSection($query, $filters['section_id'] ?? null);
         $query = $this->forDuplicateStatus($query, $filters['duplicate_filter'] ?? null);
+        $query = $this->forTranscribed($query, $filters['transcribed_filter'] ?? null);
         $query = $this->chronological($query);
 
         return $query;

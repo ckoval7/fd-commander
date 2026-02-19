@@ -50,6 +50,9 @@
                         @if($contact->is_duplicate)
                             <x-badge value="DUP" class="badge-xs badge-warning" />
                         @endif
+                        @if($contact->is_transcribed)
+                            <span class="badge badge-outline badge-xs badge-warning ml-1">transcribed</span>
+                        @endif
                     </div>
                 @endscope
 
@@ -102,6 +105,9 @@
                             <div class="flex flex-col items-end gap-1 flex-shrink-0">
                                 @if($contact->is_duplicate)
                                     <x-badge value="DUPLICATE" class="badge-xs badge-warning" />
+                                @endif
+                                @if($contact->is_transcribed)
+                                    <span class="badge badge-outline badge-xs badge-warning">transcribed</span>
                                 @endif
                                 @if($contact->operatingSession?->station?->is_gota ?? false)
                                     <x-badge value="GOTA" class="badge-xs badge-info" />

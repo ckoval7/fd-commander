@@ -47,6 +47,9 @@ class LogbookBrowser extends Component
     #[Url]
     public ?string $show_duplicates = null;
 
+    #[Url]
+    public ?string $show_transcribed = null;
+
     public ?int $eventConfigurationId = null;
 
     public int $perPage = 50;
@@ -76,6 +79,7 @@ class LogbookBrowser extends Component
             'callsign_search',
             'section_id',
             'show_duplicates',
+            'show_transcribed',
         ]);
         $this->resetPage();
     }
@@ -125,6 +129,11 @@ class LogbookBrowser extends Component
         $this->resetPage();
     }
 
+    public function updatedShowTranscribed(): void
+    {
+        $this->resetPage();
+    }
+
     #[Computed]
     public function contacts(): CursorPaginator
     {
@@ -145,6 +154,7 @@ class LogbookBrowser extends Component
             'callsign' => $this->callsign_search,
             'section_id' => $this->section_id,
             'duplicate_filter' => $this->show_duplicates,
+            'transcribed_filter' => $this->show_transcribed,
         ];
 
         $query = $queryBuilder->applyFilters($filters);
@@ -222,6 +232,7 @@ class LogbookBrowser extends Component
             'callsign' => $this->callsign_search,
             'section_id' => $this->section_id,
             'duplicate_filter' => $this->show_duplicates,
+            'transcribed_filter' => $this->show_transcribed,
         ];
 
         $query = $queryBuilder->applyFilters($filters);

@@ -117,6 +117,20 @@
                     </div>
                 </div>
 
+                {{-- Transcribed Filter --}}
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-base-content/70">Transcribed Status</label>
+                    <div class="flex flex-col gap-2">
+                        <x-radio
+                            wire:model.live="show_transcribed"
+                            :options="[
+                                ['id' => null, 'name' => 'All Contacts'],
+                                ['id' => 'only', 'name' => 'Transcribed Only']
+                            ]"
+                        />
+                    </div>
+                </div>
+
             </div>
 
             {{-- Active Filters Summary --}}
@@ -130,6 +144,7 @@
                     'Callsign' => $callsign_search,
                     'Time Range' => ($time_from || $time_to) ? 'Active' : null,
                     'Duplicates' => $show_duplicates,
+                    'Transcribed' => $show_transcribed,
                 ])->filter()->count();
             @endphp
 
