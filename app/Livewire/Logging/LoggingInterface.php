@@ -3,31 +3,20 @@
 namespace App\Livewire\Logging;
 
 use App\Events\ContactLogged;
+use App\Livewire\Logging\Concerns\HasContactForm;
+use App\Livewire\Logging\Concerns\HasDuplicateDetection;
 use App\Models\Contact;
 use App\Models\OperatingSession;
 use App\Services\DuplicateCheckService;
-use App\Services\ExchangeParserService;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 class LoggingInterface extends Component
 {
+    use HasContactForm, HasDuplicateDetection;
+
     public OperatingSession $operatingSession;
-
-    public string $exchangeInput = '';
-
-    public bool $isDuplicate = false;
-
-    public string $dupeWarning = '';
-
-    /** @var array<string, mixed> */
-    public array $parsePreview = [];
-
-    public string $parseError = '';
-
-    /** @var array<int, array{callsign: string, worked_on: string}> */
-    public array $suggestions = [];
 
     public function mount(OperatingSession $operatingSession): void
     {
@@ -47,43 +36,37 @@ class LoggingInterface extends Component
     public function updatedExchangeInput(): void
     {
         $this->parseError = '';
-        $this->isDuplicate = false;
-        $this->dupeWarning = '';
+        $this->clearDuplicateState();
         $this->parsePreview = [];
-        $this->suggestions = [];
 
         if (trim($this->exchangeInput) === '') {
             return;
         }
 
-        // Show suggestions while typing the first token (callsign)
         $tokens = preg_split('/\s+/', trim($this->exchangeInput));
         $firstToken = strtoupper($tokens[0] ?? '');
         if (count($tokens) === 1 && ! str_ends_with($this->exchangeInput, ' ') && strlen($firstToken) >= 2) {
-            $this->suggestions = $this->findCallsignSuggestions($firstToken);
+            $this->suggestions = $this->findCallsignSuggestions(
+                $firstToken,
+                $this->operatingSession->band_id,
+                $this->operatingSession->mode_id,
+                $this->operatingSession->station->event_configuration_id,
+            );
         }
 
-        $parser = app(ExchangeParserService::class);
-        $callsign = $parser->extractCallsign($this->exchangeInput);
-
+        $callsign = $this->extractCallsign();
         if ($callsign === null) {
             return;
         }
 
-        $dupeService = app(DuplicateCheckService::class);
-        $dupeCheck = $dupeService->check(
+        $this->runDuplicateCheck(
             $callsign,
             $this->operatingSession->band_id,
             $this->operatingSession->mode_id,
             $this->operatingSession->station->event_configuration_id,
+            $this->operatingSession->band->name ?? '',
+            $this->operatingSession->mode->name ?? '',
         );
-
-        if ($dupeCheck['is_duplicate']) {
-            $this->isDuplicate = true;
-            $bandName = $this->operatingSession->band->name ?? 'unknown band';
-            $modeName = $this->operatingSession->mode->name ?? 'unknown mode';
-            $this->dupeWarning = "{$callsign} already worked on {$bandName} {$modeName}";
-        }
     }
 
     public function logContact(): void
@@ -96,8 +79,7 @@ class LoggingInterface extends Component
             return;
         }
 
-        $parser = app(ExchangeParserService::class);
-        $parsed = $parser->parse($this->exchangeInput);
+        $parsed = $this->parseExchange();
 
         if (! $parsed['success']) {
             $this->parseError = implode('. ', $parsed['errors']);
@@ -137,12 +119,8 @@ class LoggingInterface extends Component
         $event = $this->operatingSession->station->eventConfiguration->event;
         ContactLogged::dispatch($contact->load(['band', 'mode', 'section']), $event);
 
-        $this->exchangeInput = '';
-        $this->isDuplicate = false;
-        $this->dupeWarning = '';
-        $this->parsePreview = [];
-        $this->parseError = '';
-        $this->suggestions = [];
+        $this->clearInput();
+        $this->clearDuplicateState();
 
         $this->dispatch('contact-logged');
     }
@@ -150,11 +128,9 @@ class LoggingInterface extends Component
     public function clearInput(): void
     {
         $this->exchangeInput = '';
-        $this->isDuplicate = false;
-        $this->dupeWarning = '';
         $this->parsePreview = [];
         $this->parseError = '';
-        $this->suggestions = [];
+        $this->clearDuplicateState();
     }
 
     public function selectSuggestion(string $exchange): void
@@ -163,22 +139,16 @@ class LoggingInterface extends Component
         $this->suggestions = [];
         $this->parseError = '';
 
-        $parser = app(ExchangeParserService::class);
-        $callsign = $parser->extractCallsign($exchange);
-
+        $callsign = $this->extractCallsign();
         if ($callsign) {
-            $dupeService = app(DuplicateCheckService::class);
-            $dupeCheck = $dupeService->check(
+            $this->runDuplicateCheck(
                 $callsign,
                 $this->operatingSession->band_id,
                 $this->operatingSession->mode_id,
                 $this->operatingSession->station->event_configuration_id,
+                $this->operatingSession->band->name,
+                $this->operatingSession->mode->name,
             );
-
-            $this->isDuplicate = $dupeCheck['is_duplicate'];
-            $this->dupeWarning = $dupeCheck['is_duplicate']
-                ? "{$callsign} already worked on {$this->operatingSession->band->name} {$this->operatingSession->mode->name}"
-                : '';
         }
 
         $this->dispatch('suggestion-selected');
@@ -243,54 +213,6 @@ class LoggingInterface extends Component
         ]);
 
         return implode(', ', $parts);
-    }
-
-    /**
-     * Find callsigns previously worked in this event on a different band/mode.
-     *
-     * @return array<int, array{callsign: string, exchange: string, worked_on: string}>
-     */
-    private function findCallsignSuggestions(string $partial): array
-    {
-        $eventConfigId = $this->operatingSession->station->event_configuration_id;
-        $currentBandId = $this->operatingSession->band_id;
-        $currentModeId = $this->operatingSession->mode_id;
-
-        // Callsigns already worked on current band+mode (dupes, not suggestions)
-        $alreadyWorked = Contact::query()
-            ->where('event_configuration_id', $eventConfigId)
-            ->where('band_id', $currentBandId)
-            ->where('mode_id', $currentModeId)
-            ->where('is_duplicate', false)
-            ->pluck('callsign');
-
-        return Contact::query()
-            ->where('event_configuration_id', $eventConfigId)
-            ->where('callsign', 'LIKE', strtoupper($partial).'%')
-            ->where('is_duplicate', false)
-            ->whereNotIn('callsign', $alreadyWorked)
-            ->with(['band:id,name', 'mode:id,name'])
-            ->latest('qso_time')
-            ->get()
-            ->groupBy('callsign')
-            ->map(function ($contacts, $callsign) {
-                $workedOn = $contacts
-                    ->map(fn ($c) => $c->band->name.' '.$c->mode->name)
-                    ->unique()
-                    ->implode(', ');
-
-                // Use the most recent exchange for this callsign
-                $exchange = strtoupper(trim($contacts->first()->received_exchange));
-
-                return [
-                    'callsign' => $callsign,
-                    'exchange' => $exchange,
-                    'worked_on' => $workedOn,
-                ];
-            })
-            ->values()
-            ->take(8)
-            ->toArray();
     }
 
     #[Computed]
