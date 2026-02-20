@@ -24,6 +24,16 @@ class TranscribeSelect extends Component
         $service = app(EventContextService::class);
         $contextEvent = $service->getContextEvent();
 
+        // No active event — fall back to most recently ended event
+        // (handles the common post-event transcription case)
+        if (! $contextEvent) {
+            $contextEvent = Event::query()
+                ->with('eventConfiguration')
+                ->where('end_time', '<=', appNow())
+                ->orderByDesc('end_time')
+                ->first();
+        }
+
         if (! $contextEvent) {
             return null;
         }

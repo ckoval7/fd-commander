@@ -56,7 +56,17 @@ class LogbookBrowser extends Component
 
     public function mount(): void
     {
-        $activeEvent = app(EventContextService::class)->getContextEvent();
+        $service = app(EventContextService::class);
+        $activeEvent = $service->getContextEvent();
+
+        // No active event — fall back to most recently ended event (handles grace period)
+        if (! $activeEvent) {
+            $activeEvent = \App\Models\Event::query()
+                ->with('eventConfiguration')
+                ->where('end_time', '<=', appNow())
+                ->orderByDesc('end_time')
+                ->first();
+        }
 
         if (! $activeEvent || ! $activeEvent->eventConfiguration) {
             $this->eventConfigurationId = null;

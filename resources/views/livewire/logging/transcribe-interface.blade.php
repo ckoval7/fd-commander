@@ -26,7 +26,7 @@
                             wire:model.live="workingTime"
                             min="{{ $this->event->start_time->subMinutes(5)->format('Y-m-d\TH:i') }}"
                             max="{{ $this->event->end_time->addMinutes(5)->format('Y-m-d\TH:i') }}"
-                            class="input input-sm input-bordered font-mono w-auto bg-white dark:bg-base-800 border-amber-300 focus:border-amber-500"
+                            class="input input-sm input-bordered font-mono w-auto border-amber-300 focus:border-amber-500 text-base-content bg-base-100"
                         />
                     </div>
                     <p class="text-xs text-amber-600/80 dark:text-amber-400/70 hidden sm:block">
@@ -114,7 +114,7 @@
                         </div>
 
                         {{-- Contact Time --}}
-                        <div>
+                        <div class="col-span-2">
                             <label class="label label-text text-xs font-semibold uppercase tracking-wider mb-1">Contact Time (UTC)</label>
                             <input
                                 type="datetime-local"
