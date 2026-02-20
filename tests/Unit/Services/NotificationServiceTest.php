@@ -143,6 +143,8 @@ test('debounce updates existing notification count and message', function () {
     $updatedNotification = $user->notifications->first();
     expect($updatedNotification->data['count'])->toBe(2);
     expect($updatedNotification->data['message'])->toBe('Second photo uploaded');
+    // Title should not change for non-NewSection categories
+    expect($updatedNotification->data['title'])->toBe('New Photo');
 });
 
 test('debounce marks updated notification as unread', function () {

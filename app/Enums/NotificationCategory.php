@@ -57,6 +57,17 @@ enum NotificationCategory: string
     }
 
     /**
+     * Get the batched title for this category when count exceeds 1, or null to keep the original.
+     */
+    public function batchedTitle(int $count): ?string
+    {
+        return match ($this) {
+            self::NewSection => "{$count} New Sections Worked!",
+            default => null,
+        };
+    }
+
+    /**
      * Get a description of what this notification category is about.
      */
     public function description(): string

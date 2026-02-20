@@ -27,7 +27,7 @@ class NotificationService
         $effectiveGroupKey = $groupKey ?? $category->value;
 
         if ($debounceSeconds > 0 && $this->shouldDebounce($user, $effectiveGroupKey, $debounceSeconds)) {
-            $this->updateExistingNotification($user, $effectiveGroupKey, $message);
+            $this->updateExistingNotification($user, $effectiveGroupKey, $message, $category);
 
             return;
         }
@@ -74,7 +74,7 @@ class NotificationService
     /**
      * Update an existing notification's count and message instead of creating a new one.
      */
-    protected function updateExistingNotification(User $user, string $groupKey, string $message): void
+    protected function updateExistingNotification(User $user, string $groupKey, string $message, NotificationCategory $category): void
     {
         $notification = $user->notifications()
             ->where('data->group_key', $groupKey)
@@ -89,9 +89,11 @@ class NotificationService
         $count = ($data['count'] ?? 1) + 1;
         $data['count'] = $count;
         $data['message'] = $message;
-        $data['title'] = $count === 1
-            ? $data['title']
-            : "{$count} New Sections Worked!";
+
+        $batchedTitle = $category->batchedTitle($count);
+        if ($batchedTitle !== null) {
+            $data['title'] = $batchedTitle;
+        }
 
         $notification->data = $data;
         $notification->read_at = null;
