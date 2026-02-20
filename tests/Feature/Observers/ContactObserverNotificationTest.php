@@ -151,6 +151,47 @@ test('qso milestone fires notification at every 50 qsos', function () {
     });
 });
 
+test('two new sections within debounce window produce one notification', function () {
+    $user = User::factory()->create();
+    $eventConfig = EventConfiguration::factory()->create();
+
+    $sectionCT = Section::where('code', 'CT')->first()
+        ?? Section::create(['code' => 'CT', 'name' => 'Connecticut', 'region' => 'W1']);
+    $sectionNY = Section::where('code', 'NY')->first()
+        ?? Section::create(['code' => 'NY', 'name' => 'New York', 'region' => 'W2']);
+
+    $session = OperatingSession::factory()->create([
+        'station_id' => $eventConfig->stations()->create([
+            'name' => 'Station 1',
+            'event_configuration_id' => $eventConfig->id,
+        ])->id,
+        'operator_user_id' => $user->id,
+    ]);
+
+    Contact::factory()->create([
+        'event_configuration_id' => $eventConfig->id,
+        'operating_session_id' => $session->id,
+        'logger_user_id' => $user->id,
+        'section_id' => $sectionCT->id,
+        'callsign' => 'W1AW',
+    ]);
+
+    Contact::factory()->create([
+        'event_configuration_id' => $eventConfig->id,
+        'operating_session_id' => $session->id,
+        'logger_user_id' => $user->id,
+        'section_id' => $sectionNY->id,
+        'callsign' => 'W2AW',
+    ]);
+
+    $user->refresh();
+    $newSectionNotifications = $user->notifications->filter(
+        fn ($n) => ($n->data['category'] ?? '') === 'new_section'
+    );
+    expect($newSectionNotifications)->toHaveCount(1);
+    expect($newSectionNotifications->first()->data['count'])->toBe(2);
+});
+
 test('duplicate qsos do not count toward milestone', function () {
     Notification::fake();
 

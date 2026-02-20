@@ -231,7 +231,7 @@ test('notification data structure matches contract', function () {
         title: 'New Section Worked!',
         message: 'W1AW worked CT on 20m CW',
         url: '/contacts',
-        groupKey: 'new_section_CT',
+        groupKey: 'new_section_event_1',
     );
 
     $notification = $user->notifications->first();
@@ -239,7 +239,7 @@ test('notification data structure matches contract', function () {
 
     expect($data)->toHaveKeys(['category', 'group_key', 'title', 'message', 'url', 'count', 'icon']);
     expect($data['category'])->toBe('new_section');
-    expect($data['group_key'])->toBe('new_section_CT');
+    expect($data['group_key'])->toBe('new_section_event_1');
     expect($data['title'])->toBe('New Section Worked!');
     expect($data['message'])->toBe('W1AW worked CT on 20m CW');
     expect($data['url'])->toBe('/contacts');

@@ -57,7 +57,7 @@ class ContactObserver
             title: 'New Section Worked!',
             message: "{$contact->callsign} worked {$sectionName} on {$band} {$mode}",
             url: '/logbook',
-            groupKey: "new_section_{$sectionName}",
+            groupKey: "new_section_event_{$eventConfigId}",
         );
     }
 
