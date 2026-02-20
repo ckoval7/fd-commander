@@ -47,7 +47,7 @@ enum NotificationCategory: string
     public function debounceSeconds(): int
     {
         return match ($this) {
-            self::NewSection => 0,
+            self::NewSection => 120,
             self::Guestbook => 180,
             self::Photos => 300,
             self::StationStatus => 120,

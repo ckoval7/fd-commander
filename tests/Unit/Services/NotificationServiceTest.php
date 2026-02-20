@@ -177,25 +177,49 @@ test('debounce marks updated notification as unread', function () {
 test('zero debounce categories always create new notifications', function () {
     $user = User::factory()->create();
 
-    // NewSection has debounce of 0
+    // QsoMilestone has debounce of 0 — each milestone is unique
     $this->service->notify(
         user: $user,
-        category: NotificationCategory::NewSection,
-        title: 'New Section!',
-        message: 'First section',
-        groupKey: 'new_section_CT',
+        category: NotificationCategory::QsoMilestone,
+        title: 'QSO Milestone!',
+        message: '50 QSOs logged',
+        groupKey: 'qso_milestone_50',
     );
 
     $this->service->notify(
         user: $user,
-        category: NotificationCategory::NewSection,
-        title: 'New Section!',
-        message: 'Second section',
-        groupKey: 'new_section_NY',
+        category: NotificationCategory::QsoMilestone,
+        title: 'QSO Milestone!',
+        message: '100 QSOs logged',
+        groupKey: 'qso_milestone_100',
     );
 
     $user->refresh();
     expect($user->notifications)->toHaveCount(2);
+});
+
+test('new section notifications debounce within 120 second window', function () {
+    $user = User::factory()->create();
+
+    $this->service->notify(
+        user: $user,
+        category: NotificationCategory::NewSection,
+        title: 'New Section Worked!',
+        message: 'First section',
+        groupKey: 'new_section_event_1',
+    );
+
+    $this->service->notify(
+        user: $user,
+        category: NotificationCategory::NewSection,
+        title: 'New Section Worked!',
+        message: 'Second section',
+        groupKey: 'new_section_event_1',
+    );
+
+    $user->refresh();
+    expect($user->notifications)->toHaveCount(1);
+    expect($user->notifications->first()->data['count'])->toBe(2);
 });
 
 test('notification data structure matches contract', function () {
