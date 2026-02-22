@@ -31,50 +31,55 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
                 {{-- Band Filter --}}
-                <x-select
+                <x-choices-offline
                     label="Band"
-                    wire:model.live="band_id"
+                    wire:model.live="band_ids"
                     :options="$this->bands"
                     placeholder="All Bands"
                     icon="o-signal"
+                    searchable
                 />
 
                 {{-- Mode Filter --}}
-                <x-select
+                <x-choices-offline
                     label="Mode"
-                    wire:model.live="mode_id"
+                    wire:model.live="mode_ids"
                     :options="$this->modes"
                     placeholder="All Modes"
                     icon="o-radio"
+                    searchable
                 />
 
                 {{-- Station Filter --}}
-                <x-select
+                <x-choices-offline
                     label="Station"
-                    wire:model.live="station_id"
+                    wire:model.live="station_ids"
                     :options="$this->stations"
                     placeholder="All Stations"
                     icon="o-home"
+                    searchable
                 />
 
                 {{-- Operator Filter --}}
-                <x-select
+                <x-choices-offline
                     label="Operator"
-                    wire:model.live="operator_id"
+                    wire:model.live="operator_ids"
                     :options="$this->operators"
                     option-label="display_name"
                     placeholder="All Operators"
                     icon="o-user"
+                    searchable
                 />
 
                 {{-- Section Filter --}}
-                <x-select
+                <x-choices-offline
                     label="Section"
-                    wire:model.live="section_id"
+                    wire:model.live="section_ids"
                     :options="$this->sections"
-                    option-label="code"
+                    option-label="display_name"
                     placeholder="All Sections"
                     icon="o-map"
+                    searchable
                 />
 
                 {{-- Callsign Search --}}
@@ -136,11 +141,11 @@
             {{-- Active Filters Summary --}}
             @php
                 $activeFilters = collect([
-                    'Band' => $band_id,
-                    'Mode' => $mode_id,
-                    'Station' => $station_id,
-                    'Operator' => $operator_id,
-                    'Section' => $section_id,
+                    'Band' => count($band_ids) > 0 ? 'Active' : null,
+                    'Mode' => count($mode_ids) > 0 ? 'Active' : null,
+                    'Station' => count($station_ids) > 0 ? 'Active' : null,
+                    'Operator' => count($operator_ids) > 0 ? 'Active' : null,
+                    'Section' => count($section_ids) > 0 ? 'Active' : null,
                     'Callsign' => $callsign_search,
                     'Time Range' => ($time_from || $time_to) ? 'Active' : null,
                     'Duplicates' => $show_duplicates,

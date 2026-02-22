@@ -61,12 +61,12 @@
                 <h3 class="card-title">Preferences</h3>
 
                 {{-- Timezone --}}
-                <x-select
+                <x-choices-offline
                     label="Preferred Timezone"
                     wire:model="preferred_timezone"
-                    :options="collect(timezone_identifiers_list())->map(fn($tz) => ['value' => $tz, 'label' => $tz])->toArray()"
-                    option-value="value"
-                    option-label="label"
+                    :options="collect(timezone_identifiers_list())->map(fn($tz) => ['id' => $tz, 'name' => str_replace('_', ' ', $tz)])->toArray()"
+                    placeholder="Search timezone..."
+                    single
                     searchable
                     hint="Used for displaying timestamps in your local time"
                 />

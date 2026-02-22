@@ -118,14 +118,14 @@ class AuditLog extends Model
         ];
     }
 
-    public function scopeForUser(Builder $query, ?int $userId): Builder
+    public function scopeForUser(Builder $query, array $userIds): Builder
     {
-        return $userId !== null ? $query->where('user_id', $userId) : $query;
+        return empty($userIds) ? $query : $query->whereIn('user_id', $userIds);
     }
 
-    public function scopeForAction(Builder $query, ?string $action): Builder
+    public function scopeForAction(Builder $query, array $actions): Builder
     {
-        return $action !== null ? $query->where('action', $action) : $query;
+        return empty($actions) ? $query : $query->whereIn('action', $actions);
     }
 
     public function scopeDateRange(Builder $query, ?string $from, ?string $to): Builder

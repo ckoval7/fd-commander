@@ -1,40 +1,33 @@
 <div class="space-y-6">
     @php
         $timezones = collect(timezone_identifiers_list())->map(fn($tz) => ['id' => $tz, 'name' => str_replace('_', ' ', $tz)])->all();
-        $dateFormats = [
-            ['id' => 'Y-m-d', 'name' => now()->format('Y-m-d') . ' (ISO 8601)'],
-            ['id' => 'm/d/Y', 'name' => now()->format('m/d/Y') . ' (US Format)'],
-            ['id' => 'd/m/Y', 'name' => now()->format('d/m/Y') . ' (EU Format)'],
-        ];
-        $timeFormats = [
-            ['id' => 'H:i:s', 'name' => now()->format('H:i:s') . ' (24-hour)'],
-            ['id' => 'h:i:s A', 'name' => now()->format('h:i:s A') . ' (12-hour)'],
-        ];
     @endphp
 
     <x-card>
         <x-slot:title>Regional Settings</x-slot:title>
 
         <div class="space-y-4">
-            <x-select
+            <x-choices-offline
                 label="Timezone"
                 wire:model.live="timezone"
                 :options="$timezones"
-                placeholder="Select a timezone..."
+                placeholder="Search timezone..."
+                single
+                searchable
                 required
             />
 
             <x-select
                 label="Date Format"
                 wire:model.live="date_format"
-                :options="$dateFormats"
+                :options="$this->dateFormats"
                 required
             />
 
             <x-select
                 label="Time Format"
                 wire:model.live="time_format"
-                :options="$timeFormats"
+                :options="$this->timeFormats"
                 required
             />
 

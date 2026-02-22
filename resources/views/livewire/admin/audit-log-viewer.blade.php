@@ -24,24 +24,25 @@
             <div class="space-y-4">
                 {{-- Row 1: User, Action Type, Date From, Date To --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <x-select
+                    <x-choices-offline
                         label="User"
-                        wire:model.live="filters.user_id"
+                        wire:model.live="filters.user_ids"
                         :options="$users"
                         placeholder="All Users"
-                        placeholder-value=""
                         option-value="id"
                         option-label="call_sign"
+                        searchable
                     />
 
-                    <x-select
+                    <x-choices-offline
                         label="Action Type"
-                        wire:model.live="filters.action_type"
+                        wire:model.live="filters.action_types"
                         :options="$actionTypeGroups"
                         placeholder="All Actions"
-                        placeholder-value=""
                         option-value="value"
                         option-label="label"
+                        option-sub-label="group"
+                        searchable
                     />
 
                     <x-datetime

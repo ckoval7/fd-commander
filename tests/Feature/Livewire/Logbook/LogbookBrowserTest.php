@@ -48,37 +48,37 @@ test('component sets no event configuration when no active event', function () {
     expect($component->eventConfigurationId)->toBeNull();
 });
 
-test('band_id property can be set', function () {
+test('band_ids property can be set', function () {
     $component = new LogbookBrowser;
 
-    $component->band_id = $this->band->id;
+    $component->band_ids = [$this->band->id];
 
-    expect($component->band_id)->toBe($this->band->id);
+    expect($component->band_ids)->toBe([$this->band->id]);
 });
 
-test('mode_id property can be set', function () {
+test('mode_ids property can be set', function () {
     $component = new LogbookBrowser;
 
-    $component->mode_id = $this->mode->id;
+    $component->mode_ids = [$this->mode->id];
 
-    expect($component->mode_id)->toBe($this->mode->id);
+    expect($component->mode_ids)->toBe([$this->mode->id]);
 });
 
-test('station_id property can be set', function () {
+test('station_ids property can be set', function () {
     $component = new LogbookBrowser;
 
-    $component->station_id = $this->station->id;
+    $component->station_ids = [$this->station->id];
 
-    expect($component->station_id)->toBe($this->station->id);
+    expect($component->station_ids)->toBe([$this->station->id]);
 });
 
-test('operator_id property can be set', function () {
+test('operator_ids property can be set', function () {
     $operator = User::factory()->create();
 
     $component = new LogbookBrowser;
-    $component->operator_id = $operator->id;
+    $component->operator_ids = [$operator->id];
 
-    expect($component->operator_id)->toBe($operator->id);
+    expect($component->operator_ids)->toBe([$operator->id]);
 });
 
 test('time_from property can be set', function () {
@@ -105,12 +105,12 @@ test('callsign_search property can be set', function () {
     expect($component->callsign_search)->toBe('W1AW');
 });
 
-test('section_id property can be set', function () {
+test('section_ids property can be set', function () {
     $component = new LogbookBrowser;
 
-    $component->section_id = $this->section->id;
+    $component->section_ids = [$this->section->id];
 
-    expect($component->section_id)->toBe($this->section->id);
+    expect($component->section_ids)->toBe([$this->section->id]);
 });
 
 test('show_duplicates property can be set', function () {
@@ -123,50 +123,49 @@ test('show_duplicates property can be set', function () {
 
 test('reset filters clears all filter values', function () {
     $component = new LogbookBrowser;
-    $component->band_id = $this->band->id;
-    $component->mode_id = $this->mode->id;
-    $component->station_id = $this->station->id;
+    $component->band_ids = [$this->band->id];
+    $component->mode_ids = [$this->mode->id];
+    $component->station_ids = [$this->station->id];
     $component->callsign_search = 'W1AW';
-    $component->section_id = $this->section->id;
+    $component->section_ids = [$this->section->id];
 
     $component->resetFilters();
 
-    expect($component->band_id)->toBeNull()
-        ->and($component->mode_id)->toBeNull()
-        ->and($component->station_id)->toBeNull()
+    expect($component->band_ids)->toBe([])
+        ->and($component->mode_ids)->toBe([])
+        ->and($component->station_ids)->toBe([])
         ->and($component->callsign_search)->toBeNull()
-        ->and($component->section_id)->toBeNull();
+        ->and($component->section_ids)->toBe([]);
 });
 
-test('updated band_id resets page', function () {
+test('updated band_ids resets page', function () {
     $component = new LogbookBrowser;
     $component->mount();
-    $component->updatedBandId();
-
-    // This test verifies the method exists and can be called
-    expect($component)->toBeInstanceOf(LogbookBrowser::class);
-});
-
-test('updated mode_id resets page', function () {
-    $component = new LogbookBrowser;
-    $component->mount();
-    $component->updatedModeId();
+    $component->updatedBandIds();
 
     expect($component)->toBeInstanceOf(LogbookBrowser::class);
 });
 
-test('updated station_id resets page', function () {
+test('updated mode_ids resets page', function () {
     $component = new LogbookBrowser;
     $component->mount();
-    $component->updatedStationId();
+    $component->updatedModeIds();
 
     expect($component)->toBeInstanceOf(LogbookBrowser::class);
 });
 
-test('updated operator_id resets page', function () {
+test('updated station_ids resets page', function () {
     $component = new LogbookBrowser;
     $component->mount();
-    $component->updatedOperatorId();
+    $component->updatedStationIds();
+
+    expect($component)->toBeInstanceOf(LogbookBrowser::class);
+});
+
+test('updated operator_ids resets page', function () {
+    $component = new LogbookBrowser;
+    $component->mount();
+    $component->updatedOperatorIds();
 
     expect($component)->toBeInstanceOf(LogbookBrowser::class);
 });
@@ -195,10 +194,10 @@ test('updated callsign_search resets page', function () {
     expect($component)->toBeInstanceOf(LogbookBrowser::class);
 });
 
-test('updated section_id resets page', function () {
+test('updated section_ids resets page', function () {
     $component = new LogbookBrowser;
     $component->mount();
-    $component->updatedSectionId();
+    $component->updatedSectionIds();
 
     expect($component)->toBeInstanceOf(LogbookBrowser::class);
 });

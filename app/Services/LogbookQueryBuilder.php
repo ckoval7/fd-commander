@@ -31,53 +31,61 @@ class LogbookQueryBuilder
     }
 
     /**
-     * Filter by band.
+     * Filter by one or more bands.
+     *
+     * @param  int[]  $bandIds
      */
-    public function forBand(Builder $query, ?int $bandId): Builder
+    public function forBand(Builder $query, array $bandIds): Builder
     {
-        if ($bandId === null) {
+        if (empty($bandIds)) {
             return $query;
         }
 
-        return $query->where('band_id', $bandId);
+        return $query->whereIn('band_id', $bandIds);
     }
 
     /**
-     * Filter by mode.
+     * Filter by one or more modes.
+     *
+     * @param  int[]  $modeIds
      */
-    public function forMode(Builder $query, ?int $modeId): Builder
+    public function forMode(Builder $query, array $modeIds): Builder
     {
-        if ($modeId === null) {
+        if (empty($modeIds)) {
             return $query;
         }
 
-        return $query->where('mode_id', $modeId);
+        return $query->whereIn('mode_id', $modeIds);
     }
 
     /**
-     * Filter by station (through operating session).
+     * Filter by one or more stations (through operating session).
+     *
+     * @param  int[]  $stationIds
      */
-    public function forStation(Builder $query, ?int $stationId): Builder
+    public function forStation(Builder $query, array $stationIds): Builder
     {
-        if ($stationId === null) {
+        if (empty($stationIds)) {
             return $query;
         }
 
-        return $query->whereHas('operatingSession', function (Builder $q) use ($stationId) {
-            $q->where('station_id', $stationId);
+        return $query->whereHas('operatingSession', function (Builder $q) use ($stationIds) {
+            $q->whereIn('station_id', $stationIds);
         });
     }
 
     /**
-     * Filter by operator (logger).
+     * Filter by one or more operators (logger).
+     *
+     * @param  int[]  $userIds
      */
-    public function forOperator(Builder $query, ?int $userId): Builder
+    public function forOperator(Builder $query, array $userIds): Builder
     {
-        if ($userId === null) {
+        if (empty($userIds)) {
             return $query;
         }
 
-        return $query->where('logger_user_id', $userId);
+        return $query->whereIn('logger_user_id', $userIds);
     }
 
     /**
@@ -109,15 +117,17 @@ class LogbookQueryBuilder
     }
 
     /**
-     * Filter by section.
+     * Filter by one or more sections.
+     *
+     * @param  int[]  $sectionIds
      */
-    public function forSection(Builder $query, ?int $sectionId): Builder
+    public function forSection(Builder $query, array $sectionIds): Builder
     {
-        if ($sectionId === null) {
+        if (empty($sectionIds)) {
             return $query;
         }
 
-        return $query->where('section_id', $sectionId);
+        return $query->whereIn('section_id', $sectionIds);
     }
 
     /**
@@ -165,14 +175,14 @@ class LogbookQueryBuilder
      *
      * @param  array{
      *     event_configuration_id: int,
-     *     band_id?: ?int,
-     *     mode_id?: ?int,
-     *     station_id?: ?int,
-     *     operator_id?: ?int,
+     *     band_ids?: int[],
+     *     mode_ids?: int[],
+     *     station_ids?: int[],
+     *     operator_ids?: int[],
      *     time_from?: ?string,
      *     time_to?: ?string,
      *     callsign?: ?string,
-     *     section_id?: ?int,
+     *     section_ids?: int[],
      *     duplicate_filter?: ?string,
      *     transcribed_filter?: ?string
      * }  $filters
@@ -182,13 +192,13 @@ class LogbookQueryBuilder
         $query = $this->buildQuery();
 
         $query = $this->forEvent($query, $filters['event_configuration_id']);
-        $query = $this->forBand($query, $filters['band_id'] ?? null);
-        $query = $this->forMode($query, $filters['mode_id'] ?? null);
-        $query = $this->forStation($query, $filters['station_id'] ?? null);
-        $query = $this->forOperator($query, $filters['operator_id'] ?? null);
+        $query = $this->forBand($query, $filters['band_ids'] ?? []);
+        $query = $this->forMode($query, $filters['mode_ids'] ?? []);
+        $query = $this->forStation($query, $filters['station_ids'] ?? []);
+        $query = $this->forOperator($query, $filters['operator_ids'] ?? []);
         $query = $this->forTimeRange($query, $filters['time_from'] ?? null, $filters['time_to'] ?? null);
         $query = $this->forCallsign($query, $filters['callsign'] ?? null);
-        $query = $this->forSection($query, $filters['section_id'] ?? null);
+        $query = $this->forSection($query, $filters['section_ids'] ?? []);
         $query = $this->forDuplicateStatus($query, $filters['duplicate_filter'] ?? null);
         $query = $this->forTranscribed($query, $filters['transcribed_filter'] ?? null);
         $query = $this->chronological($query);

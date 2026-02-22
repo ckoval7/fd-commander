@@ -9,19 +9,8 @@
         </x-card>
     @else
         {{-- Stats Summary --}}
-        <div wire:loading.remove class="mb-6">
+        <div wire:loading.class="opacity-50 transition-opacity duration-200" class="mb-6">
             @include('livewire.logbook.partials.stats-summary')
-        </div>
-
-        {{-- Loading State for Stats --}}
-        <div wire:loading class="mb-6">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                @for($i = 0; $i < 6; $i++)
-                    <x-card class="shadow-md">
-                        <div class="h-16 animate-pulse bg-base-300 rounded"></div>
-                    </x-card>
-                @endfor
-            </div>
         </div>
 
         {{-- Filter Panel --}}

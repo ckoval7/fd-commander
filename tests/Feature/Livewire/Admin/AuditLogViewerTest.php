@@ -127,7 +127,7 @@ test('user filter returns only that users logs', function () {
     ]);
 
     $component = Livewire::test(AuditLogViewer::class)
-        ->set('filters.user_id', $this->adminUser->id);
+        ->set('filters.user_ids', [$this->adminUser->id]);
 
     $logs = $component->viewData('logs');
 
@@ -155,7 +155,7 @@ test('action type filter returns only matching actions', function () {
     ]);
 
     $component = Livewire::test(AuditLogViewer::class)
-        ->set('filters.action_type', 'user.login.success');
+        ->set('filters.action_types', ['user.login.success']);
 
     $logs = $component->viewData('logs');
 
@@ -334,8 +334,8 @@ test('combined filters work together correctly', function () {
     $createLog($this->adminUser->id, 'user.login.success', '192.168.1.1', '2026-01-05 12:00:00');
 
     $component = Livewire::test(AuditLogViewer::class)
-        ->set('filters.user_id', $this->adminUser->id)
-        ->set('filters.action_type', 'user.login.success')
+        ->set('filters.user_ids', [$this->adminUser->id])
+        ->set('filters.action_types', ['user.login.success'])
         ->set('filters.ip_address', '192.168')
         ->set('filters.date_from', '2026-01-15')
         ->set('filters.date_to', '2026-01-25');
@@ -366,8 +366,8 @@ test('clear filters resets all filters and shows all logs', function () {
 
     // Apply filters first
     $component = Livewire::test(AuditLogViewer::class)
-        ->set('filters.user_id', $this->adminUser->id)
-        ->set('filters.action_type', 'user.login.success')
+        ->set('filters.user_ids', [$this->adminUser->id])
+        ->set('filters.action_types', ['user.login.success'])
         ->set('filters.ip_address', '192.168')
         ->set('filters.date_from', now()->subDays(1)->format('Y-m-d'))
         ->set('filters.date_to', now()->format('Y-m-d'));
@@ -377,8 +377,8 @@ test('clear filters resets all filters and shows all logs', function () {
 
     // Clear filters
     $component->call('clearFilters')
-        ->assertSet('filters.user_id', null)
-        ->assertSet('filters.action_type', null)
+        ->assertSet('filters.user_ids', [])
+        ->assertSet('filters.action_types', [])
         ->assertSet('filters.ip_address', null)
         ->assertSet('filters.date_from', null)
         ->assertSet('filters.date_to', null);
@@ -633,7 +633,7 @@ test('export works with filters applied', function () {
 
     // Apply filter and export
     $component = Livewire::test(AuditLogViewer::class)
-        ->set('filters.user_id', $this->adminUser->id);
+        ->set('filters.user_ids', [$this->adminUser->id]);
 
     // Verify only filtered user's logs are in the view
     $logs = $component->viewData('logs');
@@ -727,8 +727,8 @@ test('component initializes with default filter values', function () {
     $this->actingAs($this->adminUser);
 
     Livewire::test(AuditLogViewer::class)
-        ->assertSet('filters.user_id', null)
-        ->assertSet('filters.action_type', null)
+        ->assertSet('filters.user_ids', [])
+        ->assertSet('filters.action_types', [])
         ->assertSet('filters.date_from', null)
         ->assertSet('filters.date_to', null)
         ->assertSet('filters.ip_address', null)

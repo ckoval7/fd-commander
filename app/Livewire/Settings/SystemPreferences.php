@@ -58,6 +58,23 @@ class SystemPreferences extends Component
         $this->dispatch('notify', title: 'Success', description: 'System preferences saved successfully.');
     }
 
+    public function getDateFormatsProperty(): array
+    {
+        return [
+            ['id' => 'Y-m-d', 'name' => 'YYYY-MM-DD (ISO 8601)'],
+            ['id' => 'm/d/Y', 'name' => 'MM/DD/YYYY (US Format)'],
+            ['id' => 'd/m/Y', 'name' => 'DD/MM/YYYY (EU Format)'],
+        ];
+    }
+
+    public function getTimeFormatsProperty(): array
+    {
+        return [
+            ['id' => 'H:i:s', 'name' => '24-hour (HH:MM:SS)'],
+            ['id' => 'h:i:s A', 'name' => '12-hour (HH:MM:SS AM/PM)'],
+        ];
+    }
+
     public function getPreviewProperty(): string
     {
         try {

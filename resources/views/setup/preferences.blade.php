@@ -73,13 +73,71 @@
             <div class="space-y-4 mt-6">
                 <h3 class="text-lg font-semibold mb-2">System Preferences</h3>
 
-                <x-select
-                    label="Timezone"
-                    name="timezone"
-                    :options="$timezones"
-                    placeholder="Select timezone..."
-                    required
-                />
+                {{-- Searchable timezone using Alpine.js (non-Livewire form) --}}
+                <div
+                    x-data="{
+                        open: false,
+                        search: '',
+                        selected: '{{ old('timezone') }}',
+                        selectedLabel: '{{ old('timezone') ? str_replace('_', ' ', old('timezone')) : '' }}',
+                        timezones: @js($timezones),
+                        get filtered() {
+                            if (!this.search) return this.timezones;
+                            const q = this.search.toLowerCase();
+                            return this.timezones.filter(t => t.name.toLowerCase().includes(q));
+                        },
+                        select(tz) {
+                            this.selected = tz.id;
+                            this.selectedLabel = tz.name;
+                            this.search = '';
+                            this.open = false;
+                        }
+                    }"
+                    @click.outside="open = false"
+                    class="form-control w-full"
+                >
+                    <label class="label"><span class="label-text font-semibold">Timezone <span class="text-error">*</span></span></label>
+                    <input type="hidden" name="timezone" :value="selected" required />
+                    <div class="relative">
+                        <button
+                            type="button"
+                            @click="open = !open"
+                            class="select select-bordered w-full text-left flex items-center justify-between"
+                            :class="{ 'select-error': !selected }"
+                        >
+                            <span x-text="selectedLabel || 'Select timezone...'" :class="selectedLabel ? '' : 'text-base-content/40'"></span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        </button>
+                        <div
+                            x-show="open"
+                            x-transition
+                            class="absolute z-50 mt-1 w-full bg-base-100 border border-base-300 rounded-box shadow-lg"
+                        >
+                            <div class="p-2">
+                                <input
+                                    type="text"
+                                    x-model="search"
+                                    placeholder="Search timezones..."
+                                    class="input input-sm input-bordered w-full"
+                                    @click.stop
+                                    x-ref="searchInput"
+                                    x-init="$watch('open', v => v && $nextTick(() => $refs.searchInput.focus()))"
+                                />
+                            </div>
+                            <ul class="max-h-60 overflow-y-auto py-1">
+                                <template x-for="tz in filtered" :key="tz.id">
+                                    <li
+                                        @click="select(tz)"
+                                        class="px-3 py-1.5 cursor-pointer hover:bg-base-200 text-sm"
+                                        :class="selected === tz.id ? 'bg-primary/10 font-medium' : ''"
+                                        x-text="tz.name"
+                                    ></li>
+                                </template>
+                                <li x-show="filtered.length === 0" class="px-3 py-2 text-sm text-base-content/50">No results found.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
 
                 <x-select
                     label="Date Format"

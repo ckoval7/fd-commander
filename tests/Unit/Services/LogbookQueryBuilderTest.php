@@ -114,7 +114,7 @@ describe('forEvent', function () {
 });
 
 describe('forBand', function () {
-    test('filters contacts by band ID', function () {
+    test('filters contacts by a single band ID', function () {
         Contact::factory()->create([
             'event_configuration_id' => $this->eventConfig->id,
             'band_id' => $this->band->id,
@@ -125,14 +125,14 @@ describe('forBand', function () {
         ]);
 
         $query = $this->builder->buildQuery();
-        $query = $this->builder->forBand($query, $this->band->id);
+        $query = $this->builder->forBand($query, [$this->band->id]);
         $results = $query->get();
 
         expect($results)->toHaveCount(1)
             ->and($results->first()->band_id)->toBe($this->band->id);
     });
 
-    test('returns all contacts when band ID is null', function () {
+    test('filters contacts by multiple band IDs', function () {
         Contact::factory()->create([
             'event_configuration_id' => $this->eventConfig->id,
             'band_id' => $this->band->id,
@@ -143,7 +143,24 @@ describe('forBand', function () {
         ]);
 
         $query = $this->builder->buildQuery();
-        $query = $this->builder->forBand($query, null);
+        $query = $this->builder->forBand($query, [$this->band->id, $this->otherBand->id]);
+        $results = $query->get();
+
+        expect($results)->toHaveCount(2);
+    });
+
+    test('returns all contacts when band IDs array is empty', function () {
+        Contact::factory()->create([
+            'event_configuration_id' => $this->eventConfig->id,
+            'band_id' => $this->band->id,
+        ]);
+        Contact::factory()->create([
+            'event_configuration_id' => $this->eventConfig->id,
+            'band_id' => $this->otherBand->id,
+        ]);
+
+        $query = $this->builder->buildQuery();
+        $query = $this->builder->forBand($query, []);
         $results = $query->get();
 
         expect($results)->toHaveCount(2);
@@ -151,7 +168,7 @@ describe('forBand', function () {
 });
 
 describe('forMode', function () {
-    test('filters contacts by mode ID', function () {
+    test('filters contacts by a single mode ID', function () {
         Contact::factory()->create([
             'event_configuration_id' => $this->eventConfig->id,
             'mode_id' => $this->mode->id,
@@ -162,14 +179,14 @@ describe('forMode', function () {
         ]);
 
         $query = $this->builder->buildQuery();
-        $query = $this->builder->forMode($query, $this->mode->id);
+        $query = $this->builder->forMode($query, [$this->mode->id]);
         $results = $query->get();
 
         expect($results)->toHaveCount(1)
             ->and($results->first()->mode_id)->toBe($this->mode->id);
     });
 
-    test('returns all contacts when mode ID is null', function () {
+    test('filters contacts by multiple mode IDs', function () {
         Contact::factory()->create([
             'event_configuration_id' => $this->eventConfig->id,
             'mode_id' => $this->mode->id,
@@ -180,7 +197,24 @@ describe('forMode', function () {
         ]);
 
         $query = $this->builder->buildQuery();
-        $query = $this->builder->forMode($query, null);
+        $query = $this->builder->forMode($query, [$this->mode->id, $this->otherMode->id]);
+        $results = $query->get();
+
+        expect($results)->toHaveCount(2);
+    });
+
+    test('returns all contacts when mode IDs array is empty', function () {
+        Contact::factory()->create([
+            'event_configuration_id' => $this->eventConfig->id,
+            'mode_id' => $this->mode->id,
+        ]);
+        Contact::factory()->create([
+            'event_configuration_id' => $this->eventConfig->id,
+            'mode_id' => $this->otherMode->id,
+        ]);
+
+        $query = $this->builder->buildQuery();
+        $query = $this->builder->forMode($query, []);
         $results = $query->get();
 
         expect($results)->toHaveCount(2);
@@ -188,7 +222,7 @@ describe('forMode', function () {
 });
 
 describe('forStation', function () {
-    test('filters contacts by station through operating session', function () {
+    test('filters contacts by a single station through operating session', function () {
         $session1 = OperatingSession::factory()->create([
             'station_id' => $this->station->id,
         ]);
@@ -206,14 +240,14 @@ describe('forStation', function () {
         ]);
 
         $query = $this->builder->buildQuery();
-        $query = $this->builder->forStation($query, $this->station->id);
+        $query = $this->builder->forStation($query, [$this->station->id]);
         $results = $query->get();
 
         expect($results)->toHaveCount(1)
             ->and($results->first()->operatingSession->station_id)->toBe($this->station->id);
     });
 
-    test('returns all contacts when station ID is null', function () {
+    test('filters contacts by multiple stations', function () {
         $session1 = OperatingSession::factory()->create([
             'station_id' => $this->station->id,
         ]);
@@ -231,7 +265,31 @@ describe('forStation', function () {
         ]);
 
         $query = $this->builder->buildQuery();
-        $query = $this->builder->forStation($query, null);
+        $query = $this->builder->forStation($query, [$this->station->id, $this->otherStation->id]);
+        $results = $query->get();
+
+        expect($results)->toHaveCount(2);
+    });
+
+    test('returns all contacts when station IDs array is empty', function () {
+        $session1 = OperatingSession::factory()->create([
+            'station_id' => $this->station->id,
+        ]);
+        $session2 = OperatingSession::factory()->create([
+            'station_id' => $this->otherStation->id,
+        ]);
+
+        Contact::factory()->create([
+            'event_configuration_id' => $this->eventConfig->id,
+            'operating_session_id' => $session1->id,
+        ]);
+        Contact::factory()->create([
+            'event_configuration_id' => $this->eventConfig->id,
+            'operating_session_id' => $session2->id,
+        ]);
+
+        $query = $this->builder->buildQuery();
+        $query = $this->builder->forStation($query, []);
         $results = $query->get();
 
         expect($results)->toHaveCount(2);
@@ -239,7 +297,7 @@ describe('forStation', function () {
 });
 
 describe('forOperator', function () {
-    test('filters contacts by logger user ID', function () {
+    test('filters contacts by a single operator ID', function () {
         Contact::factory()->create([
             'event_configuration_id' => $this->eventConfig->id,
             'logger_user_id' => $this->user->id,
@@ -250,14 +308,14 @@ describe('forOperator', function () {
         ]);
 
         $query = $this->builder->buildQuery();
-        $query = $this->builder->forOperator($query, $this->user->id);
+        $query = $this->builder->forOperator($query, [$this->user->id]);
         $results = $query->get();
 
         expect($results)->toHaveCount(1)
             ->and($results->first()->logger_user_id)->toBe($this->user->id);
     });
 
-    test('returns all contacts when operator ID is null', function () {
+    test('filters contacts by multiple operator IDs', function () {
         Contact::factory()->create([
             'event_configuration_id' => $this->eventConfig->id,
             'logger_user_id' => $this->user->id,
@@ -268,7 +326,24 @@ describe('forOperator', function () {
         ]);
 
         $query = $this->builder->buildQuery();
-        $query = $this->builder->forOperator($query, null);
+        $query = $this->builder->forOperator($query, [$this->user->id, $this->otherUser->id]);
+        $results = $query->get();
+
+        expect($results)->toHaveCount(2);
+    });
+
+    test('returns all contacts when operator IDs array is empty', function () {
+        Contact::factory()->create([
+            'event_configuration_id' => $this->eventConfig->id,
+            'logger_user_id' => $this->user->id,
+        ]);
+        Contact::factory()->create([
+            'event_configuration_id' => $this->eventConfig->id,
+            'logger_user_id' => $this->otherUser->id,
+        ]);
+
+        $query = $this->builder->buildQuery();
+        $query = $this->builder->forOperator($query, []);
         $results = $query->get();
 
         expect($results)->toHaveCount(2);
@@ -446,7 +521,7 @@ describe('forCallsign', function () {
 });
 
 describe('forSection', function () {
-    test('filters contacts by section ID', function () {
+    test('filters contacts by a single section ID', function () {
         $section = Section::where('code', 'CT')->first();
         $otherSection = Section::where('code', '!=', 'CT')->first();
 
@@ -464,20 +539,57 @@ describe('forSection', function () {
         ]);
 
         $query = $this->builder->buildQuery();
-        $query = $this->builder->forSection($query, $section->id);
+        $query = $this->builder->forSection($query, [$section->id]);
         $results = $query->get();
 
         expect($results)->toHaveCount(1)
             ->and($results->first()->section_id)->toBe($section->id);
     });
 
-    test('returns all contacts when section ID is null', function () {
+    test('filters contacts by multiple section IDs', function () {
+        $sections = Section::orderBy('code')->take(2)->get();
+
+        if ($sections->count() < 2) {
+            $this->markTestSkipped('Not enough sections in database');
+        }
+
+        $section1 = $sections->first();
+        $section2 = $sections->last();
+        $otherSection = Section::whereNotIn('id', [$section1->id, $section2->id])->first();
+
+        if (! $otherSection) {
+            $this->markTestSkipped('Not enough sections in database');
+        }
+
+        Contact::factory()->create([
+            'event_configuration_id' => $this->eventConfig->id,
+            'section_id' => $section1->id,
+        ]);
+        Contact::factory()->create([
+            'event_configuration_id' => $this->eventConfig->id,
+            'section_id' => $section2->id,
+        ]);
+        Contact::factory()->create([
+            'event_configuration_id' => $this->eventConfig->id,
+            'section_id' => $otherSection->id,
+        ]);
+
+        $query = $this->builder->buildQuery();
+        $query = $this->builder->forSection($query, [$section1->id, $section2->id]);
+        $results = $query->get();
+
+        expect($results)->toHaveCount(2)
+            ->and($results->pluck('section_id')->all())->toContain($section1->id)
+            ->and($results->pluck('section_id')->all())->toContain($section2->id);
+    });
+
+    test('returns all contacts when section IDs array is empty', function () {
         Contact::factory(3)->create([
             'event_configuration_id' => $this->eventConfig->id,
         ]);
 
         $query = $this->builder->buildQuery();
-        $query = $this->builder->forSection($query, null);
+        $query = $this->builder->forSection($query, []);
         $results = $query->get();
 
         expect($results)->toHaveCount(3);
@@ -606,14 +718,14 @@ describe('applyFilters', function () {
 
         $results = $this->builder->applyFilters([
             'event_configuration_id' => $this->eventConfig->id,
-            'band_id' => $this->band->id,
-            'mode_id' => $this->mode->id,
-            'station_id' => $this->station->id,
-            'operator_id' => $this->user->id,
+            'band_ids' => [$this->band->id],
+            'mode_ids' => [$this->mode->id],
+            'station_ids' => [$this->station->id],
+            'operator_ids' => [$this->user->id],
             'time_from' => now()->subHour()->toDateTimeString(),
             'time_to' => now()->addHour()->toDateTimeString(),
             'callsign' => 'W1',
-            'section_id' => $section->id,
+            'section_ids' => [$section->id],
             'duplicate_filter' => 'exclude',
         ])->get();
 

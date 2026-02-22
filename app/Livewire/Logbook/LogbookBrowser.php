@@ -21,16 +21,16 @@ class LogbookBrowser extends Component
     use WithPagination;
 
     #[Url]
-    public ?int $band_id = null;
+    public array $band_ids = [];
 
     #[Url]
-    public ?int $mode_id = null;
+    public array $mode_ids = [];
 
     #[Url]
-    public ?int $station_id = null;
+    public array $station_ids = [];
 
     #[Url]
-    public ?int $operator_id = null;
+    public array $operator_ids = [];
 
     #[Url]
     public ?string $time_from = null;
@@ -42,7 +42,7 @@ class LogbookBrowser extends Component
     public ?string $callsign_search = null;
 
     #[Url]
-    public ?int $section_id = null;
+    public array $section_ids = [];
 
     #[Url]
     public ?string $show_duplicates = null;
@@ -80,36 +80,36 @@ class LogbookBrowser extends Component
     public function resetFilters(): void
     {
         $this->reset([
-            'band_id',
-            'mode_id',
-            'station_id',
-            'operator_id',
+            'band_ids',
+            'mode_ids',
+            'station_ids',
+            'operator_ids',
             'time_from',
             'time_to',
             'callsign_search',
-            'section_id',
+            'section_ids',
             'show_duplicates',
             'show_transcribed',
         ]);
         $this->resetPage();
     }
 
-    public function updatedBandId(): void
+    public function updatedBandIds(): void
     {
         $this->resetPage();
     }
 
-    public function updatedModeId(): void
+    public function updatedModeIds(): void
     {
         $this->resetPage();
     }
 
-    public function updatedStationId(): void
+    public function updatedStationIds(): void
     {
         $this->resetPage();
     }
 
-    public function updatedOperatorId(): void
+    public function updatedOperatorIds(): void
     {
         $this->resetPage();
     }
@@ -129,7 +129,7 @@ class LogbookBrowser extends Component
         $this->resetPage();
     }
 
-    public function updatedSectionId(): void
+    public function updatedSectionIds(): void
     {
         $this->resetPage();
     }
@@ -155,14 +155,14 @@ class LogbookBrowser extends Component
 
         $filters = [
             'event_configuration_id' => $this->eventConfigurationId,
-            'band_id' => $this->band_id,
-            'mode_id' => $this->mode_id,
-            'station_id' => $this->station_id,
-            'operator_id' => $this->operator_id,
+            'band_ids' => $this->band_ids,
+            'mode_ids' => $this->mode_ids,
+            'station_ids' => $this->station_ids,
+            'operator_ids' => $this->operator_ids,
             'time_from' => $this->time_from,
             'time_to' => $this->time_to,
             'callsign' => $this->callsign_search,
-            'section_id' => $this->section_id,
+            'section_ids' => $this->section_ids,
             'duplicate_filter' => $this->show_duplicates,
             'transcribed_filter' => $this->show_transcribed,
         ];
@@ -213,7 +213,11 @@ class LogbookBrowser extends Component
     #[Computed]
     public function sections()
     {
-        return Section::orderBy('code')->get();
+        return Section::orderBy('code')->get()->map(function (Section $section) {
+            $section->display_name = "{$section->code} – {$section->name}";
+
+            return $section;
+        });
     }
 
     #[Computed]
@@ -233,14 +237,14 @@ class LogbookBrowser extends Component
 
         $filters = [
             'event_configuration_id' => $this->eventConfigurationId,
-            'band_id' => $this->band_id,
-            'mode_id' => $this->mode_id,
-            'station_id' => $this->station_id,
-            'operator_id' => $this->operator_id,
+            'band_ids' => $this->band_ids,
+            'mode_ids' => $this->mode_ids,
+            'station_ids' => $this->station_ids,
+            'operator_ids' => $this->operator_ids,
             'time_from' => $this->time_from,
             'time_to' => $this->time_to,
             'callsign' => $this->callsign_search,
-            'section_id' => $this->section_id,
+            'section_ids' => $this->section_ids,
             'duplicate_filter' => $this->show_duplicates,
             'transcribed_filter' => $this->show_transcribed,
         ];

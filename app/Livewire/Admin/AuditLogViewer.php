@@ -16,8 +16,8 @@ class AuditLogViewer extends Component
     use WithPagination;
 
     public array $filters = [
-        'user_id' => null,
-        'action_type' => null,
+        'user_ids' => [],
+        'action_types' => [],
         'date_from' => null,
         'date_to' => null,
         'ip_address' => null,
@@ -39,12 +39,12 @@ class AuditLogViewer extends Component
         $query = AuditLog::query()->with('user');
 
         // Apply filters using model scopes
-        if ($this->filters['user_id']) {
-            $query->forUser($this->filters['user_id']);
+        if (! empty($this->filters['user_ids'])) {
+            $query->forUser($this->filters['user_ids']);
         }
 
-        if ($this->filters['action_type']) {
-            $query->forAction($this->filters['action_type']);
+        if (! empty($this->filters['action_types'])) {
+            $query->forAction($this->filters['action_types']);
         }
 
         if ($this->filters['date_from'] || $this->filters['date_to']) {
@@ -68,8 +68,8 @@ class AuditLogViewer extends Component
     public function clearFilters(): void
     {
         $this->filters = [
-            'user_id' => null,
-            'action_type' => null,
+            'user_ids' => [],
+            'action_types' => [],
             'date_from' => null,
             'date_to' => null,
             'ip_address' => null,
@@ -117,12 +117,12 @@ class AuditLogViewer extends Component
         $query = AuditLog::query()->with('user');
 
         // Apply same filters as main view
-        if ($this->filters['user_id']) {
-            $query->forUser($this->filters['user_id']);
+        if (! empty($this->filters['user_ids'])) {
+            $query->forUser($this->filters['user_ids']);
         }
 
-        if ($this->filters['action_type']) {
-            $query->forAction($this->filters['action_type']);
+        if (! empty($this->filters['action_types'])) {
+            $query->forAction($this->filters['action_types']);
         }
 
         if ($this->filters['date_from'] || $this->filters['date_to']) {
