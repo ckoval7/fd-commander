@@ -36,4 +36,9 @@ class EventBonus extends Model
     {
         return $this->belongsTo(EventConfiguration::class);
     }
+
+    public function bonusType(): BelongsTo
+    {
+        return $this->belongsTo(BonusType::class);
+    }
 }
