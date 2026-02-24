@@ -278,7 +278,70 @@
             <div class="text-xs font-bold uppercase tracking-widest mb-4" style="color: var(--score-text-muted);">
                 Bonus Points
             </div>
-            <div class="text-sm opacity-50" style="color: var(--score-text-muted);">Coming soon…</div>
+
+            {{-- Bonus summary totals --}}
+            <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+                <div>
+                    <div class="text-xs uppercase tracking-wide" style="color: var(--score-text-muted);">Verified</div>
+                    <div class="text-xl font-bold tabular-nums" style="color: var(--score-verified);">
+                        {{ number_format($this->bonusSummary['verified_pts']) }}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs uppercase tracking-wide" style="color: var(--score-text-muted);">Claimed</div>
+                    <div class="text-xl font-bold tabular-nums" style="color: var(--score-warning);">
+                        {{ number_format($this->bonusSummary['claimed_pts']) }}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs uppercase tracking-wide" style="color: var(--score-text-muted);">Unclaimed</div>
+                    <div class="text-xl font-bold tabular-nums" style="color: var(--score-text-muted);">
+                        {{ $this->bonusSummary['unclaimed_count'] }}
+                    </div>
+                </div>
+            </div>
+
+            {{-- Bonus checklist --}}
+            <div class="space-y-1" style="border-top: 1px solid var(--score-divider); padding-top: 0.75rem;">
+                @foreach ($this->bonusList as $item)
+                    <div class="flex items-start justify-between gap-2 py-1.5"
+                         style="border-bottom: 1px solid var(--score-divider);">
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium leading-tight truncate" style="color: var(--score-text);">
+                                {{ $item['type']->name }}
+                            </div>
+                            @if ($item['type']->is_per_occurrence && $item['bonus'])
+                                <div class="text-xs mt-0.5" style="color: var(--score-text-muted);">
+                                    {{ $item['bonus']->quantity }} × {{ $item['type']->base_points }} pts
+                                </div>
+                            @endif
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-xs tabular-nums font-semibold"
+                                  style="color: {{ $item['points'] > 0 ? 'var(--score-headline)' : 'var(--score-text-muted)' }};">
+                                @if ($item['points'] > 0) +{{ $item['points'] }} @else {{ $item['type']->base_points }} pts @endif
+                            </span>
+
+                            @if ($item['status'] === 'verified')
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold"
+                                      style="background: var(--score-verified); color: white;">
+                                    Verified
+                                </span>
+                            @elseif ($item['status'] === 'claimed')
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold"
+                                      style="background: var(--score-warning); color: white;">
+                                    Claimed
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs"
+                                      style="border: 1px solid var(--score-border); color: var(--score-text-muted);">
+                                    Unclaimed
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         </div>
 
     </div>

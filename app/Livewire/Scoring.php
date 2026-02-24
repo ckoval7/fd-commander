@@ -279,6 +279,24 @@ class Scoring extends Component
         return $list;
     }
 
+    /**
+     * Aggregated bonus point totals for the summary row.
+     * Depends on the bonusList computed property.
+     *
+     * @return array{verified_pts: int, claimed_pts: int, unclaimed_count: int}
+     */
+    #[Computed]
+    public function bonusSummary(): array
+    {
+        $list = collect($this->bonusList);
+
+        return [
+            'verified_pts' => (int) $list->where('status', 'verified')->sum('points'),
+            'claimed_pts' => (int) $list->where('status', 'claimed')->sum('points'),
+            'unclaimed_count' => $list->where('status', 'unclaimed')->count(),
+        ];
+    }
+
     // ========================================================================
     // POWER SOURCES
     // ========================================================================
@@ -516,6 +534,7 @@ class Scoring extends Component
             $this->bandModeGrid,
             $this->bandColumnTotals,
             $this->bonusList,
+            $this->bonusSummary,
             $this->powerSources,
             $this->powerMultiplierReason,
             $this->powerMultiplierRules,

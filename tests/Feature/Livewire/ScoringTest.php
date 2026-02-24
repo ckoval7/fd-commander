@@ -456,6 +456,28 @@ it('shows 5x multiplier in power column for QRP with natural power', function ()
 // VIEW — QSO COLUMN
 // ============================================================================
 
+// ============================================================================
+// VIEW — BONUS COLUMN
+// ============================================================================
+
+it('shows bonus column with status chips', function () {
+    $config = makeActiveEvent();
+    $bonusType = BonusType::where('event_type_id', $this->eventType->id)
+        ->where('is_active', true)
+        ->first();
+
+    \App\Models\EventBonus::factory()->create([
+        'event_configuration_id' => $config->id,
+        'bonus_type_id' => $bonusType->id,
+        'is_verified' => true,
+        'calculated_points' => $bonusType->base_points,
+    ]);
+
+    Livewire::test(Scoring::class)
+        ->assertSee($bonusType->name)
+        ->assertSee('Verified');
+});
+
 it('shows QSO column with band/mode counts and stats', function () {
     $config = makeActiveEvent();
     $band = Band::first();
