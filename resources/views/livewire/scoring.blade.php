@@ -346,7 +346,44 @@
 
     </div>
 
-    {{-- ZONE 4: CORRECTIONS (placeholder — added in Task 8) --}}
+    {{-- ===================================================================
+         ZONE 4 — CORRECTIONS & NOTICES
+         Only shown when errors/warnings/opportunities exist
+         =================================================================== --}}
+    @if (count($this->notices) > 0)
+        <div class="mx-6 my-6 rounded p-4"
+             style="border-left: 4px solid var(--score-warning); background: var(--score-surface);">
+
+            <div class="text-xs font-black uppercase tracking-[0.2em] mb-3"
+                 style="color: var(--score-warning);">
+                Corrections &amp; Notices
+            </div>
+
+            <div class="space-y-2">
+                @foreach ($this->notices as $notice)
+                    @php
+                        $color = match($notice['severity']) {
+                            'error'       => 'var(--score-error)',
+                            'opportunity' => 'var(--score-opportunity)',
+                            default       => 'var(--score-warning)',
+                        };
+                        $icon = match($notice['severity']) {
+                            'error'       => 'o-x-circle',
+                            'opportunity' => 'o-light-bulb',
+                            default       => 'o-exclamation-triangle',
+                        };
+                    @endphp
+                    <div class="flex items-start gap-2">
+                        <x-mary-icon :name="$icon" class="w-4 h-4 shrink-0 mt-0.5"
+                                     :style="'color: ' . $color" />
+                        <span class="text-sm" style="color: var(--score-text);">
+                            {{ $notice['message'] }}
+                        </span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     @endif
 </div>

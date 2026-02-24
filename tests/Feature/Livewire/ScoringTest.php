@@ -493,3 +493,32 @@ it('shows QSO column with band/mode counts and stats', function () {
         ->assertSeeText('Total')
         ->assertSeeText('6');  // grand total points: 3 contacts × 2 CW pts
 });
+
+// ============================================================================
+// VIEW — CORRECTIONS & NOTICES
+// ============================================================================
+
+it('shows corrections box when notices exist', function () {
+    $config = makeActiveEvent();
+    $band = Band::first();
+    $mode = Mode::first();
+
+    Contact::factory()->create([
+        'event_configuration_id' => $config->id,
+        'band_id' => $band->id,
+        'mode_id' => $mode->id,
+        'is_duplicate' => false,
+        'points' => 0,
+    ]);
+
+    Livewire::test(Scoring::class)
+        ->assertSee('Corrections')
+        ->assertSee('0 points');
+});
+
+it('does not show corrections box when no notices', function () {
+    makeActiveEvent();
+
+    Livewire::test(Scoring::class)
+        ->assertDontSee('Corrections');
+});
