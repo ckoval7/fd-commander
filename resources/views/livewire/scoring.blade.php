@@ -100,10 +100,10 @@
 
             {{-- Scoring key --}}
             <div class="flex flex-wrap gap-2 mb-4">
-                @foreach ([['CW', '2 pts'], ['Phone', '1 pt'], ['Digital', '2 pts']] as [$modeName, $pts])
+                @foreach ($this->modes as $mode)
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
                           style="background: var(--score-surface-alt); color: var(--score-text);">
-                        {{ $modeName }} = {{ $pts }}
+                        {{ $mode->name }} = {{ $mode->points_fd }} {{ $mode->points_fd === 1 ? 'pt' : 'pts' }}
                     </span>
                 @endforeach
             </div>
@@ -156,31 +156,19 @@
                                 </tr>
                             @endforeach
                         </tbody>
-                        @php
-                            $bandTotals = [];
-                            $grandTotalCount = 0;
-                            $grandTotalPoints = 0;
-                            foreach ($this->bandModeGrid as $row) {
-                                foreach ($this->bands as $band) {
-                                    $bandTotals[$band->id] = ($bandTotals[$band->id] ?? 0) + ($row['cells'][$band->id] ?? 0);
-                                }
-                                $grandTotalCount += $row['total_count'];
-                                $grandTotalPoints += $row['total_points'];
-                            }
-                        @endphp
                         <tfoot>
                             <tr class="font-bold border-t" style="border-color: var(--score-divider);">
                                 <td class="pt-2 pr-2" style="color: var(--score-text);">Total</td>
                                 @foreach ($this->bands as $band)
                                     <td class="pt-2 text-center px-1 tabular-nums" style="color: var(--score-text);">
-                                        {{ $bandTotals[$band->id] ?? 0 ?: '—' }}
+                                        {{ $this->bandColumnTotals[$band->id] ?? 0 ?: '—' }}
                                     </td>
                                 @endforeach
                                 <td class="pt-2 text-right pl-2 tabular-nums" style="color: var(--score-text);">
-                                    {{ $grandTotalCount }}
+                                    {{ $this->validContacts }}
                                 </td>
                                 <td class="pt-2 text-right pl-2 tabular-nums" style="color: var(--score-text);">
-                                    {{ $grandTotalPoints }}
+                                    {{ $this->qsoBasePoints }}
                                 </td>
                             </tr>
                         </tfoot>

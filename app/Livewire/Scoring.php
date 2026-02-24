@@ -220,6 +220,19 @@ class Scoring extends Component
         return $data;
     }
 
+    #[Computed]
+    public function bandColumnTotals(): array
+    {
+        $totals = [];
+        foreach ($this->bandModeGrid as $row) {
+            foreach ($row['cells'] as $bandId => $count) {
+                $totals[$bandId] = ($totals[$bandId] ?? 0) + $count;
+            }
+        }
+
+        return $totals;
+    }
+
     // ========================================================================
     // BONUS LIST
     // ========================================================================
@@ -460,6 +473,7 @@ class Scoring extends Component
             $this->gotaContactCount,
             $this->zeroPointContactCount,
             $this->bandModeGrid,
+            $this->bandColumnTotals,
             $this->bonusList,
             $this->powerSources,
             $this->powerMultiplierReason,
