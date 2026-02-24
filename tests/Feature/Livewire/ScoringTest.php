@@ -379,3 +379,38 @@ it('generates no notices for a clean event', function () {
 
     expect($component->notices)->toBeEmpty();
 });
+
+// ============================================================================
+// VIEW — MASTHEAD & EQUATION
+// ============================================================================
+
+it('shows callsign and section in the masthead', function () {
+    $config = makeActiveEvent(['callsign' => 'W1AW']);
+
+    Livewire::test(Scoring::class)
+        ->assertSee('W1AW');
+});
+
+it('shows all equation terms in the headline', function () {
+    $config = makeActiveEvent(['max_power_watts' => 200]); // >100W = 1x
+    $band = Band::first();
+    $mode = Mode::where('name', 'CW')->first();
+
+    Contact::factory()->count(2)->create([
+        'event_configuration_id' => $config->id,
+        'band_id' => $band->id,
+        'mode_id' => $mode->id,
+        'points' => 2,
+        'is_duplicate' => false,
+    ]);
+
+    Livewire::test(Scoring::class)
+        ->assertSeeText('QSO Base Pts')
+        ->assertSeeText('Power Multi.')
+        ->assertSeeText('Final Score');
+});
+
+it('shows no active event message when no event exists', function () {
+    Livewire::test(Scoring::class)
+        ->assertSee('No active event');
+});
