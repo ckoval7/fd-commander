@@ -97,7 +97,104 @@
             <div class="text-xs font-bold uppercase tracking-widest mb-4" style="color: var(--score-text-muted);">
                 QSO Points
             </div>
-            <div class="text-sm opacity-50" style="color: var(--score-text-muted);">Coming soon…</div>
+
+            {{-- Scoring key --}}
+            <div class="flex flex-wrap gap-2 mb-4">
+                @foreach ([['CW', '2 pts'], ['Phone', '1 pt'], ['Digital', '2 pts']] as [$modeName, $pts])
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
+                          style="background: var(--score-surface-alt); color: var(--score-text);">
+                        {{ $modeName }} = {{ $pts }}
+                    </span>
+                @endforeach
+            </div>
+
+            {{-- Band/Mode Grid --}}
+            @if (count($this->bandModeGrid) > 0 && collect($this->bandModeGrid)->sum('total_count') > 0)
+                <div class="overflow-x-auto mb-4">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--score-divider);">
+                                <th class="text-left pb-2 font-semibold uppercase tracking-wide pr-2"
+                                    style="color: var(--score-text-muted);">Mode</th>
+                                @foreach ($this->bands as $band)
+                                    <th class="text-center pb-2 font-semibold uppercase tracking-wide px-1"
+                                        style="color: var(--score-text-muted); white-space: nowrap;">
+                                        {{ $band->name }}
+                                    </th>
+                                @endforeach
+                                <th class="text-right pb-2 font-semibold uppercase tracking-wide pl-2"
+                                    style="color: var(--score-text-muted);">QSOs</th>
+                                <th class="text-right pb-2 font-semibold uppercase tracking-wide pl-2"
+                                    style="color: var(--score-text-muted);">Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($this->bandModeGrid as $row)
+                                <tr style="border-bottom: 1px solid var(--score-divider);">
+                                    <td class="py-2 pr-2 font-semibold" style="color: var(--score-text);">
+                                        {{ $row['mode']->name }}
+                                    </td>
+                                    @foreach ($this->bands as $band)
+                                        <td class="py-2 text-center px-1 tabular-nums">
+                                            @if ($row['cells'][$band->id] > 0)
+                                                <span class="font-bold" style="color: var(--score-headline);">
+                                                    {{ $row['cells'][$band->id] }}
+                                                </span>
+                                            @else
+                                                <span style="color: var(--score-text-muted); opacity: 0.4;">—</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                    <td class="py-2 text-right pl-2 font-bold tabular-nums"
+                                        style="color: {{ $row['total_count'] > 0 ? 'var(--score-text)' : 'var(--score-text-muted)' }};">
+                                        {{ $row['total_count'] ?: '—' }}
+                                    </td>
+                                    <td class="py-2 text-right pl-2 tabular-nums"
+                                        style="color: var(--score-text-muted);">
+                                        {{ $row['total_points'] ?: '—' }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="text-sm py-4 text-center mb-4" style="color: var(--score-text-muted);">
+                    No contacts logged yet.
+                </div>
+            @endif
+
+            {{-- Contact summary stats --}}
+            <div class="grid grid-cols-2 gap-3 mt-2" style="border-top: 1px solid var(--score-divider); padding-top: 1rem;">
+                <div>
+                    <div class="text-xs uppercase tracking-wide" style="color: var(--score-text-muted);">Total Logged</div>
+                    <div class="text-2xl font-bold tabular-nums mt-0.5" style="color: var(--score-text);">
+                        {{ number_format($this->totalContacts) }}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs uppercase tracking-wide" style="color: var(--score-text-muted);">Valid QSOs</div>
+                    <div class="text-2xl font-bold tabular-nums mt-0.5" style="color: var(--score-headline);">
+                        {{ number_format($this->validContacts) }}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs uppercase tracking-wide" style="color: var(--score-text-muted);">Duplicates</div>
+                    <div class="text-xl font-semibold tabular-nums mt-0.5"
+                         style="color: {{ $this->duplicateCount > 0 ? 'var(--score-warning)' : 'var(--score-text-muted)' }};">
+                        {{ $this->duplicateCount }}
+                        <span class="text-sm font-normal">({{ number_format($this->duplicateRate, 1) }}%)</span>
+                    </div>
+                </div>
+                @if ($this->event->eventConfiguration->has_gota_station)
+                    <div>
+                        <div class="text-xs uppercase tracking-wide" style="color: var(--score-text-muted);">GOTA Contacts</div>
+                        <div class="text-xl font-semibold tabular-nums mt-0.5" style="color: var(--score-text);">
+                            {{ $this->gotaContactCount }}
+                        </div>
+                    </div>
+                @endif
+            </div>
         </div>
 
         {{-- Column 2: Power Multiplier --}}

@@ -417,3 +417,27 @@ it('shows no active event message when no event exists', function () {
     Livewire::test(Scoring::class)
         ->assertSee('No active event');
 });
+
+// ============================================================================
+// VIEW — QSO COLUMN
+// ============================================================================
+
+it('shows QSO column with band/mode counts and stats', function () {
+    $config = makeActiveEvent();
+    $band = Band::first();
+    $cw = Mode::where('name', 'CW')->first();
+
+    Contact::factory()->count(3)->create([
+        'event_configuration_id' => $config->id,
+        'band_id' => $band->id,
+        'mode_id' => $cw->id,
+        'points' => 2,
+        'is_duplicate' => false,
+    ]);
+
+    Livewire::test(Scoring::class)
+        ->assertSee($band->name)
+        ->assertSee('CW')
+        ->assertSeeText('3')
+        ->assertSeeText('0.0%');
+});
