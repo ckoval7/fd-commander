@@ -218,7 +218,60 @@
             <div class="text-xs font-bold uppercase tracking-widest mb-4" style="color: var(--score-text-muted);">
                 Power Multiplier
             </div>
-            <div class="text-sm opacity-50" style="color: var(--score-text-muted);">Coming soon…</div>
+
+            {{-- Big multiplier display --}}
+            <div class="text-center mb-6">
+                <div class="font-black tabular-nums leading-none"
+                     style="font-size: 5rem; color: var(--score-headline);">
+                    {{ $this->powerMultiplier }}×
+                </div>
+                <div class="text-xs uppercase tracking-widest mt-2" style="color: var(--score-text-muted);">
+                    Power Multiplier
+                </div>
+            </div>
+
+            {{-- Why this multiplier --}}
+            <div class="rounded p-3 mb-4 text-sm leading-relaxed"
+                 style="background: var(--score-surface-alt); color: var(--score-text);">
+                {{ $this->powerMultiplierReason }}
+            </div>
+
+            {{-- Power source chips --}}
+            <div class="mb-4">
+                <div class="text-xs uppercase tracking-wide mb-2" style="color: var(--score-text-muted);">
+                    Power Sources Configured
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    @foreach ($this->powerSources as $key => $source)
+                        @if ($source['active'])
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
+                                  style="background: var(--score-headline); color: white;">
+                                {{ $source['label'] }}
+                            </span>
+                        @else
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs"
+                                  style="border: 1px solid var(--score-border); color: var(--score-text-muted);">
+                                {{ $source['label'] }}
+                            </span>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Multiplier rules reference --}}
+            <div style="border-top: 1px solid var(--score-divider); padding-top: 1rem;">
+                <div class="text-xs uppercase tracking-wide mb-2" style="color: var(--score-text-muted);">
+                    Multiplier Rules
+                </div>
+                <table class="w-full text-xs">
+                    @foreach ($this->powerMultiplierRules as $rule)
+                        <tr style="@if($rule['active']) font-weight: 700; color: var(--score-headline); @else color: var(--score-text-muted); @endif">
+                            <td class="py-1 pr-3">{{ $rule['condition'] }}</td>
+                            <td class="py-1 text-right font-mono">{{ $rule['multiplier'] }}</td>
+                        </tr>
+                    @endforeach
+                </table>
+            </div>
         </div>
 
         {{-- Column 3: Bonus Points --}}

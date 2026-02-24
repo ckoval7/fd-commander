@@ -344,6 +344,46 @@ class Scoring extends Component
     }
 
     // ========================================================================
+    // POWER MULTIPLIER RULES TABLE
+    // ========================================================================
+
+    /**
+     * Rules table for the power multiplier, with the active row flagged.
+     *
+     * @return array<int, array{condition: string, multiplier: string, active: bool}>
+     */
+    #[Computed]
+    public function powerMultiplierRules(): array
+    {
+        $config = $this->config();
+        $watts = $config?->max_power_watts ?? 0;
+        $multi = $this->powerMultiplier;
+
+        return [
+            [
+                'condition' => '≤ 5W + natural power, no commercial/generator',
+                'multiplier' => '5×',
+                'active' => $multi === 5,
+            ],
+            [
+                'condition' => '≤ 5W + commercial or generator power',
+                'multiplier' => '2×',
+                'active' => $multi === 2 && $watts <= 5,
+            ],
+            [
+                'condition' => '6 – 100W (any power source)',
+                'multiplier' => '2×',
+                'active' => $multi === 2 && $watts > 5 && $watts <= 100,
+            ],
+            [
+                'condition' => 'Over 100W',
+                'multiplier' => '1×',
+                'active' => $multi === 1,
+            ],
+        ];
+    }
+
+    // ========================================================================
     // NOTICES
     // ========================================================================
 
@@ -477,6 +517,7 @@ class Scoring extends Component
             $this->bonusList,
             $this->powerSources,
             $this->powerMultiplierReason,
+            $this->powerMultiplierRules,
             $this->notices,
             $this->bands,
             $this->modes,

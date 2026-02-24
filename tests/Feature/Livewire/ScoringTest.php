@@ -422,6 +422,27 @@ it('shows no active event message when no event exists', function () {
 // VIEW — QSO COLUMN
 // ============================================================================
 
+// ============================================================================
+// VIEW — POWER MULTIPLIER COLUMN
+// ============================================================================
+
+it('shows power multiplier column with reason and source chips', function () {
+    makeActiveEvent([
+        'max_power_watts' => 100,
+        'uses_generator' => true,
+        'uses_solar' => false,
+    ]);
+
+    Livewire::test(Scoring::class)
+        ->assertSee('2×')
+        ->assertSee('Generator')
+        ->assertSeeText('2×');
+});
+
+// ============================================================================
+// VIEW — QSO COLUMN
+// ============================================================================
+
 it('shows QSO column with band/mode counts and stats', function () {
     $config = makeActiveEvent();
     $band = Band::first();
