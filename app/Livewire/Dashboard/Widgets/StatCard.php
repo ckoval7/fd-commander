@@ -176,6 +176,29 @@ class StatCard extends Component
     }
 
     /**
+     * Get QSOs-per-hour rate since event start.
+     */
+    protected function getQsoPerHour(Event $event): array
+    {
+        $elapsedHours = $event->start_time->diffInMinutes(appNow()) / 60;
+
+        $count = Contact::query()
+            ->where('event_configuration_id', $event->eventConfiguration->id)
+            ->notDuplicate()
+            ->count();
+
+        $rate = $elapsedHours > 0 ? $count / $elapsedHours : 0;
+
+        return [
+            'value' => number_format($rate, 1),
+            'label' => 'QSOs / Hour',
+            'icon' => 'o-bolt',
+            'color' => 'text-info',
+            'last_updated_at' => appNow(),
+        ];
+    }
+
+    /**
      * Get 4-hour rolling average QSO rate metric.
      */
     protected function getAvgQsoRate4h(Event $event): array
@@ -273,6 +296,7 @@ class StatCard extends Component
             'qso_count' => ['QSOs', 'o-chat-bubble-left-right', 'text-primary'],
             'sections_worked' => ['Sections', 'o-map', 'text-info'],
             'operators_count' => ['Operators', 'o-users', 'text-warning'],
+            'qso_per_hour' => ['QSOs / Hour', 'o-bolt', 'text-info'],
             'avg_qso_rate_4h' => ['Avg QSO Rate (4h)', 'o-chart-bar', 'text-info'],
             'contacts_last_hour' => ['Contacts Last Hour', 'o-clock', 'text-success'],
             'hours_remaining' => ['Hours Remaining', 'o-clock', 'text-warning'],
