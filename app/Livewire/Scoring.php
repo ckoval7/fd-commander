@@ -349,6 +349,7 @@ class Scoring extends Component
 
     /**
      * Rules table for the power multiplier, with the active row flagged.
+     * Depends on the powerMultiplier computed property.
      *
      * @return array<int, array{condition: string, multiplier: string, active: bool}>
      */

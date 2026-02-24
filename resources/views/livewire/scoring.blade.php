@@ -225,9 +225,6 @@
                      style="font-size: 5rem; color: var(--score-headline);">
                     {{ $this->powerMultiplier }}×
                 </div>
-                <div class="text-xs uppercase tracking-widest mt-2" style="color: var(--score-text-muted);">
-                    Power Multiplier
-                </div>
             </div>
 
             {{-- Why this multiplier --}}
@@ -242,7 +239,7 @@
                     Power Sources Configured
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    @foreach ($this->powerSources as $key => $source)
+                    @foreach ($this->powerSources as $source)
                         @if ($source['active'])
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
                                   style="background: var(--score-headline); color: white;">
@@ -264,12 +261,14 @@
                     Multiplier Rules
                 </div>
                 <table class="w-full text-xs">
-                    @foreach ($this->powerMultiplierRules as $rule)
-                        <tr style="@if($rule['active']) font-weight: 700; color: var(--score-headline); @else color: var(--score-text-muted); @endif">
-                            <td class="py-1 pr-3">{{ $rule['condition'] }}</td>
-                            <td class="py-1 text-right font-mono">{{ $rule['multiplier'] }}</td>
-                        </tr>
-                    @endforeach
+                    <tbody>
+                        @foreach ($this->powerMultiplierRules as $rule)
+                            <tr style="@if($rule['active']) font-weight: 700; color: var(--score-headline); @else color: var(--score-text-muted); @endif">
+                                <td class="py-1 pr-3">{{ $rule['condition'] }}</td>
+                                <td class="py-1 text-right font-mono">{{ $rule['multiplier'] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
                 </table>
             </div>
         </div>

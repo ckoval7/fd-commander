@@ -428,15 +428,28 @@ it('shows no active event message when no event exists', function () {
 
 it('shows power multiplier column with reason and source chips', function () {
     makeActiveEvent([
-        'max_power_watts' => 100,
-        'uses_generator' => true,
-        'uses_solar' => false,
+        'max_power_watts' => 50,
+        'uses_generator' => false,
+        'uses_commercial_power' => false,
     ]);
 
     Livewire::test(Scoring::class)
-        ->assertSee('2×')
-        ->assertSee('Generator')
-        ->assertSeeText('2×');
+        ->assertSeeText('2×')
+        ->assertSee('50W')                   // part of the reason sentence
+        ->assertSeeText('Power Sources Configured')
+        ->assertSeeText('Multiplier Rules');
+});
+
+it('shows 5x multiplier in power column for QRP with natural power', function () {
+    makeActiveEvent([
+        'max_power_watts' => 5,
+        'uses_battery' => true,
+        'uses_generator' => false,
+        'uses_commercial_power' => false,
+    ]);
+
+    Livewire::test(Scoring::class)
+        ->assertSeeText('5×');
 });
 
 // ============================================================================
