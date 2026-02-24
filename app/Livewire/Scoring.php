@@ -233,7 +233,7 @@ class Scoring extends Component
         if ($eventTypeId) {
             $query->where('event_type_id', $eventTypeId);
         }
-        $bonusTypes = $query->get();
+        $bonusTypes = $query->orderByDesc('base_points')->get();
 
         $claimedBonuses = $this->config()
             ? $this->config()->bonuses->keyBy('bonus_type_id')
@@ -445,7 +445,7 @@ class Scoring extends Component
     /**
      * Clear all computed property caches.
      */
-    public function clearComputedCache(): void
+    protected function clearComputedCache(): void
     {
         unset(
             $this->qsoBasePoints,
@@ -469,7 +469,7 @@ class Scoring extends Component
         );
     }
 
-    public function render()
+    public function render(): \Illuminate\View\View
     {
         return view('livewire.scoring');
     }
