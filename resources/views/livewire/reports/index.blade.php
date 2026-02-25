@@ -33,6 +33,8 @@
         /* Highlight for active QSO rows */
         --reports-row-active:  hsl(38, 90%, 95%);
         --reports-row-hover:   hsl(215, 20%, 96%);
+
+        --reports-warning:     hsl(38, 92%, 50%);
     }
 
     [data-theme="dark"] {
@@ -60,6 +62,8 @@
 
         --reports-row-active:  hsl(38, 30%, 14%);
         --reports-row-hover:   hsl(222, 14%, 17%);
+
+        --reports-warning:     hsl(38, 92%, 65%);
     }
 </style>
 
@@ -327,7 +331,7 @@
                                         {{ number_format($row['total_logged']) }}
                                     </td>
                                     <td class="px-4 py-2.5 text-right font-mono tabular-nums"
-                                        style="color: {{ $row['duplicates'] > 0 ? 'var(--color-warning)' : 'var(--reports-text-muted)' }};">
+                                        style="color: {{ $row['duplicates'] > 0 ? 'var(--reports-warning)' : 'var(--reports-text-muted)' }};">
                                         {{ $row['duplicates'] ?: '—' }}
                                     </td>
                                 </tr>
