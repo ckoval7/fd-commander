@@ -14,6 +14,10 @@ class CabrilloExporter
     {
         $config->loadMissing(['section', 'operatingClass', 'event']);
 
+        if (! $config->section || ! $config->operatingClass) {
+            throw new \RuntimeException('EventConfiguration is missing section or operating class.');
+        }
+
         $lines = [
             'START-OF-LOG: 3.0',
             'CREATED-BY: FD Log DB',
@@ -71,7 +75,9 @@ class CabrilloExporter
 
     private function formatQso(EventConfiguration $config, Contact $contact): string
     {
-        $freqKhz = (int) ($contact->band->frequency_mhz * 1000);
+        $freqKhz = $contact->band->frequency_mhz !== null
+            ? (int) ($contact->band->frequency_mhz * 1000)
+            : 0;
         $mode = $this->cabrilloMode($contact->mode->category);
         $date = $contact->qso_time->format('Y-m-d');
         $time = $contact->qso_time->format('Hi');

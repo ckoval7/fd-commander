@@ -167,3 +167,26 @@ test('generates a correct filename', function () {
     $filename = app(CabrilloExporter::class)->filename($config);
     expect($filename)->toBe('w1aw-2025-field-day.log');
 });
+
+test('uses frequency 0 for satellite band contacts', function () {
+    $config = makeCabrilloExporterConfig();
+    $satBand = Band::factory()->create(['name' => 'Satellite', 'frequency_mhz' => null]);
+    $mode = Mode::factory()->create(['category' => 'CW']);
+
+    Contact::factory()->create([
+        'event_configuration_id' => $config->id,
+        'band_id' => $satBand->id,
+        'mode_id' => $mode->id,
+        'callsign' => 'K1SAT',
+        'is_duplicate' => false,
+    ]);
+
+    $output = app(CabrilloExporter::class)->export($config);
+    expect($output)->toContain('QSO:     0 CW');
+});
+
+test('omits club line when club name is not set', function () {
+    $config = makeCabrilloExporterConfig(['club_name' => null]);
+    $output = app(CabrilloExporter::class)->export($config);
+    expect($output)->not->toContain('CLUB:');
+});
