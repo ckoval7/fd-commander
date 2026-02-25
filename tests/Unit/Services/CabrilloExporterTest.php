@@ -13,19 +13,21 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-function makeCabrilloConfig(array $configOverrides = [], array $eventOverrides = []): EventConfiguration
+function makeCabrilloExporterConfig(array $configOverrides = [], array $eventOverrides = []): EventConfiguration
 {
     $section = Section::factory()->create(['code' => 'CT']);
 
-    $eventType = EventType::firstOrCreate(
-        ['code' => 'FD'],
-        ['name' => 'Field Day', 'description' => 'ARRL Field Day', 'is_active' => true]
-    );
+    $eventType = EventType::factory()->create(['code' => 'FD', 'name' => 'Field Day', 'is_active' => true]);
 
-    $opClass = OperatingClass::firstOrCreate(
-        ['code' => '2A', 'event_type_id' => $eventType->id],
-        ['name' => 'Class 2A', 'description' => 'Two transmitters, non-emergency power']
-    );
+    $opClass = OperatingClass::create([
+        'code' => '2A',
+        'event_type_id' => $eventType->id,
+        'name' => 'Class 2A',
+        'description' => 'Two transmitters',
+        'allows_gota' => false,
+        'allows_free_vhf' => false,
+        'requires_emergency_power' => false,
+    ]);
 
     $event = Event::factory()->create(array_merge([
         'start_time' => now()->subHours(12),
@@ -42,8 +44,8 @@ function makeCabrilloConfig(array $configOverrides = [], array $eventOverrides =
     ], $configOverrides));
 }
 
-it('includes required cabrillo header fields', function () {
-    $config = makeCabrilloConfig();
+test('includes required cabrillo header fields', function () {
+    $config = makeCabrilloExporterConfig();
     $output = app(CabrilloExporter::class)->export($config);
 
     expect($output)
@@ -57,26 +59,26 @@ it('includes required cabrillo header fields', function () {
         ->toContain('END-OF-LOG:');
 });
 
-it('maps power to HIGH when over 100 watts', function () {
-    $config = makeCabrilloConfig(['max_power_watts' => 1500]);
+test('maps power to HIGH when over 100 watts', function () {
+    $config = makeCabrilloExporterConfig(['max_power_watts' => 1500]);
     $output = app(CabrilloExporter::class)->export($config);
     expect($output)->toContain('CATEGORY-POWER: HIGH');
 });
 
-it('maps power to LOW for 6-100 watts', function () {
-    $config = makeCabrilloConfig(['max_power_watts' => 100]);
+test('maps power to LOW for 6-100 watts', function () {
+    $config = makeCabrilloExporterConfig(['max_power_watts' => 100]);
     $output = app(CabrilloExporter::class)->export($config);
     expect($output)->toContain('CATEGORY-POWER: LOW');
 });
 
-it('maps power to QRP for 5 watts or less', function () {
-    $config = makeCabrilloConfig(['max_power_watts' => 5]);
+test('maps power to QRP for 5 watts or less', function () {
+    $config = makeCabrilloExporterConfig(['max_power_watts' => 5]);
     $output = app(CabrilloExporter::class)->export($config);
     expect($output)->toContain('CATEGORY-POWER: QRP');
 });
 
-it('formats a CW qso line correctly', function () {
-    $config = makeCabrilloConfig();
+test('formats a CW qso line correctly', function () {
+    $config = makeCabrilloExporterConfig();
     $band = Band::factory()->create(['name' => '20m', 'frequency_mhz' => 14.0]);
     $mode = Mode::factory()->create(['name' => 'CW', 'category' => 'CW']);
 
@@ -95,8 +97,8 @@ it('formats a CW qso line correctly', function () {
     expect($output)->toContain('QSO: 14000 CW 2025-06-28 1423 W1AW 2A CT K1ABC 1A ME');
 });
 
-it('maps phone mode to PH', function () {
-    $config = makeCabrilloConfig();
+test('maps phone mode to PH', function () {
+    $config = makeCabrilloExporterConfig();
     $band = Band::factory()->create(['name' => '20m', 'frequency_mhz' => 14.0]);
     $mode = Mode::factory()->create(['name' => 'Phone', 'category' => 'Phone']);
 
@@ -114,8 +116,8 @@ it('maps phone mode to PH', function () {
     expect($output)->toContain('QSO: 14000 PH 2025-06-28 1423');
 });
 
-it('maps digital mode to DG', function () {
-    $config = makeCabrilloConfig();
+test('maps digital mode to DG', function () {
+    $config = makeCabrilloExporterConfig();
     $band = Band::factory()->create(['name' => '20m', 'frequency_mhz' => 14.0]);
     $mode = Mode::factory()->create(['name' => 'Digital', 'category' => 'Digital']);
 
@@ -133,10 +135,18 @@ it('maps digital mode to DG', function () {
     expect($output)->toContain('QSO: 14000 DG 2025-06-28 1430');
 });
 
-it('excludes duplicate contacts from qso lines', function () {
-    $config = makeCabrilloConfig();
+test('excludes duplicate contacts from qso lines', function () {
+    $config = makeCabrilloExporterConfig();
     $band = Band::factory()->create(['frequency_mhz' => 14.0]);
     $mode = Mode::factory()->create(['category' => 'CW']);
+
+    Contact::factory()->create([
+        'event_configuration_id' => $config->id,
+        'band_id' => $band->id,
+        'mode_id' => $mode->id,
+        'callsign' => 'K1GOOD',
+        'is_duplicate' => false,
+    ]);
 
     Contact::factory()->create([
         'event_configuration_id' => $config->id,
@@ -147,11 +157,13 @@ it('excludes duplicate contacts from qso lines', function () {
     ]);
 
     $output = app(CabrilloExporter::class)->export($config);
-    expect($output)->not->toContain('K1DUPE');
+    expect($output)
+        ->toContain('K1GOOD')
+        ->not->toContain('K1DUPE');
 });
 
-it('generates a correct filename', function () {
-    $config = makeCabrilloConfig([], ['start_time' => '2025-06-28 12:00:00']);
+test('generates a correct filename', function () {
+    $config = makeCabrilloExporterConfig([], ['start_time' => '2025-06-28 12:00:00']);
     $filename = app(CabrilloExporter::class)->filename($config);
     expect($filename)->toBe('w1aw-2025-field-day.log');
 });
