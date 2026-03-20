@@ -3,6 +3,7 @@
 namespace App\Livewire\Settings;
 
 use App\Models\Setting;
+use enshrined\svgSanitize\Sanitizer;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -77,10 +78,25 @@ class SiteBranding extends Component
                 Storage::disk('public')->delete($this->logo_path);
             }
 
-            // Save new logo
-            $extension = $this->new_logo->getClientOriginalExtension();
+            // Save new logo (sanitize SVGs to prevent XSS)
+            $extension = $this->new_logo->guessExtension() ?: 'png';
             $filename = 'logo-'.time().'.'.$extension;
-            $path = $this->new_logo->storeAs('branding', $filename, 'public');
+
+            if ($extension === 'svg') {
+                $sanitizer = new Sanitizer;
+                $cleanSvg = $sanitizer->sanitize(file_get_contents($this->new_logo->getRealPath()));
+
+                if (! $cleanSvg) {
+                    $this->addError('new_logo', 'The SVG file could not be sanitized and was rejected.');
+
+                    return;
+                }
+
+                $path = 'branding/'.$filename;
+                Storage::disk('public')->put($path, $cleanSvg);
+            } else {
+                $path = $this->new_logo->storeAs('branding', $filename, 'public');
+            }
 
             Setting::set('site_logo_path', $path);
             $this->logo_path = $path;

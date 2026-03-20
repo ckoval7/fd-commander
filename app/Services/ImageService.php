@@ -28,7 +28,7 @@ class ImageService
     {
         $hash = $this->calculateHash($file);
         $hashPrefix = substr($hash, 0, 2);
-        $extension = $file->getClientOriginalExtension() ?: 'jpg';
+        $extension = $file->guessExtension() ?: 'jpg';
         $filename = Str::uuid().'.'.$extension;
 
         $storagePath = "{$directory}/{$hashPrefix}/{$filename}";
