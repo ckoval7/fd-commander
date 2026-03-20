@@ -115,6 +115,9 @@ class LoggingInterface extends Component
 
         $this->operatingSession->increment('qso_count');
 
+        // Refresh notification bell for the logging user
+        $this->dispatch('notification-created');
+
         // Broadcast for real-time dashboard updates
         $event = $this->operatingSession->station->eventConfiguration->event;
         ContactLogged::dispatch($contact->load(['band', 'mode', 'section']), $event);

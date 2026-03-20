@@ -17,11 +17,13 @@ class EventCountdown extends Component
 
     public array $countdown = [];
 
-    public string $localTime = '';
-
-    public string $utcTime = '';
-
     public string $timezoneLabel = '';
+
+    public string $timezone = 'UTC';
+
+    public ?int $targetTimestamp = null;
+
+    public int $serverTimestamp = 0;
 
     public string $label = '';
 
@@ -44,7 +46,7 @@ class EventCountdown extends Component
 
         $this->state = $this->determineState();
         $this->calculateCountdown();
-        $this->updateTimes();
+        $this->updateTimezone();
         $this->determinePollingInterval();
         $this->setStateStyles();
     }
@@ -136,9 +138,11 @@ class EventCountdown extends Component
             'minutes' => $diff->i,
             'seconds' => $diff->s,
         ];
+
+        $this->targetTimestamp = $targetTime ? (int) $targetTime->timestamp : null;
     }
 
-    protected function updateTimes(): void
+    protected function updateTimezone(): void
     {
         // Use user's preferred timezone if authenticated, otherwise use system timezone
         $timezone = auth()->check() && auth()->user()->preferred_timezone
@@ -149,14 +153,14 @@ class EventCountdown extends Component
 
         // Get timezone abbreviation (e.g., EST, EDT, PST, PDT)
         $this->timezoneLabel = $now->timezone($timezone)->format('T');
-        $this->localTime = $now->timezone($timezone)->format('H:i:s');
-        $this->utcTime = $now->timezone('UTC')->format('H:i:s');
+        $this->timezone = $timezone;
+        $this->serverTimestamp = (int) $now->timestamp;
     }
 
     protected function determinePollingInterval(): void
     {
-        // Always poll every second to keep clocks ticking
-        $this->pollingInterval = 1;
+        // Slow poll for event state sync; clocks and countdown tick client-side via Alpine
+        $this->pollingInterval = 30;
     }
 
     protected function setStateStyles(): void

@@ -207,8 +207,8 @@ test('component displays correct timezone abbreviation for different timezones',
     }
 });
 
-test('component always uses 1 second polling for real-time clock updates', function () {
-    // Even when event is far away, we want clocks to tick every second
+test('component uses 30 second polling for event state sync', function () {
+    // Clocks and countdown tick client-side via Alpine; Livewire only syncs event state
     Event::factory()->create([
         'event_type_id' => $this->eventType->id,
         'start_time' => now()->addDays(3),
@@ -216,7 +216,7 @@ test('component always uses 1 second polling for real-time clock updates', funct
     ]);
 
     Livewire::test(EventCountdown::class)
-        ->assertSet('pollingInterval', 1);
+        ->assertSet('pollingInterval', 30);
 });
 
 test('countdown formats correctly for days remaining', function () {

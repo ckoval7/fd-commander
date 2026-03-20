@@ -1,3 +1,4 @@
+<div>
 <div class="px-3 py-2" x-data="{ open: false }">
     @if($contextEvent)
         {{-- Current event info --}}
@@ -105,4 +106,5 @@
             </div>
         @endif
     </div>
+</div>
 </div>

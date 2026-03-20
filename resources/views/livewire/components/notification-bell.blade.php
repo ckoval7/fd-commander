@@ -1,5 +1,5 @@
+<div wire:poll.30s="loadNotifications">
 <div
-    wire:poll.30s="loadNotifications"
     x-data="{ open: false }"
     @click.away="open = false"
     class="relative"
@@ -104,4 +104,5 @@
             </a>
         </div>
     </div>
+</div>
 </div>

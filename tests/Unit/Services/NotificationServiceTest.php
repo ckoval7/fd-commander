@@ -3,6 +3,7 @@
 use App\Enums\NotificationCategory;
 use App\Models\User;
 use App\Notifications\InAppNotification;
+use App\Services\DeveloperClockService;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Notification;
 
@@ -281,4 +282,26 @@ test('notification data structure matches contract', function () {
     expect($data['url'])->toBe('/contacts');
     expect($data['count'])->toBe(1);
     expect($data['icon'])->toBe('o-globe-americas');
+});
+
+test('shouldDebounce uses real time when app time is offset by time travel', function () {
+    $user = User::factory()->create();
+
+    // Create a notification at real current time (now())
+    $user->notify(new InAppNotification(
+        category: NotificationCategory::Photos,
+        title: 'Photo Uploaded',
+        message: 'Test photo',
+        groupKey: 'photo_uploads',
+    ));
+
+    // Simulate time travel: appNow() returns a time 30 days in the future
+    $clockService = $this->mock(DeveloperClockService::class);
+    $clockService->shouldReceive('now')->andReturn(now()->addDays(30));
+
+    // shouldDebounce must still detect the notification as recent (real-time window)
+    // Bug: if appNow() is used, cutoff = now()+30d-5min, so real notification appears "old"
+    $result = $this->service->shouldDebounce($user, 'photo_uploads', 300);
+
+    expect($result)->toBeTrue();
 });

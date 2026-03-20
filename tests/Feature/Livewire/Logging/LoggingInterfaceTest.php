@@ -518,3 +518,12 @@ test('suggestions show full exchange and worked-on bands', function () {
         ->assertSee('K5ABC 1D STX')
         ->assertSee('40m Phone');
 });
+
+test('logContact dispatches notification-created event so bell refreshes', function () {
+    $this->actingAs($this->user);
+
+    Livewire::test(LoggingInterface::class, ['operatingSession' => $this->session])
+        ->set('exchangeInput', 'W1AW 3A CT')
+        ->call('logContact')
+        ->assertDispatched('notification-created');
+});

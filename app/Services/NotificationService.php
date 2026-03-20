@@ -63,7 +63,7 @@ class NotificationService
      */
     public function shouldDebounce(User $user, string $groupKey, int $windowSeconds): bool
     {
-        $cutoff = appNow()->subSeconds($windowSeconds);
+        $cutoff = now()->subSeconds($windowSeconds);
 
         return $user->notifications()
             ->where('data->group_key', $groupKey)

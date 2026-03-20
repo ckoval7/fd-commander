@@ -1,4 +1,4 @@
-<div @if($isVisible && !$isFrozen) wire:poll.1s="refreshTime" @endif>
+<div @if($isVisible && !$isFrozen) wire:poll.10s="refreshTime" @endif>
     @if($isVisible)
         <div class="alert bg-amber-100 border-l-4 border-amber-500 text-amber-900 shadow-md rounded-none" role="alert">
             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
