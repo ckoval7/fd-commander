@@ -328,81 +328,68 @@ class StatCard extends Component
      */
     protected function addComparisonData(array $current, Event $event): array
     {
-        // Check if comparison is enabled
         $showComparison = $this->config['show_comparison'] ?? true;
 
-        if (! $showComparison) {
+        if (! $showComparison || ! $event->eventConfiguration) {
             return $current;
         }
 
-        // Check if event has configuration
-        if (! $event->eventConfiguration) {
-            return $current;
-        }
-
-        // Get comparison interval (default to 1h)
         $interval = $this->config['comparison_interval'] ?? '1h';
-
-        // Generate historical cache key
         $configHash = md5(json_encode($this->config));
         $historicalKey = "dashboard:widget:StatCard:{$configHash}:{$event->eventConfiguration->id}:history:{$interval}";
 
-        // Get previous value from cache
         $previousValue = Cache::get($historicalKey);
-
-        // Extract numeric value from current data (remove formatting)
         $currentNumeric = (float) str_replace(',', '', $current['value']);
 
-        // If no previous value, store current and return without comparison
+        $ttl = $this->comparisonCacheTtl($interval);
+        Cache::put($historicalKey, $currentNumeric, $ttl);
+
         if ($previousValue === null) {
-            // Set TTL based on interval
-            $ttl = match ($interval) {
-                '1h' => now()->addHours(1)->addHour(), // 1h + 1h buffer
-                '4h' => now()->addHours(4)->addHour(), // 4h + 1h buffer
-                default => now()->addHours(2),
-            };
-
-            Cache::put($historicalKey, $currentNumeric, $ttl);
-
             return $current;
         }
 
-        // Calculate comparison metrics
-        $changeAmount = $currentNumeric - $previousValue;
-        $changePercentage = $previousValue > 0
-            ? (($currentNumeric - $previousValue) / $previousValue) * 100
-            : 0;
+        return array_merge($current, $this->buildComparisonMetrics($currentNumeric, $previousValue, $interval));
+    }
 
-        // Determine trend
-        $trend = match (true) {
-            $changeAmount > 0 => 'up',
-            $changeAmount < 0 => 'down',
-            default => 'stable',
-        };
-
-        // Format comparison label
-        $comparisonLabel = match ($interval) {
-            '1h' => 'vs 1h ago',
-            '4h' => 'vs 4h ago',
-            default => 'vs earlier',
-        };
-
-        // Store current value as new historical snapshot
-        $ttl = match ($interval) {
+    /**
+     * Get the cache TTL for comparison historical data.
+     */
+    protected function comparisonCacheTtl(string $interval): \DateTimeInterface
+    {
+        return match ($interval) {
             '1h' => now()->addHours(1)->addHour(),
             '4h' => now()->addHours(4)->addHour(),
             default => now()->addHours(2),
         };
-        Cache::put($historicalKey, $currentNumeric, $ttl);
+    }
 
-        // Add comparison fields to data
-        return array_merge($current, [
+    /**
+     * Build comparison metric fields from current and previous values.
+     *
+     * @return array{previous_value: float, change_amount: float, change_percentage: float, trend: string, comparison_label: string}
+     */
+    protected function buildComparisonMetrics(float $currentNumeric, float $previousValue, string $interval): array
+    {
+        $changeAmount = $currentNumeric - $previousValue;
+
+        return [
             'previous_value' => $previousValue,
             'change_amount' => $changeAmount,
-            'change_percentage' => round($changePercentage, 1),
-            'trend' => $trend,
-            'comparison_label' => $comparisonLabel,
-        ]);
+            'change_percentage' => round(
+                $previousValue > 0 ? (($currentNumeric - $previousValue) / $previousValue) * 100 : 0,
+                1
+            ),
+            'trend' => match (true) {
+                $changeAmount > 0 => 'up',
+                $changeAmount < 0 => 'down',
+                default => 'stable',
+            },
+            'comparison_label' => match ($interval) {
+                '1h' => 'vs 1h ago',
+                '4h' => 'vs 4h ago',
+                default => 'vs earlier',
+            },
+        ];
     }
 
     public function render()

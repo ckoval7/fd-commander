@@ -27,17 +27,10 @@ class LocationDetectionService
      */
     public function isLocalNetwork(string $ip, array $subnets): bool
     {
-        // Return false for empty subnet array
-        if (empty($subnets)) {
+        if (empty($subnets) || filter_var($ip, FILTER_VALIDATE_IP) === false) {
             return false;
         }
 
-        // Validate IP address format
-        if (filter_var($ip, FILTER_VALIDATE_IP) === false) {
-            return false;
-        }
-
-        // Check each subnet
         foreach ($subnets as $subnet) {
             if ($this->ipInSubnet($ip, $subnet)) {
                 return true;
@@ -151,39 +144,27 @@ class LocationDetectionService
      */
     private function ipInSubnet(string $ip, string $subnet): bool
     {
-        // Parse CIDR notation
         if (! str_contains($subnet, '/')) {
             return false;
         }
 
         [$subnetIp, $prefixLength] = explode('/', $subnet, 2);
 
-        // Validate prefix length is numeric
-        if (! is_numeric($prefixLength)) {
+        if (! is_numeric($prefixLength) || filter_var($subnetIp, FILTER_VALIDATE_IP) === false) {
             return false;
         }
 
         $prefixLength = (int) $prefixLength;
-
-        // Validate subnet IP
-        if (filter_var($subnetIp, FILTER_VALIDATE_IP) === false) {
-            return false;
-        }
-
-        // Determine IP version
         $isIpv6 = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
         $isSubnetIpv6 = filter_var($subnetIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
 
-        // IP versions must match
         if ($isIpv6 !== $isSubnetIpv6) {
             return false;
         }
 
-        if ($isIpv6) {
-            return $this->ipv6InSubnet($ip, $subnetIp, $prefixLength);
-        }
-
-        return $this->ipv4InSubnet($ip, $subnetIp, $prefixLength);
+        return $isIpv6
+            ? $this->ipv6InSubnet($ip, $subnetIp, $prefixLength)
+            : $this->ipv4InSubnet($ip, $subnetIp, $prefixLength);
     }
 
     /**
@@ -226,12 +207,10 @@ class LocationDetectionService
      */
     private function ipv6InSubnet(string $ip, string $subnetIp, int $prefixLength): bool
     {
-        // Validate prefix length for IPv6
         if ($prefixLength < 0 || $prefixLength > 128) {
             return false;
         }
 
-        // Convert IPv6 addresses to binary strings
         $ipBinary = inet_pton($ip);
         $subnetBinary = inet_pton($subnetIp);
 
@@ -239,26 +218,19 @@ class LocationDetectionService
             return false;
         }
 
-        // Compare prefix bits
         $bytesToCompare = intdiv($prefixLength, 8);
         $remainingBits = $prefixLength % 8;
 
-        // Compare full bytes
-        if ($bytesToCompare > 0) {
-            if (substr($ipBinary, 0, $bytesToCompare) !== substr($subnetBinary, 0, $bytesToCompare)) {
-                return false;
-            }
+        // Compare full bytes of the prefix
+        if ($bytesToCompare > 0 && substr($ipBinary, 0, $bytesToCompare) !== substr($subnetBinary, 0, $bytesToCompare)) {
+            return false;
         }
 
         // Compare remaining bits if any
         if ($remainingBits > 0) {
             $mask = (0xFF << (8 - $remainingBits)) & 0xFF;
-            $ipByte = ord($ipBinary[$bytesToCompare]);
-            $subnetByte = ord($subnetBinary[$bytesToCompare]);
 
-            if (($ipByte & $mask) !== ($subnetByte & $mask)) {
-                return false;
-            }
+            return (ord($ipBinary[$bytesToCompare]) & $mask) === (ord($subnetBinary[$bytesToCompare]) & $mask);
         }
 
         return true;

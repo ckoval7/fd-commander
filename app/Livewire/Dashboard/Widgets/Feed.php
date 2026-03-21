@@ -242,24 +242,11 @@ class Feed extends Component
 
         $diffInSeconds = $timestamp->diffInSeconds(appNow());
 
-        if ($diffInSeconds < 60) {
-            return 'just now';
-        }
-
-        $diffInMinutes = (int) floor($diffInSeconds / 60);
-
-        if ($diffInMinutes < 60) {
-            return $diffInMinutes.'m ago';
-        }
-
-        $diffInHours = (int) floor($diffInMinutes / 60);
-
-        if ($diffInHours < 24) {
-            return $diffInHours.'h ago';
-        }
-
-        $diffInDays = (int) floor($diffInHours / 24);
-
-        return $diffInDays.'d ago';
+        return match (true) {
+            $diffInSeconds < 60 => 'just now',
+            $diffInSeconds < 3600 => (int) floor($diffInSeconds / 60).'m ago',
+            $diffInSeconds < 86400 => (int) floor($diffInSeconds / 3600).'h ago',
+            default => (int) floor($diffInSeconds / 86400).'d ago',
+        };
     }
 }

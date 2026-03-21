@@ -68,7 +68,7 @@
                             <x-slot:heading class="font-medium">
                                 <div class="flex items-center justify-between w-full pr-4">
                                     <span>{{ $category }}</span>
-                                    <span class="flex items-center gap-2 cursor-pointer" role="group" aria-label="Category selection" @click.stop @keydown.stop>
+                                    <span class="flex items-center gap-2 cursor-pointer" @click.stop @keydown.stop>
                                         <x-checkbox
                                             label="Select All"
                                             wire:change="toggleCategory('{{ $category }}', $event.target.checked)"

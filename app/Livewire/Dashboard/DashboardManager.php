@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Exceptions\DashboardAuthorizationException;
 use App\Models\Dashboard;
 use App\Services\DashboardService;
 use Illuminate\Contracts\View\View;
@@ -105,7 +106,7 @@ class DashboardManager extends Component
                 'icon' => 'o-check-circle',
                 'css' => 'alert-success',
             ]);
-        } catch (\Exception $e) {
+        } catch (DashboardAuthorizationException|\OverflowException|\InvalidArgumentException $e) {
             $this->dispatch('toast', [
                 'title' => 'Error',
                 'description' => 'Failed to create dashboard: '.$e->getMessage(),
@@ -122,7 +123,7 @@ class DashboardManager extends Component
 
             // Verify user owns this dashboard
             if ($dashboard->user_id !== auth()->id()) {
-                throw new \Exception('You do not have permission to duplicate this dashboard.');
+                throw new DashboardAuthorizationException('You do not have permission to duplicate this dashboard.');
             }
 
             $newTitle = $dashboard->title.' (Copy)';
@@ -135,7 +136,7 @@ class DashboardManager extends Component
                 'icon' => 'o-check-circle',
                 'css' => 'alert-success',
             ]);
-        } catch (\Exception $e) {
+        } catch (DashboardAuthorizationException|\OverflowException $e) {
             $this->dispatch('toast', [
                 'title' => 'Error',
                 'description' => 'Failed to duplicate dashboard: '.$e->getMessage(),
@@ -168,7 +169,7 @@ class DashboardManager extends Component
 
             // Verify user owns this dashboard
             if ($dashboard->user_id !== auth()->id()) {
-                throw new \Exception('You do not have permission to delete this dashboard.');
+                throw new DashboardAuthorizationException('You do not have permission to delete this dashboard.');
             }
 
             $service->deleteDashboard($dashboard);
@@ -181,7 +182,7 @@ class DashboardManager extends Component
                 'icon' => 'o-check-circle',
                 'css' => 'alert-success',
             ]);
-        } catch (\Exception $e) {
+        } catch (DashboardAuthorizationException|\LogicException $e) {
             $this->dispatch('toast', [
                 'title' => 'Error',
                 'description' => 'Failed to delete dashboard: '.$e->getMessage(),
@@ -200,7 +201,7 @@ class DashboardManager extends Component
 
             // Verify user owns this dashboard
             if ($dashboard->user_id !== auth()->id()) {
-                throw new \Exception('You do not have permission to modify this dashboard.');
+                throw new DashboardAuthorizationException('You do not have permission to modify this dashboard.');
             }
 
             $service->setAsDefault($dashboard);
@@ -212,7 +213,7 @@ class DashboardManager extends Component
                 'icon' => 'o-check-circle',
                 'css' => 'alert-success',
             ]);
-        } catch (\Exception $e) {
+        } catch (DashboardAuthorizationException $e) {
             $this->dispatch('toast', [
                 'title' => 'Error',
                 'description' => 'Failed to set default dashboard: '.$e->getMessage(),

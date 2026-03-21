@@ -21,6 +21,8 @@ class DeveloperTools extends Component
 {
     use Toast;
 
+    private const string TEST_USER_CALLSIGN_PATTERN = 'TEST%';
+
     // Time Travel Properties
     public ?string $fakeDate = null;
 
@@ -488,7 +490,7 @@ class DeveloperTools extends Component
      */
     public function testUserPoolExists(): bool
     {
-        return User::where('call_sign', 'LIKE', 'TEST%')->exists();
+        return User::where('call_sign', 'LIKE', self::TEST_USER_CALLSIGN_PATTERN)->exists();
     }
 
     /**
@@ -496,7 +498,7 @@ class DeveloperTools extends Component
      */
     public function getTestUserPoolCount(): int
     {
-        return User::where('call_sign', 'LIKE', 'TEST%')->count();
+        return User::where('call_sign', 'LIKE', self::TEST_USER_CALLSIGN_PATTERN)->count();
     }
 
     /**
@@ -592,7 +594,7 @@ class DeveloperTools extends Component
             }
 
             // Delete all test users (cascade will handle related records)
-            User::where('call_sign', 'LIKE', 'TEST%')->delete();
+            User::where('call_sign', 'LIKE', self::TEST_USER_CALLSIGN_PATTERN)->delete();
 
             AuditLog::log(
                 action: 'developer.test_users.clear',
@@ -616,46 +618,51 @@ class DeveloperTools extends Component
     // =====================
 
     /**
+     * Validate prerequisites for seeding test contacts.
+     *
+     * @return array{title: string, message: string}|null Error details, or null if all prerequisites met
+     */
+    protected function validateSeedPrerequisites(): ?array
+    {
+        if (! $this->testUserPoolExists()) {
+            return ['title' => 'Test user pool required', 'message' => 'Please initialize the test user pool before seeding contacts.'];
+        }
+
+        $event = \App\Models\Event::active()->first();
+        if ($event === null) {
+            return ['title' => 'No active event', 'message' => 'No event is currently in progress based on date range.'];
+        }
+
+        if ($event->eventConfiguration === null) {
+            return ['title' => 'No event configuration', 'message' => 'The active event does not have a configuration yet.'];
+        }
+
+        if (\App\Models\Station::count() === 0) {
+            return ['title' => 'No stations configured', 'message' => 'Please create at least one station before seeding test contacts.'];
+        }
+
+        return null;
+    }
+
+    /**
      * Seed test contacts for the active event.
      */
     public function seedTestContacts(): void
     {
         try {
-            // Check for test user pool existence
-            if (! $this->testUserPoolExists()) {
-                $this->error('Test user pool required', 'Please initialize the test user pool before seeding contacts.');
+            $prerequisiteError = $this->validateSeedPrerequisites();
+            if ($prerequisiteError !== null) {
+                $this->error($prerequisiteError['title'], $prerequisiteError['message']);
 
                 return;
             }
 
-            // Find active event using date-based scope, then get its configuration
             $event = \App\Models\Event::active()->first();
-
-            if ($event === null) {
-                $this->error('No active event', 'No event is currently in progress based on date range.');
-
-                return;
-            }
-
             $eventConfig = $event->eventConfiguration;
-
-            if ($eventConfig === null) {
-                $this->error('No event configuration', 'The active event does not have a configuration yet.');
-
-                return;
-            }
-
-            // Get existing stations
             $stations = \App\Models\Station::all();
 
-            if ($stations->isEmpty()) {
-                $this->error('No stations configured', 'Please create at least one station before seeding test contacts.');
-
-                return;
-            }
-
             // Get all test users from the pool
-            $testUserPool = User::where('call_sign', 'LIKE', 'TEST%')->get();
+            $testUserPool = User::where('call_sign', 'LIKE', self::TEST_USER_CALLSIGN_PATTERN)->get();
             $poolSize = $testUserPool->count();
 
             // Calculate random subset: min(3, pool_size) to min(10, pool_size)

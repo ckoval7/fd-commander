@@ -185,7 +185,8 @@
                 />
 
                 <div>
-                    <span class="block text-sm font-medium mb-3" role="group" aria-label="Power Sources">Power Sources</span>
+                    <fieldset>
+                    <legend class="block text-sm font-medium mb-3">Power Sources</legend>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div class="form-control">
                             <label class="label cursor-pointer justify-start gap-3">
@@ -238,6 +239,7 @@
                             </p>
                         </div>
                     </div>
+                    </fieldset>
                 </div>
 
                 <x-input

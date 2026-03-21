@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\CabrilloExportException;
 use App\Models\Contact;
 use App\Models\EventConfiguration;
 
@@ -15,7 +16,7 @@ class CabrilloExporter
         $config->loadMissing(['section', 'operatingClass', 'event']);
 
         if (! $config->section || ! $config->operatingClass) {
-            throw new \RuntimeException('EventConfiguration is missing section or operating class.');
+            throw new CabrilloExportException('EventConfiguration is missing section or operating class.');
         }
 
         $lines = [

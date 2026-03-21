@@ -23,7 +23,7 @@
  * @param {Object} wire - The Livewire `$wire` proxy for calling server methods.
  * @param {string[]} initialOrder - Array of widget IDs in their initial display order.
  */
-export default (wire, initialOrder = []) => ({
+export default function dashboardSortable(wire, initialOrder = []) { return ({
     /** @type {number|null} Index of the element currently being dragged. */
     draggedIndex: null,
 
@@ -61,10 +61,10 @@ export default (wire, initialOrder = []) => ({
         this._boundTouchEnd = this.touchEnd.bind(this);
 
         // Listen for edit mode changes from Livewire
-        this._boundEditModeChanged = ((event) => {
+        this._boundEditModeChanged = (event) => {
             this.setEnabled(event.detail.enabled);
-        }).bind(this);
-        window.addEventListener('edit-mode-changed', this._boundEditModeChanged);
+        };
+        globalThis.addEventListener('edit-mode-changed', this._boundEditModeChanged);
     },
 
     /**
@@ -75,7 +75,7 @@ export default (wire, initialOrder = []) => ({
         this.cleanupTouchClone();
         document.removeEventListener('touchmove', this._boundTouchMove);
         document.removeEventListener('touchend', this._boundTouchEnd);
-        window.removeEventListener('edit-mode-changed', this._boundEditModeChanged);
+        globalThis.removeEventListener('edit-mode-changed', this._boundEditModeChanged);
     },
 
     /**
@@ -123,28 +123,27 @@ export default (wire, initialOrder = []) => ({
      * @returns {Object} Attribute map for x-bind.
      */
     sortableItem(index) {
-        const self = this;
         return {
             'role': 'listitem',
-            'tabindex': self.enabled ? '0' : '-1',
-            ':draggable': String(self.enabled),
-            ':aria-grabbed': self.keyboardGrabbedIndex === index ? 'true' : 'false',
+            'tabindex': this.enabled ? '0' : '-1',
+            ':draggable': String(this.enabled),
+            ':aria-grabbed': this.keyboardGrabbedIndex === index ? 'true' : 'false',
             ':class': JSON.stringify({
-                'opacity-50 scale-95': self.draggedIndex === index,
-                'ring-2 ring-primary ring-offset-2 bg-primary/10': self.dropTargetIndex === index && self.draggedIndex !== index,
-                'ring-2 ring-accent scale-105 shadow-lg': self.keyboardGrabbedIndex === index,
-                'cursor-grab': self.enabled && self.draggedIndex === null && self.keyboardGrabbedIndex === null,
-                'cursor-grabbing': self.draggedIndex === index,
+                'opacity-50 scale-95': this.draggedIndex === index,
+                'ring-2 ring-primary ring-offset-2 bg-primary/10': this.dropTargetIndex === index && this.draggedIndex !== index,
+                'ring-2 ring-accent scale-105 shadow-lg': this.keyboardGrabbedIndex === index,
+                'cursor-grab': this.enabled && this.draggedIndex === null && this.keyboardGrabbedIndex === null,
+                'cursor-grabbing': this.draggedIndex === index,
                 'transition-transform duration-200': true,
             }),
-            '@dragstart'(event) { self.dragStart(event, index); },
-            '@dragover.prevent'(event) { self.dragOver(event, index); },
-            '@dragenter.prevent'(event) { self.dragEnter(event, index); },
-            '@dragleave'(event) { self.dragLeave(event, index); },
-            '@drop.prevent'(event) { self.drop(event, index); },
-            '@dragend'() { self.dragEnd(); },
-            '@touchstart.passive'(event) { self.touchStart(event, index); },
-            '@keydown'(event) { self.keyDown(event, index); },
+            '@dragstart': (event) => { this.dragStart(event, index); },
+            '@dragover.prevent': (event) => { this.dragOver(event, index); },
+            '@dragenter.prevent': (event) => { this.dragEnter(event, index); },
+            '@dragleave': (event) => { this.dragLeave(event, index); },
+            '@drop.prevent': (event) => { this.drop(event, index); },
+            '@dragend': () => { this.dragEnd(); },
+            '@touchstart.passive': (event) => { this.touchStart(event, index); },
+            '@keydown': (event) => { this.keyDown(event, index); },
         };
     },
 
@@ -416,8 +415,8 @@ export default (wire, initialOrder = []) => ({
      * Remove the touch clone from the DOM.
      */
     cleanupTouchClone() {
-        if (this.touchClone && this.touchClone.parentNode) {
-            this.touchClone.parentNode.removeChild(this.touchClone);
+        if (this.touchClone?.parentNode) {
+            this.touchClone.remove();
         }
         this.touchClone = null;
     },
@@ -467,7 +466,7 @@ export default (wire, initialOrder = []) => ({
      * @returns {number|null}
      */
     getIndexFromElement(element) {
-        const widgetId = element.getAttribute('data-widget-id');
+        const widgetId = element.dataset.widgetId;
         if (!widgetId) {
             return null;
         }
@@ -686,4 +685,4 @@ export default (wire, initialOrder = []) => ({
             this.announceMessage = '';
         }, 3000);
     },
-});
+}); }

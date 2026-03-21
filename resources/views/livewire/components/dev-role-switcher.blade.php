@@ -1,6 +1,6 @@
 <div x-data x-on:role-switched.window="window.location.reload()">
     @if(config('developer.enabled') && auth()->check())
-        <div class="bg-purple-100 dark:bg-purple-900/30 border-l-4 border-purple-500 text-purple-900 dark:text-purple-200 shadow-md rounded-none px-4 py-2" role="status">
+        <output class="bg-purple-100 dark:bg-purple-900/30 border-l-4 border-purple-500 text-purple-900 dark:text-purple-200 shadow-md rounded-none px-4 py-2 block">
             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
                 {{-- Left: Icon + Label --}}
                 <div class="flex items-center gap-2 shrink-0">
@@ -52,6 +52,6 @@
                     </button>
                 @endif
             </div>
-        </div>
+        </output>
     @endif
 </div>

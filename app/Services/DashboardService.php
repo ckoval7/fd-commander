@@ -211,31 +211,44 @@ class DashboardService
         $validTypes = array_keys(config('dashboard.widget_types', []));
 
         foreach ($config as $widget) {
-            if (! is_array($widget)) {
+            if (! $this->isValidWidgetEntry($widget, $validTypes)) {
                 return false;
             }
+        }
 
-            if (! isset($widget['id']) || ! is_string($widget['id'])) {
-                return false;
-            }
+        return true;
+    }
 
-            if (! isset($widget['type']) || ! is_string($widget['type'])) {
-                return false;
-            }
+    /**
+     * Validate a single widget entry within a dashboard config.
+     *
+     * @param  mixed  $widget  The widget entry to validate
+     * @param  array<int, string>  $validTypes  Allowed widget type strings
+     */
+    protected function isValidWidgetEntry(mixed $widget, array $validTypes): bool
+    {
+        if (! is_array($widget)) {
+            return false;
+        }
 
-            if (! in_array($widget['type'], $validTypes, true)) {
-                return false;
-            }
+        // Required string fields
+        if (! isset($widget['id']) || ! is_string($widget['id'])) {
+            return false;
+        }
 
-            if (isset($widget['config']) && ! is_array($widget['config'])) {
-                return false;
-            }
+        if (! isset($widget['type']) || ! is_string($widget['type']) || ! in_array($widget['type'], $validTypes, true)) {
+            return false;
+        }
 
-            if (isset($widget['order']) && ! is_int($widget['order'])) {
-                return false;
-            }
+        // Optional fields must have correct types when present
+        $optionalTypeChecks = [
+            'config' => fn ($v) => is_array($v),
+            'order' => fn ($v) => is_int($v),
+            'visible' => fn ($v) => is_bool($v),
+        ];
 
-            if (isset($widget['visible']) && ! is_bool($widget['visible'])) {
+        foreach ($optionalTypeChecks as $field => $check) {
+            if (isset($widget[$field]) && ! $check($widget[$field])) {
                 return false;
             }
         }

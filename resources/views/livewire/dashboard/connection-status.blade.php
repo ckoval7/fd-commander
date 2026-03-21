@@ -132,9 +132,8 @@
 
     {{-- Connection Status Badge (Bottom Right) --}}
     @if($showBadge)
-        <div
-            class="fixed bottom-4 right-4 z-40"
-            role="status"
+        <output
+            class="fixed bottom-4 right-4 z-40 block"
             aria-live="polite"
         >
             <div
@@ -176,6 +175,6 @@
                 </span>
                 <span>Connected</span>
             </div>
-        </div>
+        </output>
     @endif
 </div>

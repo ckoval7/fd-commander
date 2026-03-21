@@ -75,15 +75,11 @@ class TimeRemaining extends Component
 
         $now = appNow();
 
-        if ($now->lt($this->event->start_time)) {
-            return 'Not Started';
-        }
-
-        if ($now->gt($this->event->end_time)) {
-            return 'Ended';
-        }
-
-        return 'In Progress';
+        return match (true) {
+            $now->lt($this->event->start_time) => 'Not Started',
+            $now->gt($this->event->end_time) => 'Ended',
+            default => 'In Progress',
+        };
     }
 
     public function render()

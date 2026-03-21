@@ -492,7 +492,7 @@ class EventForm extends Component
 
     protected function rules(): array
     {
-        $rules = [
+        return [
             'name' => ['required', 'string', 'max:255'],
             'event_type_id' => ['required', 'exists:event_types,id'],
             'start_time' => ['required', 'date'],
@@ -502,6 +502,20 @@ class EventForm extends Component
             'section_id' => ['required', 'exists:sections,id'],
             'operating_class_id' => ['required', 'exists:operating_classes,id'],
             'transmitter_count' => ['required', 'integer', 'min:1', 'max:99'],
+            ...$this->powerRules(),
+            ...$this->gotaRules(),
+            ...$this->guestbookRules(),
+        ];
+    }
+
+    /**
+     * Validation rules for power-related fields.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    private function powerRules(): array
+    {
+        return [
             'max_power_watts' => [
                 'required',
                 'integer',
@@ -516,16 +530,7 @@ class EventForm extends Component
             'uses_commercial_power' => [
                 'boolean',
                 function ($attribute, $value, $fail) {
-                    $hasAnyPowerSource = $this->uses_commercial_power
-                        || $this->uses_generator
-                        || $this->uses_battery
-                        || $this->uses_solar
-                        || $this->uses_wind
-                        || $this->uses_water
-                        || $this->uses_methane
-                        || $this->uses_other_power;
-
-                    if (! $hasAnyPowerSource) {
+                    if (! $this->hasAnyPowerSourceSelected()) {
                         $fail('At least one power source must be selected.');
                     }
                 },
@@ -538,6 +543,32 @@ class EventForm extends Component
             'uses_methane' => ['boolean'],
             'uses_alternate_power' => ['boolean'],
             'uses_other_power' => ['nullable', 'string', 'max:255'],
+        ];
+    }
+
+    /**
+     * Check if any power source is currently selected.
+     */
+    private function hasAnyPowerSourceSelected(): bool
+    {
+        return $this->uses_commercial_power
+            || $this->uses_generator
+            || $this->uses_battery
+            || $this->uses_solar
+            || $this->uses_wind
+            || $this->uses_water
+            || $this->uses_methane
+            || $this->uses_other_power;
+    }
+
+    /**
+     * Validation rules for GOTA-related fields.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    private function gotaRules(): array
+    {
+        return [
             'has_gota_station' => [
                 'boolean',
                 function ($attribute, $value, $fail) {
@@ -553,72 +584,66 @@ class EventForm extends Component
                 'max:20',
                 'regex:/^[A-Z0-9\/]+$/i',
             ],
+        ];
+    }
+
+    /**
+     * Validation rules for guestbook-related fields.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    private function guestbookRules(): array
+    {
+        return [
             'guestbook_enabled' => ['boolean'],
-            'guestbook_detection_radius' => [
-                'nullable',
-                'integer',
-                'min:100',
-                'max:2000',
-            ],
+            'guestbook_detection_radius' => ['nullable', 'integer', 'min:100', 'max:2000'],
             'guestbook_local_subnets' => [
                 'nullable',
                 'string',
-                function ($attribute, $value, $fail) {
-                    if (empty($value)) {
-                        return;
-                    }
-
-                    $lines = array_filter(
-                        array_map('trim', explode("\n", $value)),
-                        fn ($line) => ! empty($line)
-                    );
-
-                    foreach ($lines as $line) {
-                        // Validate CIDR notation (e.g., 192.168.1.0/24)
-                        if (! preg_match('/^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/', $line)) {
-                            $fail("The line '{$line}' is not a valid CIDR notation. Expected format: 192.168.1.0/24");
-
-                            return;
-                        }
-
-                        // Validate IP address part
-                        [$ip, $prefix] = explode('/', $line);
-                        $octets = explode('.', $ip);
-
-                        foreach ($octets as $octet) {
-                            if ((int) $octet > 255) {
-                                $fail("The line '{$line}' contains an invalid IP address.");
-
-                                return;
-                            }
-                        }
-
-                        // Validate prefix length
-                        if ((int) $prefix > 32) {
-                            $fail("The line '{$line}' contains an invalid prefix length. Must be 0-32.");
-
-                            return;
-                        }
-                    }
-                },
+                fn ($attribute, $value, $fail) => $this->validateSubnets($value, $fail),
             ],
+            'guestbook_latitude' => ['nullable', 'numeric', 'min:-90', 'max:90'],
+            'guestbook_longitude' => ['nullable', 'numeric', 'min:-180', 'max:180'],
         ];
+    }
 
-        // Lat/lon are optional but validated if provided
-        $rules['guestbook_latitude'] = [
-            'nullable',
-            'numeric',
-            'min:-90',
-            'max:90',
-        ];
-        $rules['guestbook_longitude'] = [
-            'nullable',
-            'numeric',
-            'min:-180',
-            'max:180',
-        ];
+    /**
+     * Validate CIDR subnet notation lines.
+     */
+    private function validateSubnets(?string $value, \Closure $fail): void
+    {
+        if (empty($value)) {
+            return;
+        }
 
-        return $rules;
+        $lines = array_filter(
+            array_map('trim', explode("\n", $value)),
+            fn ($line) => ! empty($line)
+        );
+
+        foreach ($lines as $line) {
+            if (! preg_match('/^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/', $line)) {
+                $fail("The line '{$line}' is not a valid CIDR notation. Expected format: 192.168.1.0/24");
+
+                return;
+            }
+
+            [$ip, $prefix] = explode('/', $line);
+
+            foreach (explode('.', $ip) as $octet) {
+                if ((int) $octet > 255) {
+                    $fail("The line '{$line}' contains an invalid IP address.");
+
+                    return;
+                }
+            }
+
+            if ((int) $prefix > 32) {
+                $fail("The line '{$line}' contains an invalid prefix length. Must be 0-32.");
+
+                return;
+            }
+        }
     }
 
     protected function messages(): array

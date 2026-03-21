@@ -101,28 +101,39 @@ class Dashboard extends Model
         }
 
         foreach ($this->config as $widget) {
-            // Each widget must be an array
-            if (! is_array($widget)) {
+            if (! $this->isValidWidget($widget)) {
                 return false;
             }
+        }
 
-            // Required fields
-            if (! isset($widget['id']) || ! isset($widget['type'])) {
-                return false;
-            }
+        return true;
+    }
 
-            // Config must be an array if present
-            if (isset($widget['config']) && ! is_array($widget['config'])) {
-                return false;
-            }
+    /**
+     * Validate an individual widget configuration entry.
+     *
+     * @param  mixed  $widget  Widget configuration to validate
+     */
+    protected function isValidWidget(mixed $widget): bool
+    {
+        if (! is_array($widget)) {
+            return false;
+        }
 
-            // Order must be numeric if present
-            if (isset($widget['order']) && ! is_numeric($widget['order'])) {
-                return false;
-            }
+        // Required fields
+        if (! isset($widget['id']) || ! isset($widget['type'])) {
+            return false;
+        }
 
-            // Visible must be boolean if present
-            if (isset($widget['visible']) && ! is_bool($widget['visible'])) {
+        // Optional fields must have correct types when present
+        $optionalTypeChecks = [
+            'config' => fn ($v) => is_array($v),
+            'order' => fn ($v) => is_numeric($v),
+            'visible' => fn ($v) => is_bool($v),
+        ];
+
+        foreach ($optionalTypeChecks as $field => $check) {
+            if (isset($widget[$field]) && ! $check($widget[$field])) {
                 return false;
             }
         }

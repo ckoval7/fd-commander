@@ -159,28 +159,18 @@ class EventContextService extends ActiveEventService
 
         $now = appNow();
 
-        // Upcoming — hasn't started yet
         if ($event->start_time && $event->start_time->gt($now)) {
             return 'upcoming';
         }
 
-        // Active — currently running
-        if ($event->start_time && $event->end_time
-            && $event->start_time->lte($now)
-            && $event->end_time->gte($now)) {
+        if ($event->start_time && $event->end_time && $event->start_time->lte($now) && $event->end_time->gte($now)) {
             return 'active';
         }
 
-        // Ended — check grace period
         if ($event->end_time && $event->end_time->lt($now)) {
             $graceDays = (int) Setting::get('post_event_grace_period_days', 30);
-            $graceDeadline = $event->end_time->copy()->addDays($graceDays);
 
-            if ($now->lte($graceDeadline)) {
-                return 'grace';
-            }
-
-            return 'archived';
+            return $now->lte($event->end_time->copy()->addDays($graceDays)) ? 'grace' : 'archived';
         }
 
         return 'archived';

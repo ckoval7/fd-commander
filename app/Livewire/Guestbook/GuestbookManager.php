@@ -18,6 +18,8 @@ class GuestbookManager extends Component
 {
     use WithPagination;
 
+    private const string BULK_ACTION_LIMIT_MESSAGE = 'Bulk actions limited to 100 entries';
+
     public Event $event;
 
     public ?EventConfiguration $eventConfig = null;
@@ -282,7 +284,7 @@ class GuestbookManager extends Component
         }
 
         if (count($this->selectedIds) > 100) {
-            $this->dispatch('toast', title: 'Error', description: 'Bulk actions limited to 100 entries', icon: 'o-x-circle', css: 'alert-error');
+            $this->dispatch('toast', title: 'Error', description: self::BULK_ACTION_LIMIT_MESSAGE, icon: 'o-x-circle', css: 'alert-error');
 
             return;
         }
@@ -309,7 +311,7 @@ class GuestbookManager extends Component
         }
 
         if (count($this->selectedIds) > 100) {
-            $this->dispatch('toast', title: 'Error', description: 'Bulk actions limited to 100 entries', icon: 'o-x-circle', css: 'alert-error');
+            $this->dispatch('toast', title: 'Error', description: self::BULK_ACTION_LIMIT_MESSAGE, icon: 'o-x-circle', css: 'alert-error');
 
             return;
         }
@@ -336,7 +338,7 @@ class GuestbookManager extends Component
         }
 
         if (count($this->selectedIds) > 100) {
-            $this->dispatch('toast', title: 'Error', description: 'Bulk actions limited to 100 entries', icon: 'o-x-circle', css: 'alert-error');
+            $this->dispatch('toast', title: 'Error', description: self::BULK_ACTION_LIMIT_MESSAGE, icon: 'o-x-circle', css: 'alert-error');
 
             return;
         }

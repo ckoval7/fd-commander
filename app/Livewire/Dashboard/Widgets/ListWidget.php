@@ -210,24 +210,14 @@ class ListWidget extends Component
      */
     protected function formatTimeAgo(Carbon $time): string
     {
-        $now = appNow();
-        $diff = $time->diffInSeconds($now);
+        $diff = $time->diffInSeconds(appNow());
 
-        if ($diff < 60) {
-            return 'Just now';
-        } elseif ($diff < 3600) {
-            $minutes = floor($diff / 60);
-
-            return "{$minutes}m ago";
-        } elseif ($diff < 86400) {
-            $hours = floor($diff / 3600);
-
-            return "{$hours}h ago";
-        } else {
-            $days = floor($diff / 86400);
-
-            return "{$days}d ago";
-        }
+        return match (true) {
+            $diff < 60 => 'Just now',
+            $diff < 3600 => floor($diff / 60).'m ago',
+            $diff < 86400 => floor($diff / 3600).'h ago',
+            default => floor($diff / 86400).'d ago',
+        };
     }
 
     /**

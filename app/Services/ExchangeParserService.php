@@ -35,14 +35,10 @@ class ExchangeParserService
 
         $tokens = preg_split('/\s+/', strtoupper($input));
 
-        if (count($tokens) < 3) {
-            $result['errors'][] = 'Exchange must contain callsign, class, and section (e.g. W1AW 3A CT)';
-
-            return $result;
-        }
-
-        if (count($tokens) > 3) {
-            $result['errors'][] = 'Too many parts in exchange';
+        if (count($tokens) !== 3) {
+            $result['errors'][] = count($tokens) < 3
+                ? 'Exchange must contain callsign, class, and section (e.g. W1AW 3A CT)'
+                : 'Too many parts in exchange';
 
             return $result;
         }
@@ -107,24 +103,13 @@ class ExchangeParserService
      */
     private function isValidCallsign(string $callsign): bool
     {
-        if (strlen($callsign) < 3 || strlen($callsign) > 10) {
-            return false;
-        }
+        $length = strlen($callsign);
 
-        if (! preg_match('/^[A-Z0-9\/]+$/', $callsign)) {
-            return false;
-        }
-
-        // Must contain at least one digit and one letter
-        if (! preg_match('/[0-9]/', $callsign)) {
-            return false;
-        }
-
-        if (! preg_match('/[A-Z]/', $callsign)) {
-            return false;
-        }
-
-        return true;
+        return $length >= 3
+            && $length <= 10
+            && preg_match('/^[A-Z0-9\/]+$/', $callsign)
+            && preg_match('/\d/', $callsign)
+            && preg_match('/[A-Z]/', $callsign);
     }
 
     /**

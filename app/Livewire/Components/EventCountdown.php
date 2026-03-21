@@ -65,24 +65,14 @@ class EventCountdown extends Component
 
         // Check for upcoming event
         $upcoming = Event::upcoming()->orderBy('start_time')->first();
+        $upcomingWithin4Weeks = $upcoming && abs(appNow()->diffInDays($upcoming->start_time, false)) < 28;
 
-        // If there's a recently completed event
-        if ($completedWithin4Weeks) {
-            // If there's an upcoming event within 4 weeks, show that instead
-            if ($upcoming && abs(appNow()->diffInDays($upcoming->start_time, false)) < 28) {
-                return $upcoming;
-            }
-
-            // Otherwise show the ended event
-            return $completed;
-        }
-
-        // If no recently completed event, show upcoming event if it exists
-        if ($upcoming) {
+        // Prefer upcoming event within 4 weeks over completed, then completed within 4 weeks, then any upcoming
+        if ($completedWithin4Weeks && $upcomingWithin4Weeks) {
             return $upcoming;
         }
 
-        return null;
+        return $completedWithin4Weeks ? $completed : $upcoming;
     }
 
     protected function determineState(): string
@@ -195,20 +185,13 @@ class EventCountdown extends Component
             return '';
         }
 
-        $days = $this->countdown['days'];
-        $hours = $this->countdown['hours'];
-        $minutes = $this->countdown['minutes'];
-        $seconds = $this->countdown['seconds'];
+        ['days' => $days, 'hours' => $hours, 'minutes' => $minutes, 'seconds' => $seconds] = $this->countdown;
 
-        if ($days > 0) {
-            return "{$days}d {$hours}h {$minutes}m";
-        }
-
-        if ($hours > 0) {
-            return "{$hours}h {$minutes}m";
-        }
-
-        return "{$minutes}m {$seconds}s";
+        return match (true) {
+            $days > 0 => "{$days}d {$hours}h {$minutes}m",
+            $hours > 0 => "{$hours}h {$minutes}m",
+            default => "{$minutes}m {$seconds}s",
+        };
     }
 
     public function render(): View

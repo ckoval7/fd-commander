@@ -96,19 +96,31 @@ class MigrateDashboardImprovements extends Command
             return;
         }
 
+        [$updatedWidgets, $hasChanges] = $this->processWidgets($widgets);
+
+        if ($hasChanges || count($updatedWidgets) !== count($widgets)) {
+            $this->dashboardsUpdated++;
+            $this->saveDashboardConfig($dashboard, $config, $updatedWidgets, $isDryRun);
+            $this->info("  ✓ Updated {$dashboard->title}");
+        } else {
+            $this->line('  → No changes needed');
+        }
+    }
+
+    /**
+     * Process all widgets, migrating each and tracking changes.
+     *
+     * @return array{0: array, 1: bool} Tuple of [updatedWidgets, hasChanges]
+     */
+    protected function processWidgets(array $widgets): array
+    {
+        $newOrderMap = [
+            'timer' => 0, 'stat_card_qso_rate' => 1, 'stat_card_total_score' => 2,
+            'progress_bar' => 3, 'chart' => 4, 'list_widget_recent' => 5, 'list_widget_active' => 6,
+        ];
+
         $updatedWidgets = [];
         $hasChanges = false;
-
-        // Define the new widget order
-        $newOrderMap = [
-            'timer' => 0,
-            'stat_card_qso_rate' => 1,
-            'stat_card_total_score' => 2,
-            'progress_bar' => 3,
-            'chart' => 4,
-            'list_widget_recent' => 5,
-            'list_widget_active' => 6,
-        ];
 
         foreach ($widgets as $widget) {
             $updated = $this->migrateWidget($widget);
@@ -118,117 +130,123 @@ class MigrateDashboardImprovements extends Command
                 $this->widgetsUpdated++;
             }
 
-            // Only keep widgets that aren't marked for removal
             if ($updated !== null) {
                 $updatedWidgets[] = $updated;
             }
         }
 
-        // Reorder widgets based on type
-        usort($updatedWidgets, function ($a, $b) use ($newOrderMap) {
-            $orderA = $this->getWidgetNewOrder($a, $newOrderMap);
-            $orderB = $this->getWidgetNewOrder($b, $newOrderMap);
+        usort($updatedWidgets, fn ($a, $b) => $this->getWidgetNewOrder($a, $newOrderMap) <=> $this->getWidgetNewOrder($b, $newOrderMap));
 
-            return $orderA <=> $orderB;
-        });
-
-        // Update order property
         foreach ($updatedWidgets as $index => $widget) {
             $updatedWidgets[$index]['order'] = $index;
         }
 
-        if ($hasChanges || count($updatedWidgets) !== count($widgets)) {
-            $this->dashboardsUpdated++;
+        return [$updatedWidgets, $hasChanges];
+    }
 
-            if (! $isDryRun) {
-                // Update the dashboard config
-                if (isset($config['widgets'])) {
-                    $config['widgets'] = $updatedWidgets;
-                } else {
-                    $config = $updatedWidgets;
-                }
-
-                $dashboard->update(['config' => $config]);
-            }
-
-            $this->info("  ✓ Updated {$dashboard->title}");
-        } else {
-            $this->line('  → No changes needed');
+    /**
+     * Save the updated widget config to the dashboard.
+     */
+    protected function saveDashboardConfig(Dashboard $dashboard, array $config, array $updatedWidgets, bool $isDryRun): void
+    {
+        if ($isDryRun) {
+            return;
         }
+
+        if (isset($config['widgets'])) {
+            $config['widgets'] = $updatedWidgets;
+        } else {
+            $config = $updatedWidgets;
+        }
+
+        $dashboard->update(['config' => $config]);
     }
 
     protected function migrateWidget(array $widget): ?array
     {
         $type = $widget['type'] ?? null;
+
+        return match ($type) {
+            'chart' => $this->migrateChartWidget($widget),
+            'stat_card' => $this->migrateStatCardWidget($widget),
+            'feed', 'activity_feed' => $this->migrateFeedWidget($widget),
+            default => $widget,
+        };
+    }
+
+    /**
+     * Migrate a chart widget's configuration.
+     */
+    protected function migrateChartWidget(array $widget): array
+    {
+        $config = $widget['config'] ?? [];
         $changes = [];
 
-        // Migrate chart widgets
-        if ($type === 'chart') {
-            $config = $widget['config'] ?? [];
+        if (($config['chart_type'] ?? null) === 'bar') {
+            $config['chart_type'] = 'line';
+            $changes[] = 'chart_type: bar → line';
+        }
 
-            // Update chart_type to 'line' if it's 'bar'
-            if (($config['chart_type'] ?? null) === 'bar') {
-                $config['chart_type'] = 'line';
-                $changes[] = 'chart_type: bar → line';
-            }
+        if (in_array($config['time_range'] ?? null, ['event', 'all_time'])) {
+            $changes[] = 'time_range: '.$widget['config']['time_range'].' → last_12_hours';
+            $config['time_range'] = 'last_12_hours';
+        }
 
-            // Update time_range to 'last_12_hours' if it's 'event' or 'all_time'
-            if (in_array($config['time_range'] ?? null, ['event', 'all_time'])) {
-                $config['time_range'] = 'last_12_hours';
-                $changes[] = 'time_range: '.$widget['config']['time_range'].' → last_12_hours';
-            }
+        if (! empty($changes)) {
+            $widget['config'] = $config;
+            $this->line('    • Chart: '.implode(', ', $changes));
+        }
 
-            if (! empty($changes)) {
-                $widget['config'] = $config;
-                $this->line('    • Chart: '.implode(', ', $changes));
+        return $widget;
+    }
+
+    /**
+     * Migrate a stat card widget's configuration.
+     */
+    protected function migrateStatCardWidget(array $widget): array
+    {
+        $config = $widget['config'] ?? [];
+        $changes = [];
+
+        if (! isset($config['show_comparison'])) {
+            $config['show_comparison'] = true;
+            $changes[] = 'enabled comparison';
+        }
+
+        if (! isset($config['comparison_interval'])) {
+            $config['comparison_interval'] = '1h';
+            $changes[] = 'set comparison interval to 1h';
+        }
+
+        $metricMap = ['qso_count' => 'qso_count', 'total_score' => 'total_score'];
+
+        if (isset($config['metric'], $metricMap[$config['metric']])) {
+            $oldMetric = $config['metric'];
+            $config['metric'] = $metricMap[$oldMetric];
+            if ($oldMetric !== $config['metric']) {
+                $changes[] = "metric: {$oldMetric} → {$config['metric']}";
             }
         }
 
-        // Migrate stat cards
-        if ($type === 'stat_card') {
-            $config = $widget['config'] ?? [];
-
-            // Add comparison settings if not present
-            if (! isset($config['show_comparison'])) {
-                $config['show_comparison'] = true;
-                $changes[] = 'enabled comparison';
-            }
-
-            if (! isset($config['comparison_interval'])) {
-                $config['comparison_interval'] = '1h';
-                $changes[] = 'set comparison interval to 1h';
-            }
-
-            // Update old metric names to new ones
-            $metricMap = [
-                'qso_count' => 'qso_count', // Keep as is
-                'total_score' => 'total_score', // Keep as is
-            ];
-
-            if (isset($config['metric']) && isset($metricMap[$config['metric']])) {
-                $oldMetric = $config['metric'];
-                $config['metric'] = $metricMap[$oldMetric];
-                if ($oldMetric !== $config['metric']) {
-                    $changes[] = "metric: {$oldMetric} → {$config['metric']}";
-                }
-            }
-
-            if (! empty($changes)) {
-                $widget['config'] = $config;
-                $this->line('    • Stat Card ('.$config['metric'].'): '.implode(', ', $changes));
-            }
+        if (! empty($changes)) {
+            $widget['config'] = $config;
+            $this->line('    • Stat Card ('.$config['metric'].'): '.implode(', ', $changes));
         }
 
-        // Remove Activity Feed widgets (marked as deprecated)
-        if ($type === 'feed' || $type === 'activity_feed') {
-            $listType = $widget['config']['feed_type'] ?? null;
+        return $widget;
+    }
 
-            // Only remove if it's showing stale data (all_activity or contacts_only with old data)
-            if (in_array($listType, ['all_activity', 'contacts_only'])) {
-                $this->warn('    ⨯ Removed Activity Feed widget (showing stale data)');
+    /**
+     * Migrate a feed/activity_feed widget (remove if showing stale data).
+     */
+    protected function migrateFeedWidget(array $widget): ?array
+    {
+        $listType = $widget['config']['feed_type'] ?? null;
 
-                return null; // Remove this widget
-            }
+        if (in_array($listType, ['all_activity', 'contacts_only'])) {
+            $this->warn('    ⨯ Removed Activity Feed widget (showing stale data)');
+
+            return null;
         }
 
         return $widget;

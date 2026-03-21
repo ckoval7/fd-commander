@@ -4,7 +4,7 @@ import { Chart, registerables } from 'chart.js/auto';
 
 // Make Chart.js globally available for dynamic imports
 Chart.register(...registerables);
-window.Chart = Chart;
+globalThis.Chart = Chart;
 
 // Set initial theme on page load (this is redundant with inline script but kept for fallback)
 let theme = localStorage.getItem('theme');
@@ -12,7 +12,7 @@ if (!theme) {
     theme = 'light';
     localStorage.setItem('theme', theme);
 }
-document.documentElement.setAttribute('data-theme', theme);
+document.documentElement.dataset.theme = theme;
 
 // Register Alpine.js components before Alpine starts
 document.addEventListener('alpine:init', () => {

@@ -340,26 +340,19 @@ class Scoring extends Component
             return "Operating at {$watts}W (over 100W) gives a 1\u{00d7} multiplier.";
         }
 
-        $hasNaturalPower = $config->uses_battery
-            || $config->uses_solar
-            || $config->uses_wind
-            || $config->uses_water;
+        if ($watts > 5) {
+            return "Operating at {$watts}W (6\u{2013}100W) gives a 2\u{00d7} multiplier.";
+        }
 
+        // QRP (5W or less) - determine reason based on power sources
+        $hasNaturalPower = $config->uses_battery || $config->uses_solar || $config->uses_wind || $config->uses_water;
         $hasDisqualifyingPower = $config->uses_commercial_power || $config->uses_generator;
 
-        if ($watts <= 5 && $hasNaturalPower && ! $hasDisqualifyingPower) {
-            return "Operating at {$watts}W with natural power and no commercial/generator power qualifies for the 5\u{00d7} QRP natural power bonus.";
-        }
-
-        if ($watts <= 5 && $hasDisqualifyingPower) {
-            return "Operating at {$watts}W (QRP) gives a 2\u{00d7} multiplier. Switch to natural power only to qualify for 5\u{00d7}.";
-        }
-
-        if ($watts <= 5) {
-            return "Operating at {$watts}W (QRP) gives a 2\u{00d7} multiplier.";
-        }
-
-        return "Operating at {$watts}W (6\u{2013}100W) gives a 2\u{00d7} multiplier.";
+        return match (true) {
+            $hasNaturalPower && ! $hasDisqualifyingPower => "Operating at {$watts}W with natural power and no commercial/generator power qualifies for the 5\u{00d7} QRP natural power bonus.",
+            $hasDisqualifyingPower => "Operating at {$watts}W (QRP) gives a 2\u{00d7} multiplier. Switch to natural power only to qualify for 5\u{00d7}.",
+            default => "Operating at {$watts}W (QRP) gives a 2\u{00d7} multiplier.",
+        };
     }
 
     // ========================================================================
