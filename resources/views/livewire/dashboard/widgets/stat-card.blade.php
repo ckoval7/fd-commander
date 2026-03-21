@@ -12,47 +12,7 @@ Props from component:
 <div
     class="h-full"
     wire:poll.visible.10s
-    x-data="{
-        displayValue: @js($data['value']),
-        targetValue: @js($data['value']),
-        isAnimating: false,
-
-        animateValue(newValue) {
-            if (this.isAnimating) return;
-
-            const start = parseFloat(this.displayValue) || 0;
-            const end = parseFloat(newValue) || 0;
-
-            if (start === end) return;
-
-            this.isAnimating = true;
-            this.targetValue = end;
-
-            const duration = @js($size === 'tv' ? 800 : 500);
-            const startTime = Date.now();
-
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-
-                // Ease out cubic
-                const eased = 1 - Math.pow(1 - progress, 3);
-
-                const current = start + (end - start) * eased;
-                this.displayValue = Math.round(current);
-
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    this.displayValue = end;
-                    this.isAnimating = false;
-                }
-            };
-
-            requestAnimationFrame(animate);
-        }
-    }"
-    x-effect="animateValue(@js($data['value']))"
+    x-data="statCardWidget"
 >
     @if ($size === 'tv')
         {{-- TV Mode: Large display for kiosk/TV dashboards --}}
@@ -125,3 +85,56 @@ Props from component:
         </x-card>
     @endif
 </div>
+
+@script
+<script>
+    Alpine.data('statCardWidget', () => ({
+        displayValue: 0,
+        targetValue: 0,
+        isAnimating: false,
+
+        init() {
+            this.displayValue = parseFloat(String(this.$wire.statValue).replace(/,/g, '')) || 0;
+            this.targetValue = this.displayValue;
+
+            this.$wire.$watch('statValue', (newValue) => {
+                this.animateValue(parseFloat(String(newValue).replace(/,/g, '')) || 0);
+            });
+        },
+
+        animateValue(newValue) {
+            if (this.isAnimating) return;
+
+            const start = parseFloat(this.displayValue) || 0;
+            const end = parseFloat(newValue) || 0;
+
+            if (start === end) return;
+
+            this.isAnimating = true;
+            this.targetValue = end;
+
+            const duration = this.$wire.size === 'tv' ? 800 : 500;
+            const startTime = Date.now();
+
+            const animate = () => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                const eased = 1 - Math.pow(1 - progress, 3);
+
+                const current = start + (end - start) * eased;
+                this.displayValue = Math.round(current);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    this.displayValue = end;
+                    this.isAnimating = false;
+                }
+            };
+
+            requestAnimationFrame(animate);
+        }
+    }));
+</script>
+@endscript

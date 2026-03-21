@@ -113,6 +113,21 @@ trait IsWidget
     }
 
     /**
+     * No-op handler for JavaScript's JSON.stringify($wire) calls.
+     *
+     * Livewire's $wire proxy forwards all unknown property accesses to the
+     * server as method calls. JSON.stringify() calls toJSON() on objects,
+     * and since the proxy doesn't exclude it, the call reaches the server.
+     * This prevents a MethodNotFoundException during Alpine/Livewire morph.
+     *
+     * @return array<string, mixed>
+     */
+    public function toJSON(): array
+    {
+        return [];
+    }
+
+    /**
      * Handle real-time update notification.
      *
      * Called when widget data changes. Clears cache and dispatches

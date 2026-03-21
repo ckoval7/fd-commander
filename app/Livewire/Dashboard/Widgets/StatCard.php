@@ -32,6 +32,12 @@ class StatCard extends Component
     use IsWidget;
 
     /**
+     * Current metric value exposed as a reactive Livewire property.
+     * Alpine watches this via $wire.$watch to trigger count-up animation.
+     */
+    public string $statValue = '0';
+
+    /**
      * Fetch the metric data for this widget.
      *
      * Returns an array with the metric value, label, and icon.
@@ -401,8 +407,12 @@ class StatCard extends Component
 
     public function render()
     {
+        $data = $this->getData();
+
+        $this->statValue = (string) $data['value'];
+
         return view('livewire.dashboard.widgets.stat-card', [
-            'data' => $this->getData(),
+            'data' => $data,
         ]);
     }
 }

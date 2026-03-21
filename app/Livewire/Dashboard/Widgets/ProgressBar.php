@@ -23,6 +23,17 @@ class ProgressBar extends Component
 {
     use IsWidget;
 
+    /**
+     * Current QSO count exposed as a reactive Livewire property.
+     * Alpine watches this via $wire.$watch to trigger animations.
+     */
+    public int $current = 0;
+
+    /**
+     * Percentage toward next milestone, exposed as a reactive property.
+     */
+    public float $percentage = 0;
+
     public function getData(): array
     {
         return Cache::remember(
@@ -103,8 +114,13 @@ class ProgressBar extends Component
 
     public function render()
     {
+        $data = $this->getData();
+
+        $this->current = $data['current'];
+        $this->percentage = (float) $data['percentage'];
+
         return view('livewire.dashboard.widgets.progress-bar', [
-            'data' => $this->getData(),
+            'data' => $data,
         ]);
     }
 }

@@ -21,67 +21,13 @@ Celebration features:
 - Tracks last seen milestone to prevent duplicate celebrations
 --}}
 
-<x-card class="h-full flex flex-col" shadow>
-<div
-    class="flex-1 flex flex-col gap-3 relative"
+<x-card
+    class="h-full flex flex-col"
+    shadow
     wire:poll.visible.10s
-    x-data="{
-        displayCurrent: @js($data['current']),
-        displayPercentage: @js($data['percentage']),
-        isAnimating: false,
-        isCelebrating: false,
-        lastMilestone: 0,
-
-        animateNumbers(newCurrent, newPercentage) {
-            if (this.isAnimating) return;
-
-            const startCurrent = parseFloat(this.displayCurrent) || 0;
-            const endCurrent = parseFloat(newCurrent) || 0;
-            const startPercentage = parseFloat(this.displayPercentage) || 0;
-            const endPercentage = parseFloat(newPercentage) || 0;
-
-            if (startCurrent === endCurrent && startPercentage === endPercentage) return;
-
-            this.isAnimating = true;
-
-            const duration = @js($size === 'tv' ? 800 : 500);
-            const startTime = Date.now();
-
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-
-                // Ease out cubic
-                const eased = 1 - Math.pow(1 - progress, 3);
-
-                this.displayCurrent = Math.round(startCurrent + (endCurrent - startCurrent) * eased);
-                this.displayPercentage = Math.round(startPercentage + (endPercentage - startPercentage) * eased);
-
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    this.displayCurrent = endCurrent;
-                    this.displayPercentage = endPercentage;
-                    this.isAnimating = false;
-                }
-            };
-
-            requestAnimationFrame(animate);
-        },
-
-        celebrate(current) {
-            // Only celebrate if it's a new milestone we haven't seen yet
-            if (current > 0 && current % 50 === 0 && current !== this.lastMilestone) {
-                this.isCelebrating = true;
-                this.lastMilestone = current;
-                setTimeout(() => {
-                    this.isCelebrating = false;
-                }, 5000);
-            }
-        }
-    }"
-    x-effect="animateNumbers(@js($data['current']), @js($data['percentage'])); celebrate(@js($data['current']))"
+    x-data="progressBarWidget"
 >
+<div class="flex-1 flex flex-col gap-3 relative">
     {{-- Numbers Display --}}
     <div class="flex items-baseline justify-between">
         <div class="@if($size === 'tv') text-4xl @else text-2xl @endif font-bold">
@@ -148,3 +94,74 @@ Celebration features:
     {{-- Last updated timestamp --}}
     <div class="text-xs text-base-content/40 text-right mt-auto pt-2 border-t border-base-content/5">Updated {{ formatTimeAgo($data['last_updated_at'] ?? null) }}</div>
 </x-card>
+
+@script
+<script>
+    Alpine.data('progressBarWidget', () => ({
+        displayCurrent: 0,
+        displayPercentage: 0,
+        isAnimating: false,
+        isCelebrating: false,
+        lastMilestone: 0,
+
+        init() {
+            this.displayCurrent = this.$wire.current;
+            this.displayPercentage = this.$wire.percentage;
+
+            this.$wire.$watch('current', (newCurrent) => {
+                this.animateNumbers(newCurrent, this.$wire.percentage);
+                this.celebrate(newCurrent);
+            });
+            this.$wire.$watch('percentage', (newPercentage) => {
+                this.animateNumbers(this.$wire.current, newPercentage);
+            });
+        },
+
+        animateNumbers(newCurrent, newPercentage) {
+            if (this.isAnimating) return;
+
+            const startCurrent = parseFloat(this.displayCurrent) || 0;
+            const endCurrent = parseFloat(newCurrent) || 0;
+            const startPercentage = parseFloat(this.displayPercentage) || 0;
+            const endPercentage = parseFloat(newPercentage) || 0;
+
+            if (startCurrent === endCurrent && startPercentage === endPercentage) return;
+
+            this.isAnimating = true;
+
+            const duration = this.$wire.size === 'tv' ? 800 : 500;
+            const startTime = Date.now();
+
+            const animate = () => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                const eased = 1 - Math.pow(1 - progress, 3);
+
+                this.displayCurrent = Math.round(startCurrent + (endCurrent - startCurrent) * eased);
+                this.displayPercentage = Math.round(startPercentage + (endPercentage - startPercentage) * eased);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    this.displayCurrent = endCurrent;
+                    this.displayPercentage = endPercentage;
+                    this.isAnimating = false;
+                }
+            };
+
+            requestAnimationFrame(animate);
+        },
+
+        celebrate(current) {
+            if (current > 0 && current % 50 === 0 && current !== this.lastMilestone) {
+                this.isCelebrating = true;
+                this.lastMilestone = current;
+                setTimeout(() => {
+                    this.isCelebrating = false;
+                }, 5000);
+            }
+        }
+    }));
+</script>
+@endscript
