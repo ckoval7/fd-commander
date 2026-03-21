@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\StationCloneException;
 use App\Models\Equipment;
 use App\Models\EquipmentEvent;
 use App\Models\Event;
@@ -102,78 +103,18 @@ class StationCloneService
                 $user,
                 &$result
             ) {
-                // Load source stations with relationships for efficiency
-                $sourceStations = Station::query()
-                    ->whereIn('id', $stationIds)
-                    ->where('event_configuration_id', $sourceEventId)
-                    ->with(['additionalEquipment', 'primaryRadio'])
-                    ->get();
-
-                if ($sourceStations->isEmpty()) {
-                    throw new \RuntimeException('No valid stations found to clone.');
-                }
-
-                // Check if target event already has a GOTA station
-                $targetHasGota = Station::query()
-                    ->where('event_configuration_id', $targetEventId)
-                    ->where('is_gota', true)
-                    ->exists();
-
-                // Get the target event for equipment availability checks
-                $targetEventConfig = EventConfiguration::findOrFail($targetEventId);
-                $targetEvent = $targetEventConfig->event;
-
-                foreach ($sourceStations as $sourceStation) {
-                    $clonedStation = $this->cloneStation(
-                        $sourceStation,
-                        $targetEventId,
-                        $nameSuffix,
-                        $targetHasGota,
-                        $result
-                    );
-
-                    if ($clonedStation) {
-                        $result['stations_cloned']++;
-                        $result['cloned_station_ids'][] = $clonedStation->id;
-
-                        // If GOTA was cloned and target had GOTA, mark that we've now created one
-                        if ($sourceStation->is_gota && ! $targetHasGota) {
-                            $targetHasGota = true;
-                        }
-
-                        // Clone equipment assignments if requested
-                        if ($copyEquipment) {
-                            $this->cloneEquipmentAssignments(
-                                $sourceStation,
-                                $clonedStation,
-                                $targetEvent,
-                                $user,
-                                $skipConflicts,
-                                $result
-                            );
-                        }
-                    }
-                }
-
-                // If we got here with skip_conflicts=false and have conflicts, we need to rollback
-                if (! $skipConflicts && ! empty($result['conflicts'])) {
-                    throw new \RuntimeException(
-                        'Equipment conflicts detected and skip_conflicts is disabled.'
-                    );
-                }
-
-                $result['success'] = true;
-
-                Log::info('Stations cloned successfully', [
-                    'user_id' => $user->id,
-                    'source_event_id' => $sourceEventId,
-                    'target_event_id' => $targetEventId,
-                    'stations_cloned' => $result['stations_cloned'],
-                    'equipment_assigned' => $result['equipment_assigned'],
-                    'equipment_skipped' => $result['equipment_skipped'],
-                ]);
+                $this->executeCloneTransaction(
+                    $sourceEventId,
+                    $targetEventId,
+                    $stationIds,
+                    $copyEquipment,
+                    $nameSuffix,
+                    $skipConflicts,
+                    $user,
+                    $result
+                );
             });
-        } catch (\RuntimeException $e) {
+        } catch (StationCloneException $e) {
             $result['errors'][] = $e->getMessage();
             Log::warning('Station clone failed with runtime exception', [
                 'error' => $e->getMessage(),
@@ -191,6 +132,89 @@ class StationCloneService
         }
 
         return $result;
+    }
+
+    /**
+     * Execute the station cloning within a database transaction.
+     *
+     * @param  array<string, mixed>  $result  Result array (passed by reference)
+     */
+    protected function executeCloneTransaction(
+        int $sourceEventId,
+        int $targetEventId,
+        array $stationIds,
+        bool $copyEquipment,
+        ?string $nameSuffix,
+        bool $skipConflicts,
+        \App\Models\User $user,
+        array &$result
+    ): void {
+        $sourceStations = Station::query()
+            ->whereIn('id', $stationIds)
+            ->where('event_configuration_id', $sourceEventId)
+            ->with(['additionalEquipment', 'primaryRadio'])
+            ->get();
+
+        if ($sourceStations->isEmpty()) {
+            throw new StationCloneException('No valid stations found to clone.');
+        }
+
+        $targetHasGota = Station::query()
+            ->where('event_configuration_id', $targetEventId)
+            ->where('is_gota', true)
+            ->exists();
+
+        $targetEventConfig = EventConfiguration::findOrFail($targetEventId);
+        $targetEvent = $targetEventConfig->event;
+
+        foreach ($sourceStations as $sourceStation) {
+            $clonedStation = $this->cloneStation(
+                $sourceStation,
+                $targetEventId,
+                $nameSuffix,
+                $targetHasGota,
+                $result
+            );
+
+            if (! $clonedStation) {
+                continue;
+            }
+
+            $result['stations_cloned']++;
+            $result['cloned_station_ids'][] = $clonedStation->id;
+
+            if ($sourceStation->is_gota && ! $targetHasGota) {
+                $targetHasGota = true;
+            }
+
+            if ($copyEquipment) {
+                $this->cloneEquipmentAssignments(
+                    $sourceStation,
+                    $clonedStation,
+                    $targetEvent,
+                    $user,
+                    $skipConflicts,
+                    $result
+                );
+            }
+        }
+
+        if (! $skipConflicts && ! empty($result['conflicts'])) {
+            throw new StationCloneException(
+                'Equipment conflicts detected and skip_conflicts is disabled.'
+            );
+        }
+
+        $result['success'] = true;
+
+        Log::info('Stations cloned successfully', [
+            'user_id' => $user->id,
+            'source_event_id' => $sourceEventId,
+            'target_event_id' => $targetEventId,
+            'stations_cloned' => $result['stations_cloned'],
+            'equipment_assigned' => $result['equipment_assigned'],
+            'equipment_skipped' => $result['equipment_skipped'],
+        ]);
     }
 
     /**
@@ -398,7 +422,7 @@ class StationCloneService
                 ]);
 
                 if (! $skipConflicts) {
-                    throw new \RuntimeException(sprintf(
+                    throw new StationCloneException(sprintf(
                         'Equipment "%s" is not available: %s',
                         $makeModel,
                         $availability['reason']

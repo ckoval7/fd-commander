@@ -159,21 +159,22 @@ class EventContextService extends ActiveEventService
 
         $now = appNow();
 
-        if ($event->start_time && $event->start_time->gt($now)) {
-            return 'upcoming';
-        }
+        return match (true) {
+            $event->start_time && $event->start_time->gt($now) => 'upcoming',
+            $event->start_time && $event->end_time && $event->start_time->lte($now) && $event->end_time->gte($now) => 'active',
+            $event->end_time && $event->end_time->lt($now) => $this->resolvePostEventStatus($event, $now),
+            default => 'archived',
+        };
+    }
 
-        if ($event->start_time && $event->end_time && $event->start_time->lte($now) && $event->end_time->gte($now)) {
-            return 'active';
-        }
+    /**
+     * Determine whether a completed event is in grace period or archived.
+     */
+    protected function resolvePostEventStatus(Event $event, \Carbon\Carbon $now): string
+    {
+        $graceDays = (int) Setting::get('post_event_grace_period_days', 30);
 
-        if ($event->end_time && $event->end_time->lt($now)) {
-            $graceDays = (int) Setting::get('post_event_grace_period_days', 30);
-
-            return $now->lte($event->end_time->copy()->addDays($graceDays)) ? 'grace' : 'archived';
-        }
-
-        return 'archived';
+        return $now->lte($event->end_time->copy()->addDays($graceDays)) ? 'grace' : 'archived';
     }
 
     /**

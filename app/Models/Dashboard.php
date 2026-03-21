@@ -116,12 +116,7 @@ class Dashboard extends Model
      */
     protected function isValidWidget(mixed $widget): bool
     {
-        if (! is_array($widget)) {
-            return false;
-        }
-
-        // Required fields
-        if (! isset($widget['id']) || ! isset($widget['type'])) {
+        if (! is_array($widget) || ! isset($widget['id']) || ! isset($widget['type'])) {
             return false;
         }
 

@@ -158,6 +158,7 @@ class LocationDetectionService
         $isIpv6 = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
         $isSubnetIpv6 = filter_var($subnetIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
 
+        // IP version mismatch
         if ($isIpv6 !== $isSubnetIpv6) {
             return false;
         }

@@ -6,7 +6,7 @@
     }
 }">
     {{-- Screen Reader Announcements --}}
-    <div class="sr-only" role="status" aria-live="polite" aria-atomic="true" x-text="announceMessage"></div>
+    <output class="sr-only" aria-live="polite" aria-atomic="true" x-text="announceMessage"></output>
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-start lg:items-center sm:justify-between gap-4">
@@ -35,7 +35,7 @@
     {{-- Two Column Layout (Single on mobile, two on lg+) --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {{-- Left Column: Assigned Equipment --}}
-        <div
+        <section
             class="h-fit transition-all duration-200"
             x-data="{
                 dragOver: false,
@@ -55,7 +55,6 @@
                 'ring-2 ring-success ring-offset-2 bg-success/5': dragOver && isValidDrop,
                 'ring-2 ring-error ring-offset-2 bg-error/5': dragOver && !isValidDrop
             }"
-            role="region"
             aria-label="Assigned equipment drop zone"
             aria-live="polite"
         >
@@ -174,7 +173,7 @@
                 </div>
             @empty
                 @if(!$this->stationModel?->primaryRadio)
-                    <div class="text-center py-6 sm:py-8" role="status" aria-label="No equipment assigned">
+                    <output class="text-center py-6 sm:py-8 block" aria-label="No equipment assigned">
                         <x-icon name="o-cube" class="w-10 sm:w-12 h-10 sm:h-12 mx-auto text-base-content/30" />
                         <p class="mt-2 text-xs sm:text-base text-base-content/70">No equipment assigned</p>
                         <p class="text-xs sm:text-sm text-base-content/50 mt-1">
@@ -183,15 +182,15 @@
                         <p class="text-xs text-base-content/40 mt-2 hidden sm:block">
                             Keyboard: Tab to equipment, Space to pick up, Space again to drop, Escape to cancel
                         </p>
-                    </div>
+                    </output>
                 @else
-                    <div class="text-center py-4 text-xs sm:text-sm text-base-content/50" role="status">
+                    <output class="text-center py-4 text-xs sm:text-sm text-base-content/50 block">
                         No additional equipment assigned. Browse available equipment below.
-                    </div>
+                    </output>
                 @endif
             @endforelse
         </x-card>
-        </div>
+        </section>
 
         {{-- Right Column: Available Equipment --}}
         <x-card>
@@ -253,8 +252,8 @@
                                 wire:key="committed-{{ $commitment->id }}"
                                 draggable="true"
                                 tabindex="0"
-                                role="button"
                                 aria-label="Drag {{ $commitment->equipment->make }} {{ $commitment->equipment->model }} to assign to station. Press Space to pick up, Arrow keys to navigate, Space to drop, Escape to cancel."
+                                onkeydown="/* handled by Alpine */"
                                 @keydown="handleKeydown($event)"
                                 x-data="{
                                     isDragging: false,
@@ -383,8 +382,8 @@
                                 wire:key="catalog-{{ $equipment->id }}"
                                 draggable="true"
                                 tabindex="0"
-                                role="button"
                                 aria-label="Drag {{ $equipment->make }} {{ $equipment->model }} to commit and assign to station. Press Space to pick up, Arrow keys to navigate, Space to drop, Escape to cancel."
+                                onkeydown="/* handled by Alpine */"
                                 @keydown="handleKeydown($event)"
                                 x-data="{
                                     isDragging: false,

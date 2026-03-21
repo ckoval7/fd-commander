@@ -144,35 +144,7 @@ class DeveloperTools extends Component
                 ];
             }
 
-            $startTime = Carbon::parse($event->start_time);
-            $endTime = Carbon::parse($event->end_time);
-
-            if ($selectedTime->lt($startTime)) {
-                $diff = $selectedTime->diff($startTime);
-
-                return [
-                    'status' => 'UPCOMING',
-                    'message' => "Event starts in {$diff->days}d {$diff->h}h {$diff->i}m",
-                    'class' => 'badge-info',
-                ];
-            } elseif ($selectedTime->between($startTime, $endTime)) {
-                $elapsed = $startTime->diff($selectedTime);
-                $remaining = $selectedTime->diff($endTime);
-
-                return [
-                    'status' => 'IN PROGRESS',
-                    'message' => "Elapsed: {$elapsed->h}h {$elapsed->i}m | Remaining: {$remaining->days}d {$remaining->h}h {$remaining->i}m",
-                    'class' => 'badge-success',
-                ];
-            } else {
-                $endedAgo = $endTime->diff($selectedTime);
-
-                return [
-                    'status' => 'ENDED',
-                    'message' => "Event ended {$endedAgo->days}d {$endedAgo->h}h ago",
-                    'class' => 'badge-error',
-                ];
-            }
+            return $this->buildStatusPreview($selectedTime, $event);
         } catch (\Exception $e) {
             return [
                 'status' => 'Error',
@@ -180,6 +152,46 @@ class DeveloperTools extends Component
                 'class' => 'badge-error',
             ];
         }
+    }
+
+    /**
+     * Build the status preview array for a given time and event.
+     *
+     * @return array{status: string, message: string, class: string}
+     */
+    protected function buildStatusPreview(Carbon $selectedTime, \App\Models\Event $event): array
+    {
+        $startTime = Carbon::parse($event->start_time);
+        $endTime = Carbon::parse($event->end_time);
+
+        if ($selectedTime->lt($startTime)) {
+            $diff = $selectedTime->diff($startTime);
+
+            return [
+                'status' => 'UPCOMING',
+                'message' => "Event starts in {$diff->days}d {$diff->h}h {$diff->i}m",
+                'class' => 'badge-info',
+            ];
+        }
+
+        if ($selectedTime->between($startTime, $endTime)) {
+            $elapsed = $startTime->diff($selectedTime);
+            $remaining = $selectedTime->diff($endTime);
+
+            return [
+                'status' => 'IN PROGRESS',
+                'message' => "Elapsed: {$elapsed->h}h {$elapsed->i}m | Remaining: {$remaining->days}d {$remaining->h}h {$remaining->i}m",
+                'class' => 'badge-success',
+            ];
+        }
+
+        $endedAgo = $endTime->diff($selectedTime);
+
+        return [
+            'status' => 'ENDED',
+            'message' => "Event ended {$endedAgo->days}d {$endedAgo->h}h ago",
+            'class' => 'badge-error',
+        ];
     }
 
     /**

@@ -94,11 +94,7 @@ class DeveloperClockService
      */
     public function now(): Carbon
     {
-        if (! $this->isEnabled()) {
-            return Carbon::now();
-        }
-
-        $fakeTime = $this->getFakeTime();
+        $fakeTime = $this->isEnabled() ? $this->getFakeTime() : null;
 
         if ($fakeTime === null) {
             return Carbon::now();
@@ -108,15 +104,14 @@ class DeveloperClockService
             return $fakeTime->copy();
         }
 
-        // Calculate flowing time
+        // Calculate flowing time, falling back to frozen if set time is missing
         $setAt = Setting::get('dev.fake_time_set_at');
+
         if ($setAt === null) {
-            // Fallback to frozen if we don't have the set time
             return $fakeTime->copy();
         }
 
-        $realSetAt = Carbon::parse($setAt);
-        $elapsedSeconds = $realSetAt->diffInSeconds(Carbon::now());
+        $elapsedSeconds = Carbon::parse($setAt)->diffInSeconds(Carbon::now());
 
         return $fakeTime->copy()->addSeconds($elapsedSeconds);
     }

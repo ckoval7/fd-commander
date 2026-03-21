@@ -18,6 +18,8 @@ class EquipmentCommitted extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    private const DATE_FORMAT = 'M j, Y g:i A';
+
     /**
      * Create a new notification instance.
      *
@@ -78,8 +80,8 @@ class EquipmentCommitted extends Notification implements ShouldQueue
             ->line('')
             ->line('**Event Details:**')
             ->line("Event: {$event->name}")
-            ->line("Dates: {$event->start_time->format('M j, Y g:i A')} - {$event->end_time->format('M j, Y g:i A')}")
-            ->lineIf($this->equipmentEvent->expected_delivery_at, "Expected Delivery: {$this->equipmentEvent->expected_delivery_at?->format('M j, Y g:i A')}")
+            ->line("Dates: {$event->start_time->format(self::DATE_FORMAT)} - {$event->end_time->format(self::DATE_FORMAT)}")
+            ->lineIf($this->equipmentEvent->expected_delivery_at, "Expected Delivery: {$this->equipmentEvent->expected_delivery_at?->format(self::DATE_FORMAT)}")
             ->lineIf($this->equipmentEvent->delivery_notes, "Delivery Notes: {$this->equipmentEvent->delivery_notes}")
             ->line('')
             ->action('Manage Your Commitments', $url)
@@ -113,7 +115,7 @@ class EquipmentCommitted extends Notification implements ShouldQueue
             ->line('')
             ->line('**Event Details:**')
             ->line("Event: {$event->name}")
-            ->lineIf($this->equipmentEvent->expected_delivery_at, "Expected Delivery: {$this->equipmentEvent->expected_delivery_at?->format('M j, Y g:i A')}")
+            ->lineIf($this->equipmentEvent->expected_delivery_at, "Expected Delivery: {$this->equipmentEvent->expected_delivery_at?->format(self::DATE_FORMAT)}")
             ->lineIf($this->equipmentEvent->delivery_notes, "Delivery Notes: {$this->equipmentEvent->delivery_notes}")
             ->line('')
             ->action('View Equipment Dashboard', $url)

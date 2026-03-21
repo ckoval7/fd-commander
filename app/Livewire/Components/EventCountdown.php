@@ -55,19 +55,29 @@ class EventCountdown extends Component
     {
         // Priority 1: Active event (currently in date range)
         $activeEvent = Event::active()->first();
+
         if ($activeEvent) {
             return $activeEvent;
         }
 
-        // Check for recently completed event (within 4 weeks)
+        // Priority 2: Compare recently completed vs upcoming events
+        return $this->resolveNearestEvent();
+    }
+
+    /**
+     * Resolve the nearest relevant event when no active event exists.
+     *
+     * Prefers upcoming events within 4 weeks over recently completed,
+     * then completed within 4 weeks, then any upcoming.
+     */
+    protected function resolveNearestEvent(): ?Event
+    {
         $completed = Event::completed()->orderBy('end_time', 'desc')->first();
         $completedWithin4Weeks = $completed && abs(appNow()->diffInDays($completed->end_time, false)) <= 28;
 
-        // Check for upcoming event
         $upcoming = Event::upcoming()->orderBy('start_time')->first();
         $upcomingWithin4Weeks = $upcoming && abs(appNow()->diffInDays($upcoming->start_time, false)) < 28;
 
-        // Prefer upcoming event within 4 weeks over completed, then completed within 4 weeks, then any upcoming
         if ($completedWithin4Weeks && $upcomingWithin4Weeks) {
             return $upcoming;
         }
@@ -81,19 +91,14 @@ class EventCountdown extends Component
             return '';
         }
 
-        if ($this->event->start_time <= appNow() && $this->event->end_time >= appNow()) {
-            return 'active';
-        }
+        $now = appNow();
 
-        if ($this->event->start_time > appNow()) {
-            return 'upcoming';
-        }
-
-        if ($this->event->end_time < appNow()) {
-            return 'ended';
-        }
-
-        return '';
+        return match (true) {
+            $this->event->start_time <= $now && $this->event->end_time >= $now => 'active',
+            $this->event->start_time > $now => 'upcoming',
+            $this->event->end_time < $now => 'ended',
+            default => '',
+        };
     }
 
     protected function calculateCountdown(): void

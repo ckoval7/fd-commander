@@ -122,7 +122,7 @@ class EquipmentAssignment extends Component
         $this->stationId = $stationId;
 
         // Verify the station exists and user has permission
-        $station = Station::with('eventConfiguration.event')->findOrFail($stationId);
+        Station::with('eventConfiguration.event')->findOrFail($stationId);
 
         // User must have manage-stations permission to assign equipment
         if (! auth()->user()->can('manage-stations')) {
@@ -373,49 +373,38 @@ class EquipmentAssignment extends Component
 
         // Only validate band compatibility for antennas
         if ($equipment->type !== 'antenna') {
-            return [
-                'compatible' => true,
-                'warning_message' => null,
-            ];
+            return ['compatible' => true, 'warning_message' => null];
         }
 
-        // If no primary radio is assigned, we can't validate
+        return $this->checkAntennaBandCompatibility($equipment, $station);
+    }
+
+    /**
+     * Check antenna band compatibility with station's primary radio.
+     *
+     * @return array{compatible: bool, warning_message: string|null}
+     */
+    protected function checkAntennaBandCompatibility(Equipment $equipment, Station $station): array
+    {
         if (! $station->primaryRadio) {
-            return [
-                'compatible' => true,
-                'warning_message' => 'No primary radio assigned to station. Band compatibility cannot be verified.',
-            ];
+            return ['compatible' => true, 'warning_message' => 'No primary radio assigned to station. Band compatibility cannot be verified.'];
         }
 
-        // Get equipment bands and radio bands
         $equipmentBands = $equipment->bands->pluck('id');
         $radioBands = $station->primaryRadio->bands->pluck('id');
 
-        // If either has no bands defined, show a warning
         if ($equipmentBands->isEmpty() || $radioBands->isEmpty()) {
-            return [
-                'compatible' => true,
-                'warning_message' => 'Band information is incomplete. Please verify compatibility manually.',
-            ];
+            return ['compatible' => true, 'warning_message' => 'Band information is incomplete. Please verify compatibility manually.'];
         }
 
-        // Check for overlapping bands
-        $overlappingBands = $equipmentBands->intersect($radioBands);
-
-        if ($overlappingBands->isEmpty()) {
+        if ($equipmentBands->intersect($radioBands)->isEmpty()) {
             $equipmentBandNames = $equipment->bands->pluck('name')->join(', ');
             $radioBandNames = $station->primaryRadio->bands->pluck('name')->join(', ');
 
-            return [
-                'compatible' => false,
-                'warning_message' => "Antenna bands ({$equipmentBandNames}) may not be compatible with radio bands ({$radioBandNames}).",
-            ];
+            return ['compatible' => false, 'warning_message' => "Antenna bands ({$equipmentBandNames}) may not be compatible with radio bands ({$radioBandNames})."];
         }
 
-        return [
-            'compatible' => true,
-            'warning_message' => null,
-        ];
+        return ['compatible' => true, 'warning_message' => null];
     }
 
     /**
@@ -758,7 +747,6 @@ class EquipmentAssignment extends Component
         }
 
         $equipmentId = $this->conflictEquipmentId;
-        $fromCatalog = $this->conflictData['from_catalog'] ?? false;
         $previousStationId = $this->conflictData['current_station_id'];
 
         // Get the equipment and old station before updating

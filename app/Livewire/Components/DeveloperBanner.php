@@ -48,22 +48,9 @@ class DeveloperBanner extends Component
 
     protected function shouldShow(DeveloperClockService $clockService): bool
     {
-        // Don't show if already dismissed this session
-        if ($this->isDismissed) {
-            return false;
-        }
-
-        // Don't show if developer mode not enabled
-        if (! $clockService->isEnabled()) {
-            return false;
-        }
-
-        // Don't show if no fake time is set
-        if ($clockService->getFakeTime() === null) {
-            return false;
-        }
-
-        return true;
+        return ! $this->isDismissed
+            && $clockService->isEnabled()
+            && $clockService->getFakeTime() !== null;
     }
 
     public function render(): View

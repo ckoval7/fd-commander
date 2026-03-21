@@ -75,7 +75,7 @@ class UserProfile extends Component
 
     public function saveProfile(): void
     {
-        $validated = $this->validate([
+        $this->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],

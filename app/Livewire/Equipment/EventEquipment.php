@@ -16,6 +16,8 @@ class EventEquipment extends Component
 {
     use AuthorizesRequests;
 
+    private const PERMISSION_ERROR = 'You do not have permission to modify this commitment.';
+
     public ?string $selectedTab = null;
 
     public ?int $selectedEventId = null;
@@ -142,7 +144,7 @@ class EventEquipment extends Component
         $event = Event::findOrFail($this->selectedEventId);
 
         // Validate inputs
-        $validated = $this->validate([
+        $this->validate([
             'equipmentId' => [
                 'required',
                 'exists:equipment,id',
@@ -224,7 +226,7 @@ class EventEquipment extends Component
 
         // Authorize (user owns equipment)
         if ($commitment->equipment->owner_user_id !== auth()->id()) {
-            $this->dispatch('notify', title: 'Error', description: 'You do not have permission to modify this commitment.', type: 'error');
+            $this->dispatch('notify', title: 'Error', description: self::PERMISSION_ERROR, type: 'error');
 
             return;
         }
@@ -246,7 +248,7 @@ class EventEquipment extends Component
 
         // Authorize (user owns equipment and status not 'in_use')
         if ($commitment->equipment->owner_user_id !== auth()->id()) {
-            $this->dispatch('notify', title: 'Error', description: 'You do not have permission to modify this commitment.', type: 'error');
+            $this->dispatch('notify', title: 'Error', description: self::PERMISSION_ERROR, type: 'error');
 
             return;
         }
@@ -274,7 +276,7 @@ class EventEquipment extends Component
 
         // Authorize (user owns equipment)
         if ($commitment->equipment->owner_user_id !== auth()->id()) {
-            $this->dispatch('notify', title: 'Error', description: 'You do not have permission to modify this commitment.', type: 'error');
+            $this->dispatch('notify', title: 'Error', description: self::PERMISSION_ERROR, type: 'error');
 
             return;
         }

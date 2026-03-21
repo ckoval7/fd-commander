@@ -23,48 +23,64 @@ class AppBrand extends Component
 
     public function __construct()
     {
-        // Priority 1: System settings (from Settings page)
         $siteName = Setting::get('site_name');
         $siteTagline = Setting::get('site_tagline');
         $siteLogoPath = Setting::get('site_logo_path');
 
-        // Priority 2: Get active event configuration
         $this->activeEvent = EventConfiguration::where('is_active', true)->first();
 
-        // Set branding data with priority hierarchy
-        // Logo: System settings > Event config > Default
+        $this->logoPath = $this->resolveLogoPath($siteLogoPath);
+        $this->callsign = $this->resolveCallsign($siteName);
+        $this->eventName = $this->resolveEventName($siteName);
+        $this->tagline = $this->resolveTagline($siteTagline);
+    }
+
+    /**
+     * Resolve logo path: System settings > Event config > Default.
+     */
+    protected function resolveLogoPath(?string $siteLogoPath): string
+    {
         if ($siteLogoPath && Storage::disk('public')->exists($siteLogoPath)) {
-            $this->logoPath = Storage::url($siteLogoPath);
-        } elseif ($this->activeEvent && $this->activeEvent->logo_path) {
-            $this->logoPath = $this->activeEvent->logo_path;
-        } else {
-            $this->logoPath = config('branding.default_logo', '/images/logo.svg');
+            return Storage::url($siteLogoPath);
         }
 
-        // Site Name/Callsign: System settings > Event callsign > Default
-        if ($siteName) {
-            $this->callsign = $siteName;
-        } elseif ($this->activeEvent) {
-            $this->callsign = $this->activeEvent->callsign;
-        } else {
-            $this->callsign = config('branding.default_callsign', config('app.name'));
+        if ($this->activeEvent && $this->activeEvent->logo_path) {
+            return $this->activeEvent->logo_path;
         }
 
-        // Event Name: Active event > Site name > Default
+        return config('branding.default_logo', '/images/logo.svg');
+    }
+
+    /**
+     * Resolve callsign/site name: System settings > Event callsign > Default.
+     */
+    protected function resolveCallsign(?string $siteName): string
+    {
+        return $siteName
+            ?? $this->activeEvent?->callsign
+            ?? config('branding.default_callsign', config('app.name'));
+    }
+
+    /**
+     * Resolve event name: Active event > Site name > Default.
+     */
+    protected function resolveEventName(?string $siteName): string
+    {
         if ($this->activeEvent) {
-            $this->eventName = $this->activeEvent->event->name ?? ($siteName ?: config('app.name'));
-        } else {
-            $this->eventName = $siteName ?: config('app.name');
+            return $this->activeEvent->event->name ?? ($siteName ?: config('app.name'));
         }
 
-        // Tagline: System settings > Event tagline > Default
-        if ($siteTagline) {
-            $this->tagline = $siteTagline;
-        } elseif ($this->activeEvent && $this->activeEvent->tagline) {
-            $this->tagline = $this->activeEvent->tagline;
-        } else {
-            $this->tagline = config('branding.default_tagline');
-        }
+        return $siteName ?: config('app.name');
+    }
+
+    /**
+     * Resolve tagline: System settings > Event tagline > Default.
+     */
+    protected function resolveTagline(?string $siteTagline): ?string
+    {
+        return $siteTagline
+            ?? ($this->activeEvent?->tagline ?: null)
+            ?? config('branding.default_tagline');
     }
 
     public function render(): View|Closure|string

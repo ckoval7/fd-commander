@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Exceptions\DatabaseSnapshotException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
-use RuntimeException;
 
 /**
  * Service for managing database snapshots using mysqldump/mysql CLI.
@@ -23,7 +23,7 @@ class DatabaseSnapshotService
      * @param  string|null  $description  Optional description for the snapshot
      * @return string The filename of the created snapshot
      *
-     * @throws RuntimeException If the snapshot creation fails
+     * @throws DatabaseSnapshotException If the snapshot creation fails
      */
     public function createSnapshot(string $name, ?string $description = null): string
     {
@@ -49,7 +49,7 @@ class DatabaseSnapshotService
                 'exit_code' => $result->exitCode(),
             ]);
 
-            throw new RuntimeException(
+            throw new DatabaseSnapshotException(
                 'Failed to create database snapshot: '.$result->errorOutput()
             );
         }
@@ -61,7 +61,7 @@ class DatabaseSnapshotService
                 'path' => $fullPath,
             ]);
 
-            throw new RuntimeException('Database snapshot file is empty or was not created.');
+            throw new DatabaseSnapshotException('Database snapshot file is empty or was not created.');
         }
 
         // Create metadata sidecar file
@@ -91,7 +91,7 @@ class DatabaseSnapshotService
      * @param  string  $filename  The filename of the snapshot to restore
      * @return bool True on success
      *
-     * @throws RuntimeException If the restore fails or file doesn't exist
+     * @throws DatabaseSnapshotException If the restore fails or file doesn't exist
      */
     public function restoreSnapshot(string $filename): bool
     {
@@ -99,7 +99,7 @@ class DatabaseSnapshotService
         $fullPath = "{$snapshotPath}/{$filename}";
 
         if (! File::exists($fullPath)) {
-            throw new RuntimeException("Snapshot file not found: {$filename}");
+            throw new DatabaseSnapshotException("Snapshot file not found: {$filename}");
         }
 
         $command = $this->buildMysqlCommand($fullPath);
@@ -117,7 +117,7 @@ class DatabaseSnapshotService
                 'exit_code' => $result->exitCode(),
             ]);
 
-            throw new RuntimeException(
+            throw new DatabaseSnapshotException(
                 'Failed to restore database snapshot: '.$result->errorOutput()
             );
         }

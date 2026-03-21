@@ -82,16 +82,14 @@ class Event extends Model
     // Accessors
     public function getStatusAttribute(): string
     {
-        if ($this->start_time && $this->start_time > appNow()) {
-            return 'upcoming';
-        } elseif ($this->end_time && $this->end_time < appNow()) {
-            return 'completed';
-        } elseif ($this->start_time && $this->end_time
-            && $this->start_time <= appNow() && $this->end_time >= appNow()) {
-            return 'active';
-        }
+        $now = appNow();
 
-        return 'upcoming';
+        return match (true) {
+            $this->start_time && $this->start_time > $now => 'upcoming',
+            $this->start_time && $this->end_time && $this->start_time <= $now && $this->end_time >= $now => 'active',
+            $this->end_time && $this->end_time < $now => 'completed',
+            default => 'upcoming',
+        };
     }
 
     public function getStatusBadgeColorAttribute(): string

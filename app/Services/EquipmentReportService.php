@@ -10,6 +10,8 @@ use Illuminate\Support\Collection;
  */
 class EquipmentReportService
 {
+    private const DATETIME_FORMAT = 'Y-m-d H:i:s';
+
     /**
      * Generate pre-event planning report with equipment commitments summary.
      *
@@ -400,7 +402,7 @@ class EquipmentReportService
                 'type' => $c->equipment->type,
                 'serial_number' => $c->equipment->serial_number,
                 'status' => $c->status,
-                'status_changed_at' => $c->status_changed_at?->format('Y-m-d H:i:s'),
+                'status_changed_at' => $c->status_changed_at?->format(self::DATETIME_FORMAT),
                 'status_changed_by' => $c->statusChangedBy?->call_sign ?? 'Unknown',
                 'owner_name' => $c->equipment->owner_name,
                 'owner_callsign' => $c->equipment->owner?->call_sign ?? 'N/A',
@@ -466,10 +468,10 @@ class EquipmentReportService
                 'description' => $c->equipment->description,
                 'owner_name' => $c->equipment->owner_name,
                 'owner_callsign' => $c->equipment->owner?->call_sign ?? 'N/A',
-                'committed_at' => $c->committed_at?->format('Y-m-d H:i:s'),
-                'expected_delivery_at' => $c->expected_delivery_at?->format('Y-m-d H:i:s'),
+                'committed_at' => $c->committed_at?->format(self::DATETIME_FORMAT),
+                'expected_delivery_at' => $c->expected_delivery_at?->format(self::DATETIME_FORMAT),
                 'final_status' => $c->status,
-                'status_changed_at' => $c->status_changed_at?->format('Y-m-d H:i:s'),
+                'status_changed_at' => $c->status_changed_at?->format(self::DATETIME_FORMAT),
                 'status_changed_by' => $c->statusChangedBy?->call_sign ?? 'N/A',
                 'station_assigned' => $c->station?->name ?? 'Unassigned',
                 'bands_supported' => $c->equipment->bands->pluck('name')->implode(', '),

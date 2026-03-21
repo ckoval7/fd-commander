@@ -18,6 +18,8 @@ use Spatie\Permission\Models\Role;
 
 class UserManagement extends Component
 {
+    private const BULK_LIMIT_ERROR = 'Bulk actions limited to 50 users. Please select fewer users.';
+
     use WithPagination;
 
     // Search and filters
@@ -400,7 +402,7 @@ class UserManagement extends Component
         }
 
         if (count($this->selectedUsers) > 50) {
-            $this->dispatch('toast', title: 'Error', description: 'Bulk actions limited to 50 users. Please select fewer users.', icon: 'o-x-circle', css: 'alert-error');
+            $this->dispatch('toast', title: 'Error', description: self::BULK_LIMIT_ERROR, icon: 'o-x-circle', css: 'alert-error');
 
             return;
         }
@@ -427,7 +429,7 @@ class UserManagement extends Component
         }
 
         if (count($this->selectedUsers) > 50) {
-            $this->dispatch('toast', title: 'Error', description: 'Bulk actions limited to 50 users. Please select fewer users.', icon: 'o-x-circle', css: 'alert-error');
+            $this->dispatch('toast', title: 'Error', description: self::BULK_LIMIT_ERROR, icon: 'o-x-circle', css: 'alert-error');
 
             return;
         }
@@ -456,7 +458,7 @@ class UserManagement extends Component
         }
 
         if (count($this->selectedUsers) > 50) {
-            $this->dispatch('toast', title: 'Error', description: 'Bulk actions limited to 50 users. Please select fewer users.', icon: 'o-x-circle', css: 'alert-error');
+            $this->dispatch('toast', title: 'Error', description: self::BULK_LIMIT_ERROR, icon: 'o-x-circle', css: 'alert-error');
 
             return;
         }
@@ -479,7 +481,7 @@ class UserManagement extends Component
         }
 
         if (count($this->selectedUsers) > 50) {
-            $this->dispatch('toast', title: 'Error', description: 'Bulk actions limited to 50 users. Please select fewer users.', icon: 'o-x-circle', css: 'alert-error');
+            $this->dispatch('toast', title: 'Error', description: self::BULK_LIMIT_ERROR, icon: 'o-x-circle', css: 'alert-error');
 
             return;
         }

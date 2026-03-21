@@ -14,9 +14,26 @@ class BonusTypeSeeder extends Seeder
         $fdEventType = \App\Models\EventType::where('code', 'FD')->first();
         $wfdEventType = \App\Models\EventType::where('code', 'WFD')->first();
 
-        $fdBonuses = [
+        $bonuses = array_merge(
+            $this->fieldDayBonuses($fdEventType->id),
+            $this->winterFieldDayBonuses($wfdEventType->id)
+        );
+
+        foreach ($bonuses as $bonus) {
+            \App\Models\BonusType::create($bonus);
+        }
+    }
+
+    /**
+     * Get Field Day bonus type definitions.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function fieldDayBonuses(int $eventTypeId): array
+    {
+        return [
             [
-                'event_type_id' => $fdEventType->id,
+                'event_type_id' => $eventTypeId,
                 'code' => 'emergency_power',
                 'name' => 'Emergency Power',
                 'description' => '100% emergency power for entire operation',
@@ -28,7 +45,7 @@ class BonusTypeSeeder extends Seeder
                 'eligible_classes' => json_encode(['A', 'D', 'E', 'F']),
             ],
             [
-                'event_type_id' => $fdEventType->id,
+                'event_type_id' => $eventTypeId,
                 'code' => 'media_publicity',
                 'name' => 'Media Publicity',
                 'description' => 'Official visit by broadcast or print media representative',
@@ -41,7 +58,7 @@ class BonusTypeSeeder extends Seeder
                 'eligible_classes' => null,
             ],
             [
-                'event_type_id' => $fdEventType->id,
+                'event_type_id' => $eventTypeId,
                 'code' => 'public_location',
                 'name' => 'Public Location',
                 'description' => 'Set up in public place, not member residence',
@@ -53,7 +70,7 @@ class BonusTypeSeeder extends Seeder
                 'eligible_classes' => json_encode(['A', 'F']),
             ],
             [
-                'event_type_id' => $fdEventType->id,
+                'event_type_id' => $eventTypeId,
                 'code' => 'public_info_booth',
                 'name' => 'Information Booth',
                 'description' => 'Set up information table for non-hams',
@@ -65,7 +82,7 @@ class BonusTypeSeeder extends Seeder
                 'eligible_classes' => null,
             ],
             [
-                'event_type_id' => $fdEventType->id,
+                'event_type_id' => $eventTypeId,
                 'code' => 'nts_message',
                 'name' => 'NTS Messages Handled',
                 'description' => 'Formal NTS messages originated, relayed, or received (10 points each)',
@@ -78,7 +95,7 @@ class BonusTypeSeeder extends Seeder
                 'eligible_classes' => null,
             ],
             [
-                'event_type_id' => $fdEventType->id,
+                'event_type_id' => $eventTypeId,
                 'code' => 'social_media',
                 'name' => 'Social Media',
                 'description' => 'Make FD operation known to general public via social media',
@@ -90,7 +107,7 @@ class BonusTypeSeeder extends Seeder
                 'eligible_classes' => null,
             ],
             [
-                'event_type_id' => $fdEventType->id,
+                'event_type_id' => $eventTypeId,
                 'code' => 'safety_officer',
                 'name' => 'Safety Officer',
                 'description' => 'Designated safety officer for Field Day operation',
@@ -102,7 +119,7 @@ class BonusTypeSeeder extends Seeder
                 'eligible_classes' => json_encode(['A', 'F']),
             ],
             [
-                'event_type_id' => $fdEventType->id,
+                'event_type_id' => $eventTypeId,
                 'code' => 'natural_power',
                 'name' => 'Natural Power QSOs',
                 'description' => '5 or more QSOs using 100% natural power (solar, wind, water)',
@@ -114,7 +131,7 @@ class BonusTypeSeeder extends Seeder
                 'eligible_classes' => null,
             ],
             [
-                'event_type_id' => $fdEventType->id,
+                'event_type_id' => $eventTypeId,
                 'code' => 'site_visit',
                 'name' => 'Agency/Official Visit',
                 'description' => 'Visit by served agency representative or elected official',
@@ -127,7 +144,7 @@ class BonusTypeSeeder extends Seeder
                 'eligible_classes' => null,
             ],
             [
-                'event_type_id' => $fdEventType->id,
+                'event_type_id' => $eventTypeId,
                 'code' => 'satellite_qso',
                 'name' => 'Satellite QSO',
                 'description' => 'Complete at least one QSO via amateur radio satellite',
@@ -139,10 +156,18 @@ class BonusTypeSeeder extends Seeder
                 'eligible_classes' => null,
             ],
         ];
+    }
 
-        $wfdBonuses = [
+    /**
+     * Get Winter Field Day bonus type definitions.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function winterFieldDayBonuses(int $eventTypeId): array
+    {
+        return [
             [
-                'event_type_id' => $wfdEventType->id,
+                'event_type_id' => $eventTypeId,
                 'code' => 'alternative_power',
                 'name' => 'Alternative Power',
                 'description' => 'Use alternative power source for entire operation',
@@ -154,7 +179,7 @@ class BonusTypeSeeder extends Seeder
                 'eligible_classes' => null,
             ],
             [
-                'event_type_id' => $wfdEventType->id,
+                'event_type_id' => $eventTypeId,
                 'code' => 'away_from_home',
                 'name' => 'Away From Home',
                 'description' => 'Operate from location other than home',
@@ -166,7 +191,7 @@ class BonusTypeSeeder extends Seeder
                 'eligible_classes' => json_encode(['I', 'O', 'M']),
             ],
             [
-                'event_type_id' => $wfdEventType->id,
+                'event_type_id' => $eventTypeId,
                 'code' => 'public_location_wfd',
                 'name' => 'Public Location',
                 'description' => 'Operate from publicly accessible location',
@@ -178,9 +203,5 @@ class BonusTypeSeeder extends Seeder
                 'eligible_classes' => json_encode(['I', 'O']),
             ],
         ];
-
-        foreach (array_merge($fdBonuses, $wfdBonuses) as $bonus) {
-            \App\Models\BonusType::create($bonus);
-        }
     }
 }

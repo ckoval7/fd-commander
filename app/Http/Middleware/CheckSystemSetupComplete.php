@@ -22,10 +22,7 @@ class CheckSystemSetupComplete
             ->value('value') === 'true';
 
         if (! $setupComplete) {
-            // Redirect to setup wizard
-            if (! $request->is('setup/*') && ! $request->is('register/invite/*')) {
-                return redirect('/setup/welcome');
-            }
+            return redirect('/setup/welcome');
         }
 
         return $next($request);

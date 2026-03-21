@@ -34,6 +34,8 @@ class EventEquipmentDashboard extends Component
 {
     use AuthorizesRequests;
 
+    private const PERMISSION_ERROR = 'You do not have permission to manage event equipment.';
+
     /**
      * The event being managed.
      */
@@ -153,70 +155,53 @@ class EventEquipmentDashboard extends Component
     {
         $commitments = $this->allCommitments;
 
-        // Apply search filter
         if ($this->searchQuery !== '') {
-            $search = strtolower($this->searchQuery);
-            $commitments = $commitments->filter(function (EquipmentEvent $commitment) use ($search) {
-                $equipment = $commitment->equipment;
-                $owner = $equipment->owner;
-
-                // Search in equipment make and model
-                if (str_contains(strtolower($equipment->make ?? ''), $search)) {
-                    return true;
-                }
-                if (str_contains(strtolower($equipment->model ?? ''), $search)) {
-                    return true;
-                }
-
-                // Search in owner name and callsign
-                if ($owner) {
-                    $fullName = strtolower("{$owner->first_name} {$owner->last_name}");
-                    if (str_contains($fullName, $search)) {
-                        return true;
-                    }
-                    if (str_contains(strtolower($owner->call_sign ?? ''), $search)) {
-                        return true;
-                    }
-                }
-
-                // Search in organization name (for club equipment)
-                if ($equipment->owningOrganization) {
-                    if (str_contains(strtolower($equipment->owningOrganization->name ?? ''), $search)) {
-                        return true;
-                    }
-                }
-
-                return false;
-            });
+            $commitments = $this->applySearchFilter($commitments);
         }
 
-        // Apply type filter
         if ($this->typeFilter !== null && $this->typeFilter !== '') {
-            $commitments = $commitments->filter(function (EquipmentEvent $commitment) {
-                return $commitment->equipment->type === $this->typeFilter;
-            });
+            $commitments = $commitments->filter(fn (EquipmentEvent $c) => $c->equipment->type === $this->typeFilter);
         }
 
-        // Apply status filter
         if ($this->statusFilter !== null && $this->statusFilter !== '') {
-            $commitments = $commitments->filter(function (EquipmentEvent $commitment) {
-                return $commitment->status === $this->statusFilter;
-            });
+            $commitments = $commitments->filter(fn (EquipmentEvent $c) => $c->status === $this->statusFilter);
         }
 
-        // Apply station filter
         if ($this->stationFilter !== null) {
-            $commitments = $commitments->filter(function (EquipmentEvent $commitment) {
-                if ($this->stationFilter === 0) {
-                    // Unassigned
-                    return $commitment->station_id === null;
-                }
-
-                return $commitment->station_id === $this->stationFilter;
-            });
+            $commitments = $commitments->filter(fn (EquipmentEvent $c) => $this->stationFilter === 0
+                ? $c->station_id === null
+                : $c->station_id === $this->stationFilter);
         }
 
         return $commitments->values();
+    }
+
+    /**
+     * Apply search filter across equipment make, model, owner name/callsign, and organization.
+     *
+     * @param  Collection<int, EquipmentEvent>  $commitments
+     * @return Collection<int, EquipmentEvent>
+     */
+    protected function applySearchFilter(Collection $commitments): Collection
+    {
+        $search = strtolower($this->searchQuery);
+
+        return $commitments->filter(fn (EquipmentEvent $commitment) => $this->commitmentMatchesSearch($commitment, $search));
+    }
+
+    /**
+     * Check if a commitment matches the search query.
+     */
+    protected function commitmentMatchesSearch(EquipmentEvent $commitment, string $search): bool
+    {
+        $equipment = $commitment->equipment;
+        $owner = $equipment->owner;
+
+        return str_contains(strtolower($equipment->make ?? ''), $search)
+            || str_contains(strtolower($equipment->model ?? ''), $search)
+            || ($owner && str_contains(strtolower("{$owner->first_name} {$owner->last_name}"), $search))
+            || ($owner && str_contains(strtolower($owner->call_sign ?? ''), $search))
+            || ($equipment->owningOrganization && str_contains(strtolower($equipment->owningOrganization->name ?? ''), $search));
     }
 
     /**
@@ -468,7 +453,7 @@ class EventEquipmentDashboard extends Component
     {
         // Authorize - must have manage-event-equipment permission
         if (! auth()->user()->can('manage-event-equipment')) {
-            $this->dispatch('notify', title: 'Error', description: 'You do not have permission to manage event equipment.', type: 'error');
+            $this->dispatch('notify', title: 'Error', description: self::PERMISSION_ERROR, type: 'error');
 
             return;
         }
@@ -541,7 +526,7 @@ class EventEquipmentDashboard extends Component
     {
         // Authorize - must have manage-event-equipment permission
         if (! auth()->user()->can('manage-event-equipment')) {
-            $this->dispatch('notify', title: 'Error', description: 'You do not have permission to manage event equipment.', type: 'error');
+            $this->dispatch('notify', title: 'Error', description: self::PERMISSION_ERROR, type: 'error');
 
             return;
         }
@@ -606,7 +591,7 @@ class EventEquipmentDashboard extends Component
     {
         // Authorize - must have manage-event-equipment permission
         if (! auth()->user()->can('manage-event-equipment')) {
-            $this->dispatch('notify', title: 'Error', description: 'You do not have permission to manage event equipment.', type: 'error');
+            $this->dispatch('notify', title: 'Error', description: self::PERMISSION_ERROR, type: 'error');
 
             return;
         }

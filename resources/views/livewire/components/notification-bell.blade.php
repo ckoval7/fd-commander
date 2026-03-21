@@ -8,10 +8,10 @@
     <button
         @click="open = !open"
         class="btn btn-ghost btn-circle btn-sm relative"
+        title="Notifications"
         aria-label="Notifications"
     >
         <x-icon name="o-bell" class="w-5 h-5" aria-hidden="true" />
-        <span class="sr-only">Notifications</span>
         @if($unreadCount > 0)
             <span class="absolute -top-1 -right-1 badge badge-error badge-xs text-white font-bold min-w-[1.25rem] h-5 flex items-center justify-center">
                 {{ $unreadCount > 99 ? '99+' : $unreadCount }}

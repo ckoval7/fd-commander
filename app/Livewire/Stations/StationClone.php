@@ -18,6 +18,8 @@ class StationClone extends Component
 {
     use AuthorizesRequests;
 
+    private const SELECT_STATION_MESSAGE = 'Please select at least one station to clone.';
+
     // Modal state
     public bool $showModal = false;
 
@@ -183,7 +185,7 @@ class StationClone extends Component
         $validated = $this->validate();
 
         if (empty($validated['selectedStationIds'])) {
-            $this->addError('selectedStationIds', 'Please select at least one station to clone.');
+            $this->addError('selectedStationIds', self::SELECT_STATION_MESSAGE);
 
             return;
         }
@@ -252,8 +254,6 @@ class StationClone extends Component
 
         // Show success message with detailed summary
         if ($result['success'] && $result['stations_cloned'] > 0) {
-            $targetEvent = EventConfiguration::find($validated['targetEventId'])->event;
-
             $description = sprintf(
                 "Stations Created: %d\nEquipment Assigned: %d%s",
                 $result['stations_cloned'],
@@ -387,8 +387,8 @@ class StationClone extends Component
     {
         return [
             'sourceEventId.required' => 'Please select a source event.',
-            'selectedStationIds.required' => 'Please select at least one station to clone.',
-            'selectedStationIds.min' => 'Please select at least one station to clone.',
+            'selectedStationIds.required' => self::SELECT_STATION_MESSAGE,
+            'selectedStationIds.min' => self::SELECT_STATION_MESSAGE,
             'targetEventId.required' => 'Please select a target event.',
             'nameSuffix.max' => 'Name suffix must not exceed 50 characters.',
         ];

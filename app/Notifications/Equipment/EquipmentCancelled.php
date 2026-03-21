@@ -17,6 +17,8 @@ class EquipmentCancelled extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    private const DATE_FORMAT = 'M d, Y \a\t g:i A';
+
     /**
      * Create a new notification instance.
      *
@@ -57,11 +59,11 @@ class EquipmentCancelled extends Notification implements ShouldQueue
             $message->line("**Description**: {$equipment->description}");
         }
 
-        $message->line("**Cancelled On**: {$this->equipmentEvent->status_changed_at->format('M d, Y \a\t g:i A')}")
-            ->line("**Originally Committed**: {$this->equipmentEvent->committed_at->format('M d, Y \a\t g:i A')}");
+        $message->line("**Cancelled On**: {$this->equipmentEvent->status_changed_at->format(self::DATE_FORMAT)}")
+            ->line("**Originally Committed**: {$this->equipmentEvent->committed_at->format(self::DATE_FORMAT)}");
 
         if ($this->equipmentEvent->expected_delivery_at) {
-            $message->line("**Was Expected**: {$this->equipmentEvent->expected_delivery_at->format('M d, Y \a\t g:i A')}");
+            $message->line("**Was Expected**: {$this->equipmentEvent->expected_delivery_at->format(self::DATE_FORMAT)}");
         }
 
         if ($operator) {

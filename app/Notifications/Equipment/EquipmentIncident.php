@@ -46,72 +46,91 @@ class EquipmentIncident extends Notification
         $equipment = $this->equipmentEvent->equipment;
         $event = $this->equipmentEvent->event;
         $incidentLabel = ucfirst($this->incidentType);
-
-        // Check if the notifiable is the equipment owner (operator)
         $isOwner = $notifiable->id === $equipment->owner_user_id;
 
         $message = (new MailMessage)
             ->level('error')
             ->subject("URGENT: Equipment {$incidentLabel} - {$equipment->make} {$equipment->model}");
 
-        if ($isOwner) {
-            // Message to equipment owner
-            $message->greeting("Hello {$notifiable->first_name},")
-                ->line("This is an urgent notification regarding your equipment at {$event->name}.")
-                ->line("**Equipment {$incidentLabel}**: {$equipment->make} {$equipment->model}")
-                ->line("**Type**: {$equipment->type}")
-                ->line("**Status**: {$incidentLabel} on {$this->equipmentEvent->status_changed_at->format('M d, Y \a\t g:i A')}")
-                ->line('**Event**: '.$event->name);
-
-            if ($this->equipmentEvent->manager_notes) {
-                $message->line('**Manager Notes**:')
-                    ->line($this->equipmentEvent->manager_notes);
-            }
-
-            $message->line('Please contact the event organizers immediately to discuss recovery or compensation.');
-        } else {
-            // Message to event managers and admins
-            $message->greeting('Equipment Incident Report')
-                ->line("An equipment incident has been reported at {$event->name}.")
-                ->line("**Incident Type**: {$incidentLabel}")
-                ->line("**Equipment**: {$equipment->make} {$equipment->model}")
-                ->line("**Type**: {$equipment->type}")
-                ->line('**Serial Number**: '.($equipment->serial_number ?? 'Not recorded'));
-
-            if ($equipment->value_usd) {
-                $message->line("**Estimated Value**: \${$equipment->value_usd} USD");
-            }
-
-            $message->line("**Status Changed**: {$this->equipmentEvent->status_changed_at->format('M d, Y \a\t g:i A')}");
-
-            $owner = $equipment->owner;
-            if ($owner) {
-                $message->line('**Owner Contact Information**:')
-                    ->line("{$owner->first_name} {$owner->last_name} ({$owner->call_sign})")
-                    ->line("Email: {$owner->email}");
-
-                if ($equipment->emergency_contact_phone) {
-                    $message->line("Emergency Contact: {$equipment->emergency_contact_phone}");
-                } elseif ($owner->phone) {
-                    $message->line("Phone: {$owner->phone}");
-                }
-            }
-
-            if ($this->equipmentEvent->manager_notes) {
-                $message->line('**Manager Notes**:')
-                    ->line($this->equipmentEvent->manager_notes);
-            }
-        }
+        $isOwner
+            ? $this->buildOwnerMessage($message, $notifiable, $equipment, $event, $incidentLabel)
+            : $this->buildManagerMessage($message, $equipment, $event, $incidentLabel);
 
         $message->action('View Equipment Dashboard', route('events.equipment.dashboard', $event));
 
-        if ($isOwner) {
-            $message->line('We apologize for this incident and will work with you to resolve it.');
-        } else {
-            $message->line('Please contact the equipment owner as soon as possible to discuss recovery or compensation.');
-        }
+        $message->line($isOwner
+            ? 'We apologize for this incident and will work with you to resolve it.'
+            : 'Please contact the equipment owner as soon as possible to discuss recovery or compensation.');
 
         return $message;
+    }
+
+    /**
+     * Build the mail message body for equipment owners.
+     */
+    protected function buildOwnerMessage(MailMessage $message, object $notifiable, $equipment, $event, string $incidentLabel): void
+    {
+        $message->greeting("Hello {$notifiable->first_name},")
+            ->line("This is an urgent notification regarding your equipment at {$event->name}.")
+            ->line("**Equipment {$incidentLabel}**: {$equipment->make} {$equipment->model}")
+            ->line("**Type**: {$equipment->type}")
+            ->line("**Status**: {$incidentLabel} on {$this->equipmentEvent->status_changed_at->format('M d, Y \a\t g:i A')}")
+            ->line('**Event**: '.$event->name);
+
+        if ($this->equipmentEvent->manager_notes) {
+            $message->line('**Manager Notes**:')
+                ->line($this->equipmentEvent->manager_notes);
+        }
+
+        $message->line('Please contact the event organizers immediately to discuss recovery or compensation.');
+    }
+
+    /**
+     * Build the mail message body for event managers and admins.
+     */
+    protected function buildManagerMessage(MailMessage $message, $equipment, $event, string $incidentLabel): void
+    {
+        $message->greeting('Equipment Incident Report')
+            ->line("An equipment incident has been reported at {$event->name}.")
+            ->line("**Incident Type**: {$incidentLabel}")
+            ->line("**Equipment**: {$equipment->make} {$equipment->model}")
+            ->line("**Type**: {$equipment->type}")
+            ->line('**Serial Number**: '.($equipment->serial_number ?? 'Not recorded'));
+
+        if ($equipment->value_usd) {
+            $message->line("**Estimated Value**: \${$equipment->value_usd} USD");
+        }
+
+        $message->line("**Status Changed**: {$this->equipmentEvent->status_changed_at->format('M d, Y \a\t g:i A')}");
+
+        $this->appendOwnerContactInfo($message, $equipment);
+
+        if ($this->equipmentEvent->manager_notes) {
+            $message->line('**Manager Notes**:')
+                ->line($this->equipmentEvent->manager_notes);
+        }
+    }
+
+    /**
+     * Append owner contact information to the message.
+     */
+    protected function appendOwnerContactInfo(MailMessage $message, $equipment): void
+    {
+        $owner = $equipment->owner;
+
+        if (! $owner) {
+            return;
+        }
+
+        $message->line('**Owner Contact Information**:')
+            ->line("{$owner->first_name} {$owner->last_name} ({$owner->call_sign})")
+            ->line("Email: {$owner->email}");
+
+        if ($equipment->emergency_contact_phone) {
+            $message->line("Emergency Contact: {$equipment->emergency_contact_phone}");
+        } elseif ($owner->phone) {
+            $message->line("Phone: {$owner->phone}");
+        }
     }
 
     /**

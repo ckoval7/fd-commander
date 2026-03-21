@@ -227,16 +227,10 @@ class DashboardService
      */
     protected function isValidWidgetEntry(mixed $widget, array $validTypes): bool
     {
-        if (! is_array($widget)) {
-            return false;
-        }
-
-        // Required string fields
-        if (! isset($widget['id']) || ! is_string($widget['id'])) {
-            return false;
-        }
-
-        if (! isset($widget['type']) || ! is_string($widget['type']) || ! in_array($widget['type'], $validTypes, true)) {
+        if (! is_array($widget)
+            || ! isset($widget['id']) || ! is_string($widget['id'])
+            || ! isset($widget['type']) || ! is_string($widget['type']) || ! in_array($widget['type'], $validTypes, true)
+        ) {
             return false;
         }
 

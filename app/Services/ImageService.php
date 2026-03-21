@@ -68,13 +68,7 @@ class ImageService
 
         [$width, $height, $type] = $imageInfo;
 
-        $source = match ($type) {
-            IMAGETYPE_JPEG => imagecreatefromjpeg($originalFullPath),
-            IMAGETYPE_PNG => imagecreatefrompng($originalFullPath),
-            IMAGETYPE_GIF => imagecreatefromgif($originalFullPath),
-            IMAGETYPE_WEBP => imagecreatefromwebp($originalFullPath),
-            default => null,
-        };
+        $source = $this->createImageResource($originalFullPath, $type);
 
         if ($source === null) {
             return null;
@@ -105,6 +99,20 @@ class ImageService
         imagedestroy($thumb);
 
         return $thumbnailPath;
+    }
+
+    /**
+     * Create a GD image resource from a file based on its type.
+     */
+    protected function createImageResource(string $path, int $type): ?\GdImage
+    {
+        return match ($type) {
+            IMAGETYPE_JPEG => imagecreatefromjpeg($path),
+            IMAGETYPE_PNG => imagecreatefrompng($path),
+            IMAGETYPE_GIF => imagecreatefromgif($path),
+            IMAGETYPE_WEBP => imagecreatefromwebp($path),
+            default => null,
+        };
     }
 
     public function regenerateThumbnail(string $storagePath): ?string

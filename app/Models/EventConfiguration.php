@@ -121,33 +121,33 @@ class EventConfiguration extends Model
      */
     public function calculatePowerMultiplier(): int
     {
-        // Over 100W always gets 1x
         if ($this->max_power_watts > 100) {
             return 1;
         }
 
-        // 5W or less qualifies for potential 5x
-        if ($this->max_power_watts <= 5) {
-            // Check for natural power sources (battery, solar, wind, water)
-            $hasNaturalPower = $this->uses_battery
-                || $this->uses_solar
-                || $this->uses_wind
-                || $this->uses_water;
-
-            // Check for disqualifying power sources (commercial or generator)
-            $hasDisqualifyingPower = $this->uses_commercial_power || $this->uses_generator;
-
-            // 5x if natural power and no commercial/generator
-            if ($hasNaturalPower && ! $hasDisqualifyingPower) {
-                return 5;
-            }
-
-            // Otherwise QRP with commercial/generator gets 2x
-            return 2;
+        if ($this->max_power_watts <= 5 && $this->hasQrpNaturalPowerBonus()) {
+            return 5;
         }
 
-        // 6-100W always gets 2x regardless of power source
+        // 6-100W or QRP without natural power bonus gets 2x
         return 2;
+    }
+
+    /**
+     * Check if station qualifies for QRP natural power bonus (5x multiplier).
+     *
+     * Requires natural power sources and no commercial/generator power.
+     */
+    protected function hasQrpNaturalPowerBonus(): bool
+    {
+        $hasNaturalPower = $this->uses_battery
+            || $this->uses_solar
+            || $this->uses_wind
+            || $this->uses_water;
+
+        $hasDisqualifyingPower = $this->uses_commercial_power || $this->uses_generator;
+
+        return $hasNaturalPower && ! $hasDisqualifyingPower;
     }
 
     /**

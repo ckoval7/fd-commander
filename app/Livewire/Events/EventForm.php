@@ -91,36 +91,47 @@ class EventForm extends Component
 
     public function mount(?int $eventId = null, ?string $mode = null): void
     {
-        // Detect mode - prioritize parameter, then route, then default
-        if ($mode) {
-            $this->mode = $mode;
-        } elseif ($eventId) {
-            $this->eventId = $eventId;
+        $this->resolveMode($eventId, $mode);
+        $this->authorizeMode();
+        $this->initializeEventData();
+    }
 
-            // Determine if we're cloning or editing based on route name
-            $routeName = request()->route()?->getName();
-            if ($routeName === 'events.clone') {
-                $this->mode = 'clone';
-            } else {
-                $this->mode = 'edit';
-            }
-        } else {
-            $this->mode = 'create';
-        }
-
-        // Set eventId if provided
+    /**
+     * Detect mode from parameter, route name, or default to create.
+     */
+    private function resolveMode(?int $eventId, ?string $mode): void
+    {
         if ($eventId) {
             $this->eventId = $eventId;
         }
 
-        // Authorization
-        if ($this->mode === 'create' || $this->mode === 'clone') {
-            $this->authorize('create-events');
-        } elseif ($this->mode === 'edit') {
-            $this->authorize('edit-events');
+        if ($mode) {
+            $this->mode = $mode;
+        } elseif ($eventId) {
+            $routeName = request()->route()?->getName();
+            $this->mode = $routeName === 'events.clone' ? 'clone' : 'edit';
+        } else {
+            $this->mode = 'create';
         }
+    }
 
-        // Load existing event data
+    /**
+     * Authorize the current mode.
+     */
+    private function authorizeMode(): void
+    {
+        match ($this->mode) {
+            'create', 'clone' => $this->authorize('create-events'),
+            'edit' => $this->authorize('edit-events'),
+            default => null,
+        };
+    }
+
+    /**
+     * Load event data or set defaults based on the current mode.
+     */
+    private function initializeEventData(): void
+    {
         if ($this->eventId && ($this->mode === 'edit' || $this->mode === 'clone')) {
             $this->loadEvent();
 
@@ -129,7 +140,6 @@ class EventForm extends Component
             }
         }
 
-        // Set default year for new events
         if ($this->mode === 'create') {
             $this->year = now()->year;
         }
@@ -209,33 +219,31 @@ class EventForm extends Component
     #[Computed]
     public function powerMultiplier(): int
     {
-        // Over 100W always gets 1x
         if ($this->max_power_watts > 100) {
             return 1;
         }
 
-        // 5W or less qualifies for potential 5x
-        if ($this->max_power_watts <= 5) {
-            // Check for natural power sources
-            $hasNaturalPower = $this->uses_battery
-                || $this->uses_solar
-                || $this->uses_wind
-                || $this->uses_water;
-
-            // Check for disqualifying power sources
-            $hasDisqualifyingPower = $this->uses_commercial_power || $this->uses_generator;
-
-            // 5x if natural power and no commercial/generator
-            if ($hasNaturalPower && ! $hasDisqualifyingPower) {
-                return 5;
-            }
-
-            // Otherwise QRP with commercial/generator gets 2x
-            return 2;
+        if ($this->max_power_watts <= 5 && $this->hasQrpNaturalPowerBonus()) {
+            return 5;
         }
 
-        // 6-100W always gets 2x
+        // 6-100W or QRP without natural power bonus gets 2x
         return 2;
+    }
+
+    /**
+     * Check if current power configuration qualifies for QRP natural power bonus (5x).
+     */
+    protected function hasQrpNaturalPowerBonus(): bool
+    {
+        $hasNaturalPower = $this->uses_battery
+            || $this->uses_solar
+            || $this->uses_wind
+            || $this->uses_water;
+
+        $hasDisqualifyingPower = $this->uses_commercial_power || $this->uses_generator;
+
+        return $hasNaturalPower && ! $hasDisqualifyingPower;
     }
 
     #[Computed]
@@ -317,8 +325,6 @@ class EventForm extends Component
 
             // Cancel the update by not allowing it to proceed
             $this->skipRender();
-
-            return;
         }
     }
 
