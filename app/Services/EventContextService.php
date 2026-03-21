@@ -43,13 +43,28 @@ class EventContextService extends ActiveEventService
                     ->with('eventConfiguration')
                     ->first();
             } else {
-                $this->contextEvent = $this->getActiveEvent();
+                $this->contextEvent = $this->getActiveEvent()
+                    ?? $this->getGracePeriodEvent();
             }
 
             $this->contextLoaded = true;
         }
 
         return $this->contextEvent;
+    }
+
+    /**
+     * Get the most recently completed event still within its grace period.
+     */
+    protected function getGracePeriodEvent(): ?Event
+    {
+        $graceDays = (int) Setting::get('post_event_grace_period_days', 30);
+
+        return Event::completed()
+            ->where('end_time', '>=', appNow()->subDays($graceDays))
+            ->orderByDesc('end_time')
+            ->with('eventConfiguration')
+            ->first();
     }
 
     /**
