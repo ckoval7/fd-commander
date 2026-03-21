@@ -1,6 +1,6 @@
-@script
-<script>
-    Alpine.data('eventCountdown', () => ({
+<div
+    wire:poll.visible.30s="updateComponent"
+    x-data="{
         localTime: '',
         utcTime: '',
         countdown: '',
@@ -12,22 +12,22 @@
         _interval: null,
 
         init() {
-            this.targetTs = this.$wire.targetTimestamp;
-            this.serverTs = this.$wire.serverTimestamp;
+            this.targetTs = $wire.targetTimestamp;
+            this.serverTs = $wire.serverTimestamp;
             this.initRealTs = Math.floor(Date.now() / 1000);
-            this.tz = this.$wire.timezone;
-            this.state = this.$wire.state;
+            this.tz = $wire.timezone;
+            this.state = $wire.state;
 
             this.tick();
             this._interval = setInterval(() => this.tick(), 1000);
 
-            this.$wire.$watch('targetTimestamp', (v) => {
+            $wire.$watch('targetTimestamp', (v) => {
                 this.targetTs = v;
-                this.serverTs = this.$wire.serverTimestamp;
+                this.serverTs = $wire.serverTimestamp;
                 this.initRealTs = Math.floor(Date.now() / 1000);
             });
-            this.$wire.$watch('state', (v) => { this.state = v; });
-            this.$wire.$watch('timezone', (v) => { this.tz = v; });
+            $wire.$watch('state', (v) => { this.state = v; });
+            $wire.$watch('timezone', (v) => { this.tz = v; });
         },
 
         destroy() {
@@ -71,13 +71,7 @@
                 this.countdown = minutes + 'm ' + seconds + 's';
             }
         }
-    }));
-</script>
-@endscript
-
-<div
-    @if($event) wire:poll.30s="updateComponent" @endif
-    x-data="eventCountdown"
+    }"
     class="flex flex-col lg:flex-row items-start lg:items-baseline gap-3 lg:gap-4"
     aria-live="polite"
     aria-label="Event countdown timer"
