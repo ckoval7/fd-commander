@@ -27,3 +27,5 @@ Thumbs.db
 test-results/
 .scannerwork/
 .claude/
+.mcp.json
+boost.json
