@@ -54,6 +54,12 @@ class StationForm extends Component
         if ($this->stationId) {
             $this->loadStation();
             $this->authorize('update', $station);
+
+            // Open specific tab if requested via query parameter
+            $requestedTab = request()->query('tab');
+            if ($requestedTab && in_array($requestedTab, ['configuration', 'equipment', 'activity'])) {
+                $this->activeTab = $requestedTab;
+            }
         } else {
             $this->authorize('create', Station::class);
             // Default to context event (session-overridden or active event)
@@ -212,7 +218,9 @@ class StationForm extends Component
             'is_gota' => $validated['is_gota'],
             'is_vhf_only' => $validated['is_vhf_only'],
             'is_satellite' => $validated['is_satellite'],
-            'max_power_watts' => $validated['max_power_watts'],
+            'max_power_watts' => $validated['max_power_watts']
+                ?? Equipment::find($validated['radio_equipment_id'])?->power_output_watts
+                ?? 100,
             'power_source_description' => $validated['power_source_description'],
         ];
 
@@ -223,7 +231,7 @@ class StationForm extends Component
             $successMessage = 'Station updated successfully';
         } else {
             // Create new station
-            Station::create($stationData);
+            $station = Station::create($stationData);
             $successMessage = 'Station created successfully';
         }
 
@@ -241,6 +249,9 @@ class StationForm extends Component
         // Close modal or redirect
         if ($this->showModal) {
             $this->closeModal();
+        } elseif (! $this->stationId && isset($station)) {
+            // After creation, redirect to edit page on Equipment tab
+            $this->redirect(route('stations.edit', $station).'?tab=equipment', navigate: true);
         } else {
             $this->redirect(route('stations.index'), navigate: true);
         }

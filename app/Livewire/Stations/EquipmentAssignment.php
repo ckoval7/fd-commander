@@ -90,6 +90,28 @@ class EquipmentAssignment extends Component
     public ?int $detailsEquipmentId = null;
 
     /**
+     * Show warning confirmation modal (band/power warnings).
+     */
+    public bool $showWarningModal = false;
+
+    /**
+     * Warning messages to display in the modal.
+     *
+     * @var array<int, array{title: string, message: string}>
+     */
+    public array $warningMessages = [];
+
+    /**
+     * Pending equipment assignment ID (waiting for warning confirmation).
+     */
+    public ?int $pendingEquipmentId = null;
+
+    /**
+     * Whether pending assignment is from catalog.
+     */
+    public bool $pendingFromCatalog = false;
+
+    /**
      * Show unassign confirmation modal (for in_use equipment).
      */
     public bool $showUnassignConfirmModal = false;
@@ -666,33 +688,36 @@ class EquipmentAssignment extends Component
             return;
         }
 
-        // Check band compatibility (warning only)
+        // Collect warnings for band compatibility and power limits
+        $warnings = [];
+
         $bandCheck = $this->validateBandCompatibility($equipmentId, $this->stationId);
         if (! $bandCheck['compatible'] && $bandCheck['warning_message']) {
-            // TODO: Show warning dialog with continue/cancel options
-            // For now, just show a toast warning and continue
-            $this->dispatch('toast', [
-                'title' => 'Band Compatibility Warning',
-                'description' => $bandCheck['warning_message'],
-                'icon' => 'o-exclamation-triangle',
-                'css' => 'alert-warning',
-            ]);
+            $warnings[] = [
+                'title' => 'Band Compatibility',
+                'message' => $bandCheck['warning_message'],
+            ];
         }
 
-        // Check power limits (warning only)
         $powerCheck = $this->validatePowerLimits($equipmentId, $this->stationId);
         if (! $powerCheck['within_limits'] && $powerCheck['warning_message']) {
-            // TODO: Show warning dialog with continue/cancel options
-            // For now, just show a toast warning and continue
-            $this->dispatch('toast', [
-                'title' => 'Power Limit Warning',
-                'description' => $powerCheck['warning_message'],
-                'icon' => 'o-exclamation-triangle',
-                'css' => 'alert-warning',
-            ]);
+            $warnings[] = [
+                'title' => 'Power Limit',
+                'message' => $powerCheck['warning_message'],
+            ];
         }
 
-        // Perform the assignment
+        // If there are warnings, show confirmation modal instead of proceeding
+        if (! empty($warnings)) {
+            $this->warningMessages = $warnings;
+            $this->pendingEquipmentId = $equipmentId;
+            $this->pendingFromCatalog = $fromCatalog;
+            $this->showWarningModal = true;
+
+            return;
+        }
+
+        // No warnings — perform the assignment directly
         $this->performAssignment($equipmentId, $fromCatalog);
     }
 
@@ -813,6 +838,37 @@ class EquipmentAssignment extends Component
         $this->showConflictModal = false;
         $this->conflictEquipmentId = null;
         $this->conflictData = null;
+    }
+
+    /**
+     * Confirm assignment despite warnings.
+     */
+    public function confirmWarningAssignment(): void
+    {
+        if (! $this->pendingEquipmentId) {
+            return;
+        }
+
+        $equipmentId = $this->pendingEquipmentId;
+        $fromCatalog = $this->pendingFromCatalog;
+
+        $this->showWarningModal = false;
+        $this->warningMessages = [];
+        $this->pendingEquipmentId = null;
+        $this->pendingFromCatalog = false;
+
+        $this->performAssignment($equipmentId, $fromCatalog);
+    }
+
+    /**
+     * Cancel assignment due to warnings.
+     */
+    public function cancelWarningAssignment(): void
+    {
+        $this->showWarningModal = false;
+        $this->warningMessages = [];
+        $this->pendingEquipmentId = null;
+        $this->pendingFromCatalog = false;
     }
 
     /**

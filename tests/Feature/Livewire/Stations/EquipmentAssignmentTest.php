@@ -791,6 +791,147 @@ test('validateEquipmentType accepts valid equipment types', function () {
     }
 });
 
+test('shows warning modal for incompatible antenna bands', function () {
+    $hfBand = Band::factory()->create(['name' => '20m', 'meters' => 20, 'is_hf' => true]);
+    $vhfBand = Band::factory()->create(['name' => '2m', 'meters' => 2, 'is_vhf_uhf' => true]);
+
+    $this->radio->bands()->attach($hfBand);
+
+    $antenna = Equipment::factory()->create([
+        'type' => 'antenna',
+        'make' => 'VHF Only',
+        'model' => 'Antenna',
+        'owner_user_id' => $this->user->id,
+    ]);
+    $antenna->bands()->attach($vhfBand);
+
+    EquipmentEvent::create([
+        'equipment_id' => $antenna->id,
+        'event_id' => $this->event->id,
+        'station_id' => null,
+        'status' => 'committed',
+        'committed_at' => now(),
+        'status_changed_at' => now(),
+    ]);
+
+    Livewire::test(EquipmentAssignment::class, ['stationId' => $this->station->id])
+        ->call('assignEquipment', $antenna->id, false)
+        ->assertSet('showWarningModal', true)
+        ->assertSet('pendingEquipmentId', $antenna->id);
+
+    // Equipment should NOT be assigned yet
+    $this->assertDatabaseHas('equipment_event', [
+        'equipment_id' => $antenna->id,
+        'station_id' => null,
+    ]);
+});
+
+test('shows warning modal for amplifier exceeding power limits', function () {
+    $this->station->update(['max_power_watts' => 100]);
+
+    $amplifier = Equipment::factory()->create([
+        'type' => 'amplifier',
+        'make' => 'Overpowered',
+        'model' => 'Amp',
+        'power_output_watts' => 500,
+        'owner_user_id' => $this->user->id,
+    ]);
+
+    EquipmentEvent::create([
+        'equipment_id' => $amplifier->id,
+        'event_id' => $this->event->id,
+        'station_id' => null,
+        'status' => 'committed',
+        'committed_at' => now(),
+        'status_changed_at' => now(),
+    ]);
+
+    Livewire::test(EquipmentAssignment::class, ['stationId' => $this->station->id])
+        ->call('assignEquipment', $amplifier->id, false)
+        ->assertSet('showWarningModal', true)
+        ->assertSet('pendingEquipmentId', $amplifier->id);
+
+    // Equipment should NOT be assigned yet
+    $this->assertDatabaseHas('equipment_event', [
+        'equipment_id' => $amplifier->id,
+        'station_id' => null,
+    ]);
+});
+
+test('confirming warning modal proceeds with assignment', function () {
+    $hfBand = Band::factory()->create(['name' => '20m', 'meters' => 20, 'is_hf' => true]);
+    $vhfBand = Band::factory()->create(['name' => '2m', 'meters' => 2, 'is_vhf_uhf' => true]);
+
+    $this->radio->bands()->attach($hfBand);
+
+    $antenna = Equipment::factory()->create([
+        'type' => 'antenna',
+        'make' => 'Warn Then Assign',
+        'model' => 'Antenna',
+        'owner_user_id' => $this->user->id,
+    ]);
+    $antenna->bands()->attach($vhfBand);
+
+    EquipmentEvent::create([
+        'equipment_id' => $antenna->id,
+        'event_id' => $this->event->id,
+        'station_id' => null,
+        'status' => 'committed',
+        'committed_at' => now(),
+        'status_changed_at' => now(),
+    ]);
+
+    Livewire::test(EquipmentAssignment::class, ['stationId' => $this->station->id])
+        ->call('assignEquipment', $antenna->id, false)
+        ->assertSet('showWarningModal', true)
+        ->call('confirmWarningAssignment')
+        ->assertSet('showWarningModal', false)
+        ->assertSet('pendingEquipmentId', null)
+        ->assertDispatched('toast');
+
+    $this->assertDatabaseHas('equipment_event', [
+        'equipment_id' => $antenna->id,
+        'station_id' => $this->station->id,
+    ]);
+});
+
+test('cancelling warning modal does not assign equipment', function () {
+    $hfBand = Band::factory()->create(['name' => '20m', 'meters' => 20, 'is_hf' => true]);
+    $vhfBand = Band::factory()->create(['name' => '2m', 'meters' => 2, 'is_vhf_uhf' => true]);
+
+    $this->radio->bands()->attach($hfBand);
+
+    $antenna = Equipment::factory()->create([
+        'type' => 'antenna',
+        'make' => 'Cancelled',
+        'model' => 'Antenna',
+        'owner_user_id' => $this->user->id,
+    ]);
+    $antenna->bands()->attach($vhfBand);
+
+    EquipmentEvent::create([
+        'equipment_id' => $antenna->id,
+        'event_id' => $this->event->id,
+        'station_id' => null,
+        'status' => 'committed',
+        'committed_at' => now(),
+        'status_changed_at' => now(),
+    ]);
+
+    Livewire::test(EquipmentAssignment::class, ['stationId' => $this->station->id])
+        ->call('assignEquipment', $antenna->id, false)
+        ->assertSet('showWarningModal', true)
+        ->call('cancelWarningAssignment')
+        ->assertSet('showWarningModal', false)
+        ->assertSet('pendingEquipmentId', null);
+
+    // Equipment should remain unassigned
+    $this->assertDatabaseHas('equipment_event', [
+        'equipment_id' => $antenna->id,
+        'station_id' => null,
+    ]);
+});
+
 test('validation integration prevents assigning conflicted in_use equipment', function () {
     // Create another station with equipment in use
     $anotherRadio = Equipment::factory()->create(['type' => 'radio', 'owner_user_id' => $this->user->id]);

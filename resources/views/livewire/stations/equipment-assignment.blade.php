@@ -589,6 +589,39 @@
         </x-slot:actions>
     </x-modal>
 
+    {{-- Warning Confirmation Modal --}}
+    <x-modal wire:model="showWarningModal" title="Assignment Warnings" persistent>
+        <div class="space-y-3">
+            <p class="text-sm text-base-content/70">
+                The following issues were detected. Would you like to proceed anyway?
+            </p>
+
+            @foreach($warningMessages as $warning)
+                <x-alert icon="o-exclamation-triangle" class="alert-warning">
+                    <div>
+                        <div class="font-semibold">{{ $warning['title'] }}</div>
+                        <div class="text-sm">{{ $warning['message'] }}</div>
+                    </div>
+                </x-alert>
+            @endforeach
+        </div>
+
+        <x-slot:actions>
+            <x-button
+                label="Cancel"
+                wire:click="cancelWarningAssignment"
+                class="w-full sm:w-auto"
+            />
+            <x-button
+                label="Assign Anyway"
+                class="btn-warning w-full sm:w-auto"
+                icon="o-check"
+                wire:click="confirmWarningAssignment"
+                spinner="confirmWarningAssignment"
+            />
+        </x-slot:actions>
+    </x-modal>
+
     {{-- Equipment Details Modal --}}
     <x-modal wire:model="showDetailsModal" title="Equipment Details" class="backdrop-blur">
         @if($this->detailsEquipment)

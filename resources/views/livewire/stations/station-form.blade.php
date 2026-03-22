@@ -75,10 +75,6 @@
         <form wire:submit="save" class="space-y-6">
             @include('livewire.stations.partials.configuration-form')
 
-            <x-alert icon="o-information-circle" class="alert-info">
-                Equipment can be assigned after creating the station.
-            </x-alert>
-
             {{-- Form Actions --}}
             <div class="flex gap-3">
                 <x-button

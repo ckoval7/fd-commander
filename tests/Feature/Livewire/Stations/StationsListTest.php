@@ -23,6 +23,11 @@ beforeEach(function () {
     $role = Role::create(['name' => 'Operator', 'guard_name' => 'web']);
     $role->givePermissionTo('view-stations');
     $this->user->assignRole($role);
+
+    // Shared event infrastructure
+    $this->event = Event::factory()->create();
+    $this->eventConfig = EventConfiguration::factory()->create(['event_id' => $this->event->id]);
+    Setting::set('active_event_id', $this->event->id);
 });
 
 // Authorization Tests
@@ -45,14 +50,10 @@ test('stations list is accessible with view-stations permission', function () {
 test('users without manage-stations cannot see edit delete buttons', function () {
     $this->actingAs($this->user);
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
     $station = Station::factory()->create([
-        'event_configuration_id' => $config->id,
+        'event_configuration_id' => $this->eventConfig->id,
         'name' => 'Test Station',
     ]);
-
-    Setting::set('active_event_id', $event->id);
 
     $component = Livewire::test(StationsList::class);
 
@@ -66,11 +67,7 @@ test('users with manage-stations can see edit delete buttons', function () {
     $this->actingAs($this->user);
     $this->user->givePermissionTo('manage-stations');
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
-    $station = Station::factory()->create(['event_configuration_id' => $config->id]);
-
-    Setting::set('active_event_id', $event->id);
+    $station = Station::factory()->create(['event_configuration_id' => $this->eventConfig->id]);
 
     $component = Livewire::test(StationsList::class);
 
@@ -93,7 +90,7 @@ test('event filter dropdown shows all non-deleted events', function () {
     $component = Livewire::test(StationsList::class);
 
     $events = $component->get('events');
-    expect($events->count())->toBe(2);
+    // +1 for the shared event from beforeEach
     expect($events->pluck('name')->toArray())->toContain('Field Day 2025', 'Field Day 2024');
     expect($events->pluck('name')->toArray())->not->toContain('Field Day 2023');
 });
@@ -101,22 +98,16 @@ test('event filter dropdown shows all non-deleted events', function () {
 test('event filter defaults to active event', function () {
     $this->actingAs($this->user);
 
-    $activeEvent = Event::factory()->create();
-    Event::factory()->create(); // Another event
-
-    Setting::set('active_event_id', $activeEvent->id);
-
+    // active_event_id is already set to $this->event in beforeEach
     Livewire::test(StationsList::class)
-        ->assertSet('eventFilter', $activeEvent->id);
+        ->assertSet('eventFilter', $this->event->id);
 });
 
 test('changing event filter updates station list', function () {
     $this->actingAs($this->user);
 
-    $event1 = Event::factory()->create(['name' => 'Event 1']);
-    $config1 = EventConfiguration::factory()->create(['event_id' => $event1->id]);
     $station1 = Station::factory()->create([
-        'event_configuration_id' => $config1->id,
+        'event_configuration_id' => $this->eventConfig->id,
         'name' => 'Station Alpha',
     ]);
 
@@ -127,10 +118,8 @@ test('changing event filter updates station list', function () {
         'name' => 'Station Beta',
     ]);
 
-    Setting::set('active_event_id', $event1->id);
-
     Livewire::test(StationsList::class)
-        ->assertSet('eventFilter', $event1->id)
+        ->assertSet('eventFilter', $this->event->id)
         ->assertSee('Station Alpha')
         ->assertDontSee('Station Beta')
         ->set('eventFilter', $event2->id)
@@ -141,18 +130,14 @@ test('changing event filter updates station list', function () {
 test('stats update when event filter changes', function () {
     $this->actingAs($this->user);
 
-    $event1 = Event::factory()->create();
-    $config1 = EventConfiguration::factory()->create(['event_id' => $event1->id]);
-    Station::factory()->count(3)->create(['event_configuration_id' => $config1->id]);
+    Station::factory()->count(3)->create(['event_configuration_id' => $this->eventConfig->id]);
 
     $event2 = Event::factory()->create();
     $config2 = EventConfiguration::factory()->create(['event_id' => $event2->id]);
     Station::factory()->count(5)->create(['event_configuration_id' => $config2->id]);
 
-    Setting::set('active_event_id', $event1->id);
-
     $component = Livewire::test(StationsList::class)
-        ->assertSet('eventFilter', $event1->id);
+        ->assertSet('eventFilter', $this->event->id);
 
     $stats = $component->get('stats');
     expect($stats['total'])->toBe(3);
@@ -167,16 +152,12 @@ test('stats update when event filter changes', function () {
 test('station cards display correctly with all details', function () {
     $this->actingAs($this->user);
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
     $station = Station::factory()->create([
-        'event_configuration_id' => $config->id,
+        'event_configuration_id' => $this->eventConfig->id,
         'name' => '20m SSB Station',
         'power_source_description' => 'Solar + Battery',
         'max_power_watts' => 100,
     ]);
-
-    Setting::set('active_event_id', $event->id);
 
     Livewire::test(StationsList::class)
         ->assertSee('20m SSB Station')
@@ -187,14 +168,10 @@ test('station cards display correctly with all details', function () {
 test('gota badge shows for gota stations', function () {
     $this->actingAs($this->user);
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
     Station::factory()->gota()->create([
-        'event_configuration_id' => $config->id,
+        'event_configuration_id' => $this->eventConfig->id,
         'name' => 'GOTA Station',
     ]);
-
-    Setting::set('active_event_id', $event->id);
 
     Livewire::test(StationsList::class)
         ->assertSee('GOTA Station')
@@ -204,14 +181,10 @@ test('gota badge shows for gota stations', function () {
 test('vhf-only badge shows for vhf stations', function () {
     $this->actingAs($this->user);
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
     Station::factory()->vhfOnly()->create([
-        'event_configuration_id' => $config->id,
+        'event_configuration_id' => $this->eventConfig->id,
         'name' => 'VHF Station',
     ]);
-
-    Setting::set('active_event_id', $event->id);
 
     Livewire::test(StationsList::class)
         ->assertSee('VHF Station')
@@ -221,13 +194,9 @@ test('vhf-only badge shows for vhf stations', function () {
 test('satellite badge shows for satellite stations', function () {
     $this->actingAs($this->user);
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
     Station::factory()->satellite()->create([
-        'event_configuration_id' => $config->id,
+        'event_configuration_id' => $this->eventConfig->id,
     ]);
-
-    Setting::set('active_event_id', $event->id);
 
     Livewire::test(StationsList::class)
         ->assertSee('Satellite');
@@ -236,20 +205,15 @@ test('satellite badge shows for satellite stations', function () {
 test('active badge shows for stations with active sessions', function () {
     $this->actingAs($this->user);
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
     $station = Station::factory()->create([
-        'event_configuration_id' => $config->id,
+        'event_configuration_id' => $this->eventConfig->id,
         'name' => 'Active Station',
     ]);
 
-    // Create an active operating session (end_time is null)
     OperatingSession::factory()->create([
         'station_id' => $station->id,
         'end_time' => null,
     ]);
-
-    Setting::set('active_event_id', $event->id);
 
     Livewire::test(StationsList::class)
         ->assertSee('Active Station')
@@ -259,19 +223,15 @@ test('active badge shows for stations with active sessions', function () {
 test('primary radio details display correctly', function () {
     $this->actingAs($this->user);
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
     $radio = Equipment::factory()->create([
         'type' => 'radio',
         'make' => 'Yaesu',
         'model' => 'FT-991A',
     ]);
-    $station = Station::factory()->create([
-        'event_configuration_id' => $config->id,
+    Station::factory()->create([
+        'event_configuration_id' => $this->eventConfig->id,
         'radio_equipment_id' => $radio->id,
     ]);
-
-    Setting::set('active_event_id', $event->id);
 
     Livewire::test(StationsList::class)
         ->assertSee('Yaesu')
@@ -281,10 +241,8 @@ test('primary radio details display correctly', function () {
 test('equipment count badge shows correct count', function () {
     $this->actingAs($this->user);
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
     $station = Station::factory()->create([
-        'event_configuration_id' => $config->id,
+        'event_configuration_id' => $this->eventConfig->id,
         'name' => 'Multi Equipment Station',
     ]);
 
@@ -294,22 +252,20 @@ test('equipment count badge shows correct count', function () {
     $equipment3 = Equipment::factory()->create(['type' => 'tuner']);
 
     $station->additionalEquipment()->attach($equipment1->id, [
-        'event_id' => $event->id,
+        'event_id' => $this->event->id,
         'status' => 'committed',
         'assigned_by_user_id' => $this->user->id,
     ]);
     $station->additionalEquipment()->attach($equipment2->id, [
-        'event_id' => $event->id,
+        'event_id' => $this->event->id,
         'status' => 'committed',
         'assigned_by_user_id' => $this->user->id,
     ]);
     $station->additionalEquipment()->attach($equipment3->id, [
-        'event_id' => $event->id,
+        'event_id' => $this->event->id,
         'status' => 'committed',
         'assigned_by_user_id' => $this->user->id,
     ]);
-
-    Setting::set('active_event_id', $event->id);
 
     $component = Livewire::test(StationsList::class);
     $stations = $component->get('stations');
@@ -323,14 +279,10 @@ test('can delete station without contacts (hard delete)', function () {
     $this->actingAs($this->user);
     $this->user->givePermissionTo('manage-stations');
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
     $station = Station::factory()->create([
-        'event_configuration_id' => $config->id,
+        'event_configuration_id' => $this->eventConfig->id,
         'name' => 'Empty Station',
     ]);
-
-    Setting::set('active_event_id', $event->id);
 
     expect(Station::where('id', $station->id)->exists())->toBeTrue();
 
@@ -346,9 +298,7 @@ test('can delete station with contacts (soft delete)', function () {
     $this->actingAs($this->user);
     $this->user->givePermissionTo('manage-stations');
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
-    $station = Station::factory()->create(['event_configuration_id' => $config->id]);
+    $station = Station::factory()->create(['event_configuration_id' => $this->eventConfig->id]);
     $session = OperatingSession::factory()->create([
         'station_id' => $station->id,
         'end_time' => now()->subHours(1),
@@ -356,11 +306,9 @@ test('can delete station with contacts (soft delete)', function () {
 
     // Create a contact for this station
     Contact::factory()->create([
-        'event_configuration_id' => $config->id,
+        'event_configuration_id' => $this->eventConfig->id,
         'operating_session_id' => $session->id,
     ]);
-
-    Setting::set('active_event_id', $event->id);
 
     Livewire::test(StationsList::class)
         ->call('deleteStation', $station->id)
@@ -375,17 +323,13 @@ test('cannot delete station with active sessions', function () {
     $this->actingAs($this->user);
     $this->user->givePermissionTo('manage-stations');
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
-    $station = Station::factory()->create(['event_configuration_id' => $config->id]);
+    $station = Station::factory()->create(['event_configuration_id' => $this->eventConfig->id]);
 
     // Create an active operating session
     OperatingSession::factory()->create([
         'station_id' => $station->id,
         'end_time' => null, // Active session
     ]);
-
-    Setting::set('active_event_id', $event->id);
 
     Livewire::test(StationsList::class)
         ->call('deleteStation', $station->id)
@@ -399,11 +343,7 @@ test('delete confirmation modal shows', function () {
     $this->actingAs($this->user);
     $this->user->givePermissionTo('manage-stations');
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
-    Station::factory()->create(['event_configuration_id' => $config->id]);
-
-    Setting::set('active_event_id', $event->id);
+    Station::factory()->create(['event_configuration_id' => $this->eventConfig->id]);
 
     Livewire::test(StationsList::class)
         ->assertSee('Are you sure');
@@ -413,18 +353,73 @@ test('successful delete shows toast notification', function () {
     $this->actingAs($this->user);
     $this->user->givePermissionTo('manage-stations');
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
     $station = Station::factory()->create([
-        'event_configuration_id' => $config->id,
+        'event_configuration_id' => $this->eventConfig->id,
         'name' => 'Test Station',
     ]);
-
-    Setting::set('active_event_id', $event->id);
 
     Livewire::test(StationsList::class)
         ->call('deleteStation', $station->id)
         ->assertDispatched('notify');
+});
+
+// End Sessions Tests
+
+test('can end active sessions for a station', function () {
+    $this->actingAs($this->user);
+    $this->user->givePermissionTo('manage-stations');
+
+    $station = Station::factory()->create(['event_configuration_id' => $this->eventConfig->id]);
+
+    $session = OperatingSession::factory()->active()->create([
+        'station_id' => $station->id,
+    ]);
+
+    Livewire::test(StationsList::class)
+        ->call('endSessions', $station->id)
+        ->assertDispatched('toast');
+
+    $session->refresh();
+    expect($session->end_time)->not->toBeNull();
+});
+
+test('end sessions requires manage-stations permission', function () {
+    $this->actingAs($this->user);
+
+    $station = Station::factory()->create(['event_configuration_id' => $this->eventConfig->id]);
+
+    OperatingSession::factory()->active()->create([
+        'station_id' => $station->id,
+    ]);
+
+    Livewire::test(StationsList::class)
+        ->call('endSessions', $station->id)
+        ->assertForbidden();
+});
+
+test('end sessions button visible only for active stations', function () {
+    $this->actingAs($this->user);
+    $this->user->givePermissionTo('manage-stations');
+
+    $activeStation = Station::factory()->create([
+        'event_configuration_id' => $this->eventConfig->id,
+        'name' => 'Active One',
+    ]);
+
+    OperatingSession::factory()->active()->create([
+        'station_id' => $activeStation->id,
+    ]);
+
+    $inactiveStation = Station::factory()->create([
+        'event_configuration_id' => $this->eventConfig->id,
+        'name' => 'Inactive One',
+    ]);
+
+    $html = Livewire::test(StationsList::class)
+        ->html();
+
+    expect($html)->toContain('wire:click="endSessions('.$activeStation->id.')"');
+    expect($html)->not->toContain('wire:click="endSessions('.$inactiveStation->id.')"');
 });
 
 // Search/Pagination Tests
@@ -432,13 +427,7 @@ test('successful delete shows toast notification', function () {
 test('pagination shows when more than 12 stations', function () {
     $this->actingAs($this->user);
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
-
-    // Create 15 stations (more than the 12 per page limit)
-    Station::factory()->count(15)->create(['event_configuration_id' => $config->id]);
-
-    Setting::set('active_event_id', $event->id);
+    Station::factory()->count(15)->create(['event_configuration_id' => $this->eventConfig->id]);
 
     $component = Livewire::test(StationsList::class);
 
@@ -450,15 +439,11 @@ test('pagination shows when more than 12 stations', function () {
 test('pagination resets on filter change', function () {
     $this->actingAs($this->user);
 
-    $event1 = Event::factory()->create();
-    $config1 = EventConfiguration::factory()->create(['event_id' => $event1->id]);
-    Station::factory()->count(20)->create(['event_configuration_id' => $config1->id]);
+    Station::factory()->count(20)->create(['event_configuration_id' => $this->eventConfig->id]);
 
     $event2 = Event::factory()->create();
     $config2 = EventConfiguration::factory()->create(['event_id' => $event2->id]);
     Station::factory()->count(5)->create(['event_configuration_id' => $config2->id]);
-
-    Setting::set('active_event_id', $event1->id);
 
     $component = Livewire::test(StationsList::class);
 
@@ -478,22 +463,15 @@ test('pagination resets on filter change', function () {
 test('shows no event selected when no event selected', function () {
     $this->actingAs($this->user);
 
-    // Don't set active event
-    Setting::set('active_event_id', null);
-
     Livewire::test(StationsList::class)
-        ->assertSet('eventFilter', null)
+        ->set('eventFilter', null)
         ->assertSee('No Event Selected');
 });
 
 test('shows no stations configured when event has no stations', function () {
     $this->actingAs($this->user);
 
-    $event = Event::factory()->create();
-    EventConfiguration::factory()->create(['event_id' => $event->id]);
-
-    Setting::set('active_event_id', $event->id);
-
+    // The shared event has no stations by default
     Livewire::test(StationsList::class)
         ->assertSee('No stations configured');
 });
@@ -501,10 +479,8 @@ test('shows no stations configured when event has no stations', function () {
 test('stats show zeros when no event selected', function () {
     $this->actingAs($this->user);
 
-    Setting::set('active_event_id', null);
-
     $component = Livewire::test(StationsList::class)
-        ->assertSet('eventFilter', null);
+        ->set('eventFilter', null);
 
     $stats = $component->get('stats');
     expect($stats['total'])->toBe(0);
@@ -515,13 +491,10 @@ test('stats show zeros when no event selected', function () {
 test('stats calculate active stations correctly', function () {
     $this->actingAs($this->user);
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
-
     // Create 5 stations total
-    $station1 = Station::factory()->create(['event_configuration_id' => $config->id]);
-    $station2 = Station::factory()->create(['event_configuration_id' => $config->id]);
-    Station::factory()->count(3)->create(['event_configuration_id' => $config->id]);
+    $station1 = Station::factory()->create(['event_configuration_id' => $this->eventConfig->id]);
+    $station2 = Station::factory()->create(['event_configuration_id' => $this->eventConfig->id]);
+    Station::factory()->count(3)->create(['event_configuration_id' => $this->eventConfig->id]);
 
     // 2 active sessions
     OperatingSession::factory()->create([
@@ -533,8 +506,6 @@ test('stats calculate active stations correctly', function () {
         'end_time' => null,
     ]);
 
-    Setting::set('active_event_id', $event->id);
-
     $component = Livewire::test(StationsList::class);
     $stats = $component->get('stats');
 
@@ -545,22 +516,19 @@ test('stats calculate active stations correctly', function () {
 test('stats calculate equipment count correctly', function () {
     $this->actingAs($this->user);
 
-    $event = Event::factory()->create();
-    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
-
-    $station1 = Station::factory()->create(['event_configuration_id' => $config->id]);
-    $station2 = Station::factory()->create(['event_configuration_id' => $config->id]);
+    $station1 = Station::factory()->create(['event_configuration_id' => $this->eventConfig->id]);
+    $station2 = Station::factory()->create(['event_configuration_id' => $this->eventConfig->id]);
 
     // Station 1: 2 additional equipment
     $equipment1 = Equipment::factory()->create();
     $equipment2 = Equipment::factory()->create();
     $station1->additionalEquipment()->attach($equipment1->id, [
-        'event_id' => $event->id,
+        'event_id' => $this->event->id,
         'status' => 'committed',
         'assigned_by_user_id' => $this->user->id,
     ]);
     $station1->additionalEquipment()->attach($equipment2->id, [
-        'event_id' => $event->id,
+        'event_id' => $this->event->id,
         'status' => 'committed',
         'assigned_by_user_id' => $this->user->id,
     ]);
@@ -570,22 +538,20 @@ test('stats calculate equipment count correctly', function () {
     $equipment4 = Equipment::factory()->create();
     $equipment5 = Equipment::factory()->create();
     $station2->additionalEquipment()->attach($equipment3->id, [
-        'event_id' => $event->id,
+        'event_id' => $this->event->id,
         'status' => 'committed',
         'assigned_by_user_id' => $this->user->id,
     ]);
     $station2->additionalEquipment()->attach($equipment4->id, [
-        'event_id' => $event->id,
+        'event_id' => $this->event->id,
         'status' => 'committed',
         'assigned_by_user_id' => $this->user->id,
     ]);
     $station2->additionalEquipment()->attach($equipment5->id, [
-        'event_id' => $event->id,
+        'event_id' => $this->event->id,
         'status' => 'committed',
         'assigned_by_user_id' => $this->user->id,
     ]);
-
-    Setting::set('active_event_id', $event->id);
 
     $component = Livewire::test(StationsList::class);
     $stats = $component->get('stats');

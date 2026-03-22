@@ -157,6 +157,31 @@ class StationsList extends Component
     }
 
     /**
+     * End all active operating sessions for a station.
+     */
+    public function endSessions(int $stationId): void
+    {
+        $station = Station::findOrFail($stationId);
+
+        $this->authorize('update', $station);
+
+        $closed = $station->operatingSessions()
+            ->whereNull('end_time')
+            ->update(['end_time' => now()]);
+
+        // Clear computed caches so the card re-renders
+        unset($this->stations);
+        unset($this->stats);
+
+        $this->dispatch('toast', [
+            'title' => 'Sessions Ended',
+            'description' => "Closed {$closed} active session(s) for {$station->name}.",
+            'icon' => 'o-check-circle',
+            'css' => 'alert-success',
+        ]);
+    }
+
+    /**
      * Delete a station.
      */
     public function deleteStation(int $stationId): void

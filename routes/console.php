@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Schedule event auto-activation
 Schedule::command('events:activate-by-date')->everyFifteenMinutes();
+
+// Close operating sessions for events that have ended
+Schedule::command('sessions:close-expired')->everyFifteenMinutes();

@@ -144,6 +144,16 @@
                     {{-- Actions --}}
                     <div class="flex flex-col sm:flex-row gap-2 pt-3 border-t border-base-300">
                         @can('update', $station)
+                            @if($station->is_active)
+                                <x-button
+                                    label="End Sessions"
+                                    icon="o-stop"
+                                    class="btn-sm btn-warning flex-1 min-h-[2.75rem] sm:min-h-[1.75rem]"
+                                    wire:click="endSessions({{ $station->id }})"
+                                    wire:confirm="End all active operating sessions for '{{ $station->name }}'?"
+                                    spinner
+                                />
+                            @endif
                             <x-button
                                 label="Edit"
                                 icon="o-pencil"
