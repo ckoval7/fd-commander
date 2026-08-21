@@ -42,6 +42,10 @@ class AdifContactMapper
             }
         }
 
+        // NOSONAR php:S4790 - md5 here is a non-cryptographic dedup key, not a
+        // security primitive. The digest is persisted to contacts.external_id
+        // (string(32)); changing the algorithm would orphan every previously
+        // imported contact and re-import them as duplicates.
         $externalId = md5($callsign.$qsoDate.$timeOn.$freq);
 
         return new ExternalContactDto(

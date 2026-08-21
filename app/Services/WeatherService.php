@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Events\WeatherAlertChanged;
 use App\Models\Setting;
+use App\Support\GeoJsonGeometry;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -214,7 +215,7 @@ class WeatherService
                 ))
                 ->map(function ($feature) use ($lat, $lon) {
                     $geometry = $feature['geometry'] ?? null;
-                    $severityLevel = ($geometry !== null && $this->pointInPolygon($lat, $lon, $geometry))
+                    $severityLevel = ($geometry !== null && GeoJsonGeometry::containsPoint($lat, $lon, $geometry))
                         ? 'red'
                         : 'yellow';
 
@@ -230,7 +231,7 @@ class WeatherService
                 ->values()
                 ->all();
 
-            $fingerprint = md5(json_encode($alerts));
+            $fingerprint = hash('xxh128', json_encode($alerts));
             $previousFingerprint = Setting::get('weather.alert_fingerprint');
 
             $preserveExistingManualAlert = false;
@@ -297,7 +298,7 @@ class WeatherService
         ]];
 
         Setting::set('weather.alerts', $alerts);
-        Setting::set('weather.alert_fingerprint', md5(json_encode($alerts)));
+        Setting::set('weather.alert_fingerprint', hash('xxh128', json_encode($alerts)));
         WeatherAlertChanged::dispatch($alerts, true, true);
     }
 
@@ -305,7 +306,7 @@ class WeatherService
     {
         $alerts = [];
         Setting::set('weather.alerts', $alerts);
-        Setting::set('weather.alert_fingerprint', md5(json_encode($alerts)));
+        Setting::set('weather.alert_fingerprint', hash('xxh128', json_encode($alerts)));
         WeatherAlertChanged::dispatch($alerts, false, true);
     }
 
@@ -356,7 +357,7 @@ class WeatherService
 
         if (! $isManual) {
             Setting::set('weather.alerts', []);
-            Setting::set('weather.alert_fingerprint', md5(json_encode([])));
+            Setting::set('weather.alert_fingerprint', hash('xxh128', json_encode([])));
             WeatherAlertChanged::dispatch([], false, false);
         }
     }
@@ -438,48 +439,5 @@ class WeatherService
         }
 
         return ['zone' => $zone, 'county' => $county];
-    }
-
-    private function pointInPolygon(float $lat, float $lon, array $geometry): bool
-    {
-        $rings = match ($geometry['type']) {
-            'Polygon' => [$geometry['coordinates'][0]],
-            'MultiPolygon' => array_map(fn ($polygon) => $polygon[0], $geometry['coordinates']),
-            default => [],
-        };
-
-        foreach ($rings as $ring) {
-            if ($this->pointInRing($lat, $lon, $ring)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function pointInRing(float $lat, float $lon, array $ring): bool
-    {
-        $inside = false;
-        $n = count($ring);
-        $j = $n - 1;
-
-        for ($i = 0; $i < $n; $i++) {
-            // GeoJSON coordinates are [longitude, latitude]
-            $xi = $ring[$i][0]; // lon of vertex i
-            $yi = $ring[$i][1]; // lat of vertex i
-            $xj = $ring[$j][0]; // lon of vertex j
-            $yj = $ring[$j][1]; // lat of vertex j
-
-            $intersect = (($yi > $lat) !== ($yj > $lat))
-                && ($lon < ($xj - $xi) * ($lat - $yi) / ($yj - $yi) + $xi);
-
-            if ($intersect) {
-                $inside = ! $inside;
-            }
-
-            $j = $i;
-        }
-
-        return $inside;
     }
 }

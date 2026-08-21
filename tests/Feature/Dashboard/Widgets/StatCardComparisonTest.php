@@ -97,7 +97,7 @@ it('calculates comparison data with previous value', function () {
     ]);
 
     // Clear component cache to force recalculation
-    Cache::forget('dashboard:widget:StatCard:'.md5(json_encode([
+    Cache::forget('dashboard:widget:StatCard:'.hash('xxh128', json_encode([
         'metric' => 'qso_count',
         'show_comparison' => true,
         'comparison_interval' => '1h',
@@ -128,7 +128,7 @@ it('calculates comparison data with previous value', function () {
 
 it('calculates trend as up when value increases', function () {
     // Store initial value in cache
-    $configHash = md5(json_encode([
+    $configHash = hash('xxh128', json_encode([
         'metric' => 'qso_count',
         'show_comparison' => true,
         'comparison_interval' => '1h',
@@ -163,7 +163,7 @@ it('calculates trend as up when value increases', function () {
 
 it('calculates trend as down when value decreases', function () {
     // Store initial value in cache (higher than current)
-    $configHash = md5(json_encode([
+    $configHash = hash('xxh128', json_encode([
         'metric' => 'qso_count',
         'show_comparison' => true,
         'comparison_interval' => '1h',
@@ -198,7 +198,7 @@ it('calculates trend as down when value decreases', function () {
 
 it('calculates trend as stable when value unchanged', function () {
     // Store initial value in cache
-    $configHash = md5(json_encode([
+    $configHash = hash('xxh128', json_encode([
         'metric' => 'qso_count',
         'show_comparison' => true,
         'comparison_interval' => '1h',
@@ -233,7 +233,7 @@ it('calculates trend as stable when value unchanged', function () {
 
 it('supports different comparison intervals', function () {
     // Store value in 4h cache
-    $configHash = md5(json_encode([
+    $configHash = hash('xxh128', json_encode([
         'metric' => 'qso_count',
         'show_comparison' => true,
         'comparison_interval' => '4h',
@@ -294,7 +294,7 @@ it('does not show comparison when disabled', function () {
 });
 
 it('generates correct cache keys for different intervals', function () {
-    $configHash = md5(json_encode([
+    $configHash = hash('xxh128', json_encode([
         'metric' => 'qso_count',
         'show_comparison' => true,
         'comparison_interval' => '1h',
@@ -327,7 +327,7 @@ it('handles formatted numbers correctly', function () {
     ]);
 
     // Store previous value
-    $configHash = md5(json_encode([
+    $configHash = hash('xxh128', json_encode([
         'metric' => 'qso_count',
         'show_comparison' => true,
         'comparison_interval' => '1h',

@@ -51,7 +51,7 @@ class WeatherAlertBanner extends Component
 
     protected function currentFingerprint(): string
     {
-        return md5(json_encode($this->alerts));
+        return hash('xxh128', json_encode($this->alerts));
     }
 
     public function render(): View

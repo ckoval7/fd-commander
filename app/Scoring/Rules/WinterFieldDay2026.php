@@ -57,6 +57,11 @@ class WinterFieldDay2026 implements RuleSet
      */
     protected const FALLBACK_POINTS = 1;
 
+    /**
+     * Rulebook section heading shared by every objective and multiplier entry.
+     */
+    protected const SECTION_OBJECTIVE_MULTIPLIERS = 'Objective & Multipliers';
+
     protected ?int $cachedEventTypeId = null;
 
     /** @var array<string, ?BonusType> */
@@ -274,51 +279,51 @@ class WinterFieldDay2026 implements RuleSet
     {
         return [
             'alternative_power' => [
-                'section' => 'Objective & Multipliers',
+                'section' => self::SECTION_OBJECTIVE_MULTIPLIERS,
                 'text' => 'Operate 100% on alternative power: Operate exclusively on alternative power, defined as any power source not connected to the commercial power grid. You may use generators, batteries, solar power, wind power, or anything else. All batteries, whether in use or charging, should only be recharged using alternative power. WFD stations should run all station equipment, including all laptops and other accessories, from an alternative power source. Lights and HVAC are exceptions and may be connected to the power grid or any power source available. OM x1',
             ],
             'away_from_home' => [
-                'section' => 'Objective & Multipliers',
+                'section' => self::SECTION_OBJECTIVE_MULTIPLIERS,
                 'text' => 'Operate away from home: Operating away from home is one of the main reasons for “Winter Field Day.” Do you have the ability to walk into any shelter, parking garage, hospital, or community center and set up a portable Amateur radio station? Now is the time to start planning what you will do if your home location is destroyed during an emergency. For this objective, set up your field station more than ½ mile from your home. OM x3',
             ],
             'multiple_antennas' => [
-                'section' => 'Objective & Multipliers',
+                'section' => self::SECTION_OBJECTIVE_MULTIPLIERS,
                 'text' => 'Deploy and make at least one contact on multiple antennas: Deploy two or more antennas that have not been previously installed and make at least one contact on each. Previously installed antennas are any antennas that were deployed or installed before the WFD set-up time. Previously installed antennas do not count. You must deploy the antennas during the WFD set-up time or event to achieve this OM. This could be a dipole and a hex beam or an EFHW and a 2-meter J-pole. Any combination of antennas works. Multi-band antennas do not count as separate antennas. OM x1',
             ],
             'fm_satellite' => [
-                'section' => 'Objective & Multipliers',
+                'section' => self::SECTION_OBJECTIVE_MULTIPLIERS,
                 'text' => 'Make an FM satellite contact: Make at least 1 FM satellite contact during the operating period. Dedicated satellite transmitters do not count toward your Category number. Satellite contacts do not count towards your total QSO points. Only the multiplier applies. See the appendix below for more information on satellite contacts. OM x2',
             ],
             'ssb_cw_satellite' => [
-                'section' => 'Objective & Multipliers',
+                'section' => self::SECTION_OBJECTIVE_MULTIPLIERS,
                 'text' => 'Make a SSB or CW satellite contact: Make at least one contact using SSB or CW. Dedicated satellite transmitters do not count toward your Category number. Satellite contacts do not count towards your total QSO points. Only the multiplier applies. See the appendix below for more information on satellite contacts. OM x3',
             ],
             'winlink_email' => [
-                'section' => 'Objective & Multipliers',
+                'section' => self::SECTION_OBJECTIVE_MULTIPLIERS,
                 'text' => 'Send and receive at least one Winlink email: Winlink has proven useful during emergencies and is considered a digital mode. Successfully send and receive at least one email from a winlink.org email address to any Winlink or commercial email address via amateur RF. All time stamps on Winlink contacts must fall within the operational period. OM x1',
             ],
             'special_bulletin' => [
-                'section' => 'Objective & Multipliers',
+                'section' => self::SECTION_OBJECTIVE_MULTIPLIERS,
                 'text' => 'Copy the Winter Field Day Special Bulletin: Accurately copy the WFD Special Bulletin message and submit your copy with your log submission to achieve this objective. The frequencies and times are published on our website prior to the event. OM x1',
             ],
             'six_bands' => [
-                'section' => 'Objective & Multipliers',
+                'section' => self::SECTION_OBJECTIVE_MULTIPLIERS,
                 'text' => 'Make three contacts on at least six (6) different bands: Conditions may change throughout an event. Log operations on at least six different bands by making a minimum of three contacts per band. You should be able to accomplish this objective by utilizing HF, VHF, and UHF frequencies. Don’t forget about 1.25 meters (220)! It’s an excellent band for local emergencies. OM x6',
             ],
             'twelve_bands' => [
-                'section' => 'Objective & Multipliers',
+                'section' => self::SECTION_OBJECTIVE_MULTIPLIERS,
                 'text' => 'Make three contacts on at least twelve (12) different bands: Was six too easy? You may have to pull out your microwave equipment to achieve this one. Log operations on at least twelve different bands by making a minimum of three contacts per band. The six bands from the previous objective count toward this one. OM x6',
             ],
             'multiple_modes' => [
-                'section' => 'Objective & Multipliers',
+                'section' => self::SECTION_OBJECTIVE_MULTIPLIERS,
                 'text' => 'Use multiple modes: Increase your versatility by using multiple modes during the event, such as Phone and CW, CW and Digital, or Phone and Digital. Using all three modes does not increase this OM. OM x2',
             ],
             'qrp' => [
-                'section' => 'Objective & Multipliers',
+                'section' => self::SECTION_OBJECTIVE_MULTIPLIERS,
                 'text' => 'Operate the event QRP: Operating on QRP means every station in your Winter Field Day operation is using 10 watts or less on Phone or 5 watts or less on CW or Digital for the entire time you choose to operate during the event. OM x4',
             ],
             'six_continuous_hours' => [
-                'section' => 'Objective & Multipliers',
+                'section' => self::SECTION_OBJECTIVE_MULTIPLIERS,
                 'text' => 'Operate six continuous hours during the event: Emergencies may last days or even weeks. You may be expected to man a radio station between 4-12 hours if you are operating alone or in shifts. Can you sit and operate for extended periods of time with enough backup power? This does not necessarily mean you are making contacts the whole time, but you are in front of the radio, monitoring, and ready to pick up a microphone if you are called. OM x2',
             ],
         ];

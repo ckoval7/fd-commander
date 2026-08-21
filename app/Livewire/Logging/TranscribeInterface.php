@@ -26,6 +26,11 @@ class TranscribeInterface extends Component
 {
     use AuthorizesRequests, HasContactForm, HasDuplicateDetection;
 
+    /**
+     * Splits an exchange string on any run of whitespace.
+     */
+    private const WHITESPACE_PATTERN = '/\s+/';
+
     public Station $station;
 
     public string $workingDate = '';
@@ -103,7 +108,7 @@ class TranscribeInterface extends Component
         }
 
         $exchange = $this->getExchangeWithoutTime();
-        $tokens = preg_split('/\s+/', trim($exchange));
+        $tokens = preg_split(self::WHITESPACE_PATTERN, trim($exchange));
         $firstToken = strtoupper($tokens[0] ?? '');
         if (count($tokens) === 1 && ! str_ends_with($exchange, ' ') && strlen($firstToken) >= 2) {
             $this->suggestions = $this->findCallsignSuggestions(
@@ -420,7 +425,7 @@ class TranscribeInterface extends Component
         // Check for inline time prefix (e.g. "1423 W1AW 3A CT")
         $inlineTime = null;
         $exchange = trim($exchangeInput);
-        $tokens = preg_split('/\s+/', $exchange);
+        $tokens = preg_split(self::WHITESPACE_PATTERN, $exchange);
 
         if (count($tokens) >= 2) {
             $possibleTime = $this->parseFlexibleTime($tokens[0]);
@@ -538,7 +543,7 @@ class TranscribeInterface extends Component
      */
     private function extractInlineTime(): ?string
     {
-        $tokens = preg_split('/\s+/', trim($this->exchangeInput));
+        $tokens = preg_split(self::WHITESPACE_PATTERN, trim($this->exchangeInput));
         if (count($tokens) >= 2) {
             return $this->parseFlexibleTime($tokens[0]);
         }
@@ -552,7 +557,7 @@ class TranscribeInterface extends Component
     private function getExchangeWithoutTime(): string
     {
         $input = trim($this->exchangeInput);
-        $tokens = preg_split('/\s+/', $input);
+        $tokens = preg_split(self::WHITESPACE_PATTERN, $input);
 
         if (count($tokens) >= 2 && $this->parseFlexibleTime($tokens[0]) !== null) {
             return implode(' ', array_slice($tokens, 1));
@@ -589,26 +594,22 @@ class TranscribeInterface extends Component
         $hour = null;
         $minute = null;
 
-        if (preg_match('/^(\d{1,2}):(\d{2})\s*([aApP][mM]?)?$/', $input, $m)) {
-            // H:MM or HH:MM with optional am/pm
-            $hour = (int) $m[1];
-            $minute = (int) $m[2];
-            if (! empty($m[3])) {
-                [$hour, $minute] = $this->applyAmPm($hour, $minute, $m[3]);
+        // Hour+minute forms share one body: H:MM / HH:MM (colon-separated),
+        // HHMM (4 digits), and HMM (3 digits), each with optional am/pm.
+        $hourMinutePattern = '/^(?:(\d{1,2}):(\d{2})|(\d{2})(\d{2})|(\d)(\d{2}))\s*([aApP][mM]?)?$/';
+
+        if (preg_match($hourMinutePattern, $input, $m)) {
+            // Exactly one alternative matches; its pair is the first of
+            // groups 1/2, 3/4, 5/6 that participated in the match.
+            foreach ([[1, 2], [3, 4], [5, 6]] as [$hourGroup, $minuteGroup]) {
+                if (($m[$hourGroup] ?? '') !== '') {
+                    $hour = (int) $m[$hourGroup];
+                    $minute = (int) $m[$minuteGroup];
+                    break;
+                }
             }
-        } elseif (preg_match('/^(\d{2})(\d{2})\s*([aApP][mM]?)?$/', $input, $m)) {
-            // 4 digits with optional am/pm: 1423, 0223p
-            $hour = (int) $m[1];
-            $minute = (int) $m[2];
-            if (! empty($m[3])) {
-                [$hour, $minute] = $this->applyAmPm($hour, $minute, $m[3]);
-            }
-        } elseif (preg_match('/^(\d)(\d{2})\s*([aApP][mM]?)?$/', $input, $m)) {
-            // 3 digits: 123 → 1:23, with optional am/pm
-            $hour = (int) $m[1];
-            $minute = (int) $m[2];
-            if (! empty($m[3])) {
-                [$hour, $minute] = $this->applyAmPm($hour, $minute, $m[3]);
+            if (! empty($m[7])) {
+                [$hour, $minute] = $this->applyAmPm($hour, $minute, $m[7]);
             }
         } elseif (preg_match('/^(\d{1,2})\s*([aApP][mM]?)$/', $input, $m)) {
             // Hour-only with am/pm: 2p, 2pm, 12a

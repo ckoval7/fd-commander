@@ -228,11 +228,11 @@ class WidgetCacheService
     public function buildWidgetKey(string $widgetType, array $config, ?int $eventId = null): string
     {
         // Create a hash of the config to ensure uniqueness
-        $configHash = md5(json_encode($config));
+        $configHash = hash('xxh128', json_encode($config));
 
         // Use current active event ID if not provided
         if ($eventId === null) {
-            $eventId = app(\App\Services\EventContextService::class)->getContextEventId();
+            $eventId = app(EventContextService::class)->getContextEventId();
         }
 
         return "{$widgetType}:{$configHash}:{$eventId}";

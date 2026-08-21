@@ -3,6 +3,7 @@
 namespace App\Livewire\Dashboard\Widgets\Concerns;
 
 use App\Services\EventContextService;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Foundation trait for all dashboard widgets.
@@ -136,7 +137,7 @@ trait IsWidget
     public function handleUpdate(): void
     {
         // Clear widget cache
-        \Illuminate\Support\Facades\Cache::forget($this->cacheKey());
+        Cache::forget($this->cacheKey());
 
         // Notify frontend of update
         $this->dispatch('widget-updating', widgetId: $this->widgetId);
@@ -157,7 +158,7 @@ trait IsWidget
     public function cacheKey(): string
     {
         $type = class_basename(get_class($this));
-        $configHash = md5(json_encode($this->config));
+        $configHash = hash('xxh128', json_encode($this->config));
         $contextService = app(EventContextService::class);
         $eventId = $contextService->getContextEventId();
 
@@ -193,7 +194,7 @@ trait IsWidget
     protected function generateWidgetId(): string
     {
         $type = class_basename(get_class($this));
-        $configHash = substr(md5(json_encode($this->config)), 0, 8);
+        $configHash = substr(hash('xxh128', json_encode($this->config)), 0, 8);
 
         return strtolower($type).'-'.$configHash;
     }

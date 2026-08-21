@@ -397,7 +397,7 @@ class StatCard extends Component
         }
 
         $interval = $this->config['comparison_interval'] ?? '1h';
-        $configHash = md5(json_encode($this->config));
+        $configHash = hash('xxh128', json_encode($this->config));
         $historicalKey = "dashboard:widget:StatCard:{$configHash}:{$event->eventConfiguration->id}:history:{$interval}";
 
         $previousValue = Cache::get($historicalKey);
