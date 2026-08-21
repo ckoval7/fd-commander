@@ -50,7 +50,7 @@ function objectiveRow(EventType $wfd, string $code, int $multiplier): BonusType
 /**
  * Log $count non-duplicate contacts on a freshly created band.
  */
-function contactsOnNewBand(EventConfiguration $config, Mode $mode, int $count, int $meters): void
+function contactsOnNewBand(EventConfiguration $config, Mode $mode, int $count, int $meters, ?int $powerWatts = null): void
 {
     $band = Band::factory()->create(['name' => "{$meters}m", 'meters' => $meters]);
 
@@ -60,6 +60,9 @@ function contactsOnNewBand(EventConfiguration $config, Mode $mode, int $count, i
         'mode_id' => $mode->id,
         'points' => 1,
         'is_duplicate' => false,
+        // The factory randomises power; QRP is judged per contact, so tests
+        // that care about power must pin it rather than inherit a random value.
+        'power_watts' => $powerWatts,
     ]);
 }
 
@@ -197,27 +200,88 @@ test('QRP allows 10W on a Phone-only operation', function () {
     $this->config->update(['max_power_watts' => 10]);
 
     $phone = Mode::factory()->create(['name' => 'Phone', 'category' => 'Phone']);
-    contactsOnNewBand($this->config, $phone, 1, 20);
+    contactsOnNewBand($this->config, $phone, 1, 20, 10);
 
     (new QrpStrategy)->reconcile($this->config->fresh());
 
     expect(achieved($this->config, $objective))->toBeTrue();
 });
 
-test('QRP drops to the 5W ceiling once CW or Digital is worked', function () {
+test('QRP holds CW and Digital contacts to the 5W ceiling', function () {
     $objective = objectiveRow($this->wfd, 'qrp', 4);
     $this->config->update(['max_power_watts' => 10]);
 
     $cw = Mode::factory()->create(['name' => 'CW', 'category' => 'CW']);
-    contactsOnNewBand($this->config, $cw, 1, 40);
+    contactsOnNewBand($this->config, $cw, 1, 40, 10);
 
     (new QrpStrategy)->reconcile($this->config->fresh());
     expect(achieved($this->config, $objective))->toBeFalse();
 
-    $this->config->update(['max_power_watts' => 5]);
+    Contact::where('event_configuration_id', $this->config->id)->update(['power_watts' => 5]);
     (new QrpStrategy)->reconcile($this->config->fresh());
 
     expect(achieved($this->config, $objective))->toBeTrue();
+});
+
+test('QRP is awarded for 10W Phone alongside 5W CW, each within its own ceiling', function () {
+    $objective = objectiveRow($this->wfd, 'qrp', 4);
+    // The operation's configured maximum is the Phone figure; the CW contacts
+    // ran lower. Judging every contact against 5W would deny a valid claim.
+    $this->config->update(['max_power_watts' => 10]);
+
+    $phone = Mode::factory()->create(['name' => 'Phone', 'category' => 'Phone']);
+    $cw = Mode::factory()->create(['name' => 'CW', 'category' => 'CW']);
+
+    contactsOnNewBand($this->config, $phone, 2, 20, 10);
+    contactsOnNewBand($this->config, $cw, 2, 40, 5);
+
+    (new QrpStrategy)->reconcile($this->config->fresh());
+
+    expect(achieved($this->config, $objective))->toBeTrue();
+});
+
+test('QRP is denied when a single CW contact exceeds 5W despite legal Phone power', function () {
+    $objective = objectiveRow($this->wfd, 'qrp', 4);
+    $this->config->update(['max_power_watts' => 10]);
+
+    $phone = Mode::factory()->create(['name' => 'Phone', 'category' => 'Phone']);
+    $cw = Mode::factory()->create(['name' => 'CW', 'category' => 'CW']);
+
+    contactsOnNewBand($this->config, $phone, 2, 20, 10);
+    contactsOnNewBand($this->config, $cw, 1, 40, 6);
+
+    (new QrpStrategy)->reconcile($this->config->fresh());
+
+    expect(achieved($this->config, $objective))->toBeFalse();
+});
+
+test('QRP holds Digital to the CW ceiling, not the Phone one', function () {
+    $objective = objectiveRow($this->wfd, 'qrp', 4);
+    $this->config->update(['max_power_watts' => 10]);
+
+    $digital = Mode::factory()->create(['name' => 'FT8', 'category' => 'Digital']);
+    contactsOnNewBand($this->config, $digital, 1, 20, 10);
+
+    (new QrpStrategy)->reconcile($this->config->fresh());
+
+    expect(achieved($this->config, $objective))->toBeFalse();
+});
+
+test('QRP falls back to configured power for contacts with no recorded power', function () {
+    $objective = objectiveRow($this->wfd, 'qrp', 4);
+    $this->config->update(['max_power_watts' => 10]);
+
+    $phone = Mode::factory()->create(['name' => 'Phone', 'category' => 'Phone']);
+    contactsOnNewBand($this->config, $phone, 1, 20, null);
+
+    (new QrpStrategy)->reconcile($this->config->fresh());
+    expect(achieved($this->config, $objective))->toBeTrue();
+
+    // Same contacts, but the operation was configured above the Phone ceiling.
+    $this->config->update(['max_power_watts' => 50]);
+    (new QrpStrategy)->reconcile($this->config->fresh());
+
+    expect(achieved($this->config, $objective))->toBeFalse();
 });
 
 test('QRP is not awarded to an operation running 100W', function () {
@@ -225,7 +289,7 @@ test('QRP is not awarded to an operation running 100W', function () {
     $this->config->update(['max_power_watts' => 100]);
 
     $phone = Mode::factory()->create(['category' => 'Phone']);
-    contactsOnNewBand($this->config, $phone, 1, 20);
+    contactsOnNewBand($this->config, $phone, 1, 20, 100);
 
     (new QrpStrategy)->reconcile($this->config->fresh());
 
@@ -242,7 +306,7 @@ test('QRP respects a station running higher power than the event config', functi
     ]);
 
     $phone = Mode::factory()->create(['category' => 'Phone']);
-    contactsOnNewBand($this->config, $phone, 1, 20);
+    contactsOnNewBand($this->config, $phone, 1, 20, null);
 
     (new QrpStrategy)->reconcile($this->config->fresh());
 
