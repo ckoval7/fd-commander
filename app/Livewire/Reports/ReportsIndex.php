@@ -29,6 +29,19 @@ class ReportsIndex extends Component
     }
 
     /**
+     * Whether to offer the ARRL Field Day submission sheet for this event.
+     *
+     * Winter Field Day has no equivalent form, so the card is hidden rather
+     * than producing a document WFDA does not accept.
+     */
+    #[Computed]
+    public function showsArrlSubmissionSheet(): bool
+    {
+        return app(EventContextService::class)
+            ->getEventConfiguration()?->usesArrlSubmissionSheet() ?? false;
+    }
+
+    /**
      * @return array<int, array{hour: string, total: int, cw: int, phone: int, digital: int}>
      */
     #[Computed]

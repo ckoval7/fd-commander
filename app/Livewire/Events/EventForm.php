@@ -10,6 +10,7 @@ use App\Models\OperatingClass;
 use App\Models\Organization;
 use App\Models\Section;
 use App\Models\Setting;
+use App\Scoring\Contracts\FieldDayRuleSet;
 use App\Scoring\RuleSetFactory;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
@@ -312,34 +313,70 @@ class EventForm extends Component
         // Clear dates, then autofill if Field Day
         $this->start_time = null;
         $this->end_time = null;
-        $this->autofillFieldDayDates();
+        $this->autofillEventDates();
     }
 
     /**
-     * Autofill start/end times if the selected event type is Field Day.
-     * Field Day is the 4th full weekend of June: 1800 UTC Saturday to 2059 UTC Sunday.
+     * Published operating window for each event type we can prefill.
+     *
+     * Keyed by event type code. Each entry gives the month whose 4th full
+     * weekend the event falls on, the UTC start time on the Saturday, and the
+     * UTC end time on the Sunday.
+     *
+     *  - FD:  ARRL Field Day, 4th full weekend of June, 1800Z Sat to 2059Z Sun.
+     *  - WFD: Winter Field Day, 4th full weekend of January, 1600Z Sat to
+     *         2159Z Sun (the WFDA SOP's 30-hour operational period).
+     *
+     * @var array<string, array{month: int, start: array{int, int}, end: array{int, int}}>
      */
-    private function autofillFieldDayDates(): void
+    private const OPERATING_WINDOWS = [
+        'FD' => ['month' => 6, 'start' => [18, 0], 'end' => [20, 59]],
+        'WFD' => ['month' => 1, 'start' => [16, 0], 'end' => [21, 59]],
+    ];
+
+    /**
+     * Autofill start/end times from the selected event type's published window.
+     *
+     * No-op for event types with no published window of their own.
+     */
+    private function autofillEventDates(): void
     {
         if (! $this->event_type_id) {
             return;
         }
 
         $eventType = EventType::find($this->event_type_id);
+        $window = self::OPERATING_WINDOWS[$eventType?->code] ?? null;
 
-        if (! $eventType || $eventType->code !== 'FD') {
+        if (! $window) {
             return;
         }
 
         $year = $this->year ?? (int) now()->year;
+        $saturday = $this->fourthFullWeekendSaturday($year, $window['month']);
 
-        // Find the 4th Saturday in June
-        $june1 = Carbon::create($year, 6, 1);
-        $firstSaturday = $june1->isSaturday() ? $june1->copy() : $june1->copy()->next(Carbon::SATURDAY);
-        $fourthSaturday = $firstSaturday->copy()->addWeeks(3);
+        $this->start_time = $saturday->copy()
+            ->setTime($window['start'][0], $window['start'][1], 0)
+            ->format(self::DATETIME_FORMAT);
 
-        $this->start_time = $fourthSaturday->copy()->setTime(18, 0, 0)->format(self::DATETIME_FORMAT);
-        $this->end_time = $fourthSaturday->copy()->addDay()->setTime(20, 59, 0)->format(self::DATETIME_FORMAT);
+        $this->end_time = $saturday->copy()
+            ->addDay()
+            ->setTime($window['end'][0], $window['end'][1], 0)
+            ->format(self::DATETIME_FORMAT);
+    }
+
+    /**
+     * The Saturday of the 4th full weekend in the given month.
+     */
+    private function fourthFullWeekendSaturday(int $year, int $month): Carbon
+    {
+        $firstOfMonth = Carbon::create($year, $month, 1);
+
+        $firstSaturday = $firstOfMonth->isSaturday()
+            ? $firstOfMonth->copy()
+            : $firstOfMonth->copy()->next(Carbon::SATURDAY);
+
+        return $firstSaturday->copy()->addWeeks(3);
     }
 
     /**
@@ -361,6 +398,30 @@ class EventForm extends Component
 
         return Event::calculateSetupAllowedFrom(Carbon::parse($this->start_time), $eventType->setup_offset_hours)
             ->format('l, F j, Y \a\t Hi\z');
+    }
+
+    /**
+     * Whether the selected event type's rulebook scores with a power multiplier.
+     *
+     * Winter Field Day caps every station at 100 W PEP and has no multiplier,
+     * so showing one on the form would misstate how the event is scored.
+     */
+    #[Computed]
+    public function usesPowerMultiplier(): bool
+    {
+        $code = $this->event_type_id
+            ? EventType::query()->whereKey($this->event_type_id)->value('code')
+            : null;
+
+        $versions = $code ? app(RuleSetFactory::class)->versionsFor($code) : [];
+
+        if ($code === null || $versions === []) {
+            return true;
+        }
+
+        $rules = app(RuleSetFactory::class)->resolve($code, $this->rules_version ?? end($versions));
+
+        return $rules instanceof FieldDayRuleSet;
     }
 
     #[Computed]
@@ -485,7 +546,7 @@ class EventForm extends Component
             return;
         }
 
-        $this->autofillFieldDayDates();
+        $this->autofillEventDates();
         $this->rules_version = null;
         $this->defaultRulesVersionIfUnset();
     }
@@ -499,7 +560,7 @@ class EventForm extends Component
 
             // Recalculate Field Day dates when year changes
             if ($this->year !== $previousYear && $this->mode !== 'edit') {
-                $this->autofillFieldDayDates();
+                $this->autofillEventDates();
             }
         }
 

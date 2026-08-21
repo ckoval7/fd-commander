@@ -3,6 +3,7 @@
 namespace App\Scoring\Rules;
 
 use App\Models\BonusType;
+use App\Models\EventConfiguration;
 use App\Models\EventType;
 use App\Models\Mode;
 use App\Models\ModeRulePoint;
@@ -20,12 +21,16 @@ use App\Scoring\Bonuses\FieldDay2025\W1awBulletinStrategy;
 use App\Scoring\Bonuses\FieldDay2025\WebSubmissionStrategy;
 use App\Scoring\Bonuses\FieldDay2025\YouthParticipationStrategy;
 use App\Scoring\Contracts\BonusStrategy;
-use App\Scoring\Contracts\RuleSet;
+use App\Scoring\Contracts\FieldDayRuleSet;
 use App\Scoring\DomainEvents\GuestbookEntryChanged;
 use App\Scoring\DomainEvents\MessageChanged;
 use App\Scoring\DomainEvents\QsoLogged;
 use App\Scoring\DomainEvents\W1awBulletinChanged;
+use App\Scoring\Dto\Nomenclature;
 use App\Scoring\Dto\PowerContext;
+use App\Scoring\Dto\ScoreBreakdown;
+use App\Scoring\Dto\ScoreLine;
+use App\Scoring\Dto\ScoreTerm;
 
 /**
  * ARRL Field Day 2025 scoring rules.
@@ -34,7 +39,7 @@ use App\Scoring\Dto\PowerContext;
  * goes into a new FieldDay2026 class — see
  * docs/scoring/adding-a-rules-version.md.
  */
-class FieldDay2025 implements RuleSet
+class FieldDay2025 implements FieldDayRuleSet
 {
     protected const QRP_WATT_CEILING = 5;
 
@@ -111,6 +116,83 @@ class FieldDay2025 implements RuleSet
     public function youthPointsPerYouth(): int
     {
         return 20;
+    }
+
+    /**
+     * ARRL Field Day score: (QSO points x power multiplier) + GOTA + bonuses.
+     *
+     * GOTA points and bonus points are explicitly outside the power multiplier
+     * per rule 7.3.13.1.
+     */
+    public function score(EventConfiguration $config): ScoreBreakdown
+    {
+        $qsoPoints = $config->qsoBasePoints();
+        $multiplier = (int) $config->calculatePowerMultiplier();
+        $qsoScore = $qsoPoints * $multiplier;
+        $gotaBonus = $config->calculateGotaBonus();
+        $gotaCoachBonus = $config->calculateGotaCoachBonus();
+        $bonusScore = $config->calculateBonusScore();
+
+        $total = $qsoScore + $gotaBonus + $gotaCoachBonus + $bonusScore;
+
+        return new ScoreBreakdown(
+            total: $total,
+            lines: [
+                new ScoreLine('qso_points', 'QSO Points', $qsoPoints),
+                new ScoreLine('power_multiplier', 'Power Multiplier', $multiplier),
+                new ScoreLine('qso_score', 'QSO Score', $qsoScore),
+                new ScoreLine('gota_qso', 'GOTA Bonus', $gotaBonus),
+                new ScoreLine('gota_coach', 'GOTA Coach Bonus', $gotaCoachBonus),
+                new ScoreLine('bonus_points', 'Bonus Points', $bonusScore),
+            ],
+            formula: '(QSO Points x Power Multiplier) + GOTA + Bonus Points',
+            headline: $this->headlineFor($config, $qsoPoints, $multiplier, $bonusScore, $gotaBonus + $gotaCoachBonus),
+        );
+    }
+
+    /**
+     * The headline equation: (QSO Base x Power) + Bonus, plus GOTA when run.
+     *
+     * @return array<int, ScoreTerm|string>
+     */
+    protected function headlineFor(
+        EventConfiguration $config,
+        int $qsoPoints,
+        int $multiplier,
+        int $bonusScore,
+        int $gotaTotal,
+    ): array {
+        $headline = [
+            '(',
+            new ScoreTerm('QSO Base Pts', number_format($qsoPoints), '#col-qso'),
+            '×',
+            new ScoreTerm('Power Multi.', $multiplier.'×', '#col-power'),
+            ')',
+            '+',
+            new ScoreTerm('Bonus Pts', number_format($bonusScore), '#col-bonus'),
+        ];
+
+        if ($config->has_gota_station) {
+            $headline[] = '+';
+            $headline[] = new ScoreTerm('GOTA Bonus', number_format($gotaTotal), '#col-bonus');
+        }
+
+        return $headline;
+    }
+
+    public function nomenclature(): Nomenclature
+    {
+        return new Nomenclature;
+    }
+
+    public function cabrilloContestName(): string
+    {
+        return 'ARRL-FD';
+    }
+
+    public function logFilenameSlug(): string
+    {
+        return 'field-day';
     }
 
     public function emergencyPowerMaxTransmitters(): int

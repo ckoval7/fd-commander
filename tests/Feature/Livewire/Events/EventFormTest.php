@@ -561,7 +561,7 @@ test('changing year in event name recalculates Field Day dates', function () {
     expect($component->get('end_time'))->toBe('2027-06-27 20:59:00');
 });
 
-test('non-Field Day event type does not autofill dates', function () {
+test('WFD autofills the 4th full weekend of January per the WFDA SOP', function () {
     $this->actingAs($this->user);
 
     $wfdType = EventType::create([
@@ -572,8 +572,28 @@ test('non-Field Day event type does not autofill dates', function () {
     ]);
 
     $component = Livewire::test(EventForm::class, ['mode' => 'create'])
-        ->set('name', 'Winter Field Day 2025')
-        ->set('event_type_id', $wfdType->id);
+        ->set('event_type_id', $wfdType->id)
+        ->set('year', 2026)
+        ->set('name', 'Winter Field Day 2026');
+
+    // The 2026 SOP names January 24th-25th, 1600 UTC Saturday to 2159 UTC Sunday.
+    expect($component->get('start_time'))->toBe('2026-01-24 16:00:00')
+        ->and($component->get('end_time'))->toBe('2026-01-25 21:59:00');
+});
+
+test('an event type with no published window does not autofill dates', function () {
+    $this->actingAs($this->user);
+
+    $otherType = EventType::create([
+        'code' => 'XYZ',
+        'name' => 'Some Other Event',
+        'description' => 'No published operating window',
+        'is_active' => true,
+    ]);
+
+    $component = Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('name', 'Some Other Event 2026')
+        ->set('event_type_id', $otherType->id);
 
     expect($component->get('start_time'))->toBeNull();
     expect($component->get('end_time'))->toBeNull();
@@ -1299,4 +1319,25 @@ test('event form locks rules_version after event has started', function () {
 
     Livewire::test(EventForm::class, ['eventId' => $event->id, 'mode' => 'edit'])
         ->assertSet('rulesVersionLocked', true);
+});
+
+test('the power multiplier badge is hidden for event types that have no multiplier', function () {
+    $this->actingAs($this->user);
+
+    $wfdType = EventType::create([
+        'code' => 'WFD',
+        'name' => 'Winter Field Day',
+        'description' => 'Winter Field Day',
+        'is_active' => true,
+    ]);
+
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('event_type_id', $wfdType->id)
+        ->assertSet('event_type_id', $wfdType->id)
+        ->assertDontSee('Power Multiplier Rules');
+
+    // Field Day still shows it.
+    Livewire::test(EventForm::class, ['mode' => 'create'])
+        ->set('event_type_id', $this->eventType->id)
+        ->assertSee('Power Multiplier Rules');
 });

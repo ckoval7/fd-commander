@@ -1,7 +1,7 @@
 <div>
 @can('verify-bonuses')
     @if($this->event->eventConfiguration && $this->eligibleBonusTypes->isNotEmpty())
-        <x-card title="Manual Bonus Claims" shadow>
+        <x-card :title="$this->terms->claimsTitle" shadow>
             <div class="divide-y divide-base-200">
                 @foreach($this->eligibleBonusTypes as $bonusType)
                     @php
@@ -14,12 +14,12 @@
                                 <input
                                     type="checkbox"
                                     class="checkbox checkbox-sm checkbox-success"
-                                    aria-label="Claim bonus: {{ $bonusType->name }}"
+                                    aria-label="Claim {{ strtolower($this->terms->awardSingular) }}: {{ $bonusType->name }}"
                                     @checked($claimed)
                                     wire:click="{{ $claimed
                                         ? "unclaim({$bonusType->id})"
                                         : "claim({$bonusType->id}, \$wire.notes[{$bonusType->id}])" }}"
-                                    @if($claimed) wire:confirm="Remove this bonus claim?" @endif
+                                    @if($claimed) wire:confirm="Remove this {{ strtolower($this->terms->awardSingular) }} claim?" @endif
                                 />
                                 <div class="min-w-0 flex-1">
                                     <x-bonus-rule-help :rule="$this->bonusRule($bonusType->code)">
@@ -30,7 +30,13 @@
                             </div>
                             <span class="text-sm tabular-nums font-semibold shrink-0 {{ $claimed ? 'text-success' : 'text-base-content/40' }}">
                                 @if($claimed)
-                                    +{{ $bonus->calculated_points }} pts
+                                    @if($bonusType->objective_multiplier !== null)
+                                        OM ×{{ $bonusType->objective_multiplier }}
+                                    @else
+                                        +{{ $bonus->calculated_points }} pts
+                                    @endif
+                                @elseif($bonusType->objective_multiplier !== null)
+                                    OM ×{{ $bonusType->objective_multiplier }}
                                 @elseif($bonusType->is_per_occurrence && $bonusType->max_occurrences)
                                     {{ $bonusType->base_points }}-{{ $bonusType->max_points }} pts
                                 @else

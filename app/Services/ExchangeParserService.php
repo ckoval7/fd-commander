@@ -6,6 +6,14 @@ use App\Models\Section;
 
 class ExchangeParserService
 {
+    /**
+     * Class letters valid in any supported rulebook's exchange.
+     *
+     * A-F are ARRL Field Day; H (Home), I (Indoor), O (Outdoor) and M (Mobile)
+     * are Winter Field Day.
+     */
+    private const EXCHANGE_CLASS_CODES = '[A-FHIMO]';
+
     /** @var array<string, int>|null */
     private ?array $sectionCache = null;
 
@@ -52,9 +60,15 @@ class ExchangeParserService
         }
         $result['callsign'] = $callsign;
 
-        // Token 2: Exchange class (e.g. "3A", "1D", "15F")
-        if (! preg_match('/^(\d{1,2})([A-F])$/i', $tokens[1], $matches)) {
-            $result['errors'][] = "Invalid class: {$tokens[1]} (expected format like 3A, 1D)";
+        // Token 2: Exchange class (e.g. "3A", "1D", "15F", or WFD's "2M", "1H")
+        //
+        // Field Day uses classes A-F; Winter Field Day uses H, I, O and M. The
+        // union is accepted here because this parses the exchange *received*
+        // from the station worked, and the parser has no event context of its
+        // own — class codes are checked against the event type's own operating
+        // classes downstream (see AdifValidationService).
+        if (! preg_match('/^(\d{1,2})('.self::EXCHANGE_CLASS_CODES.')$/i', $tokens[1], $matches)) {
+            $result['errors'][] = "Invalid class: {$tokens[1]} (expected format like 3A, 1D, 2M)";
 
             return $result;
         }

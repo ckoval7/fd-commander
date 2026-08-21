@@ -267,9 +267,11 @@
             <x-slot:title>
                 <div class="flex items-center justify-between">
                     <span>Power Configuration</span>
-                    <span class="badge badge-{{ $this->powerMultiplierColor }} badge-lg">
-                        {{ $this->powerMultiplier }}× Multiplier
-                    </span>
+                    @if($this->usesPowerMultiplier)
+                        <span class="badge badge-{{ $this->powerMultiplierColor }} badge-lg">
+                            {{ $this->powerMultiplier }}× Multiplier
+                        </span>
+                    @endif
                 </div>
             </x-slot:title>
 
@@ -354,16 +356,18 @@
                     :disabled="$isLocked"
                 />
 
-                <x-alert icon="phosphor-info" class="alert-info">
-                    <div class="text-sm">
-                        <strong>Power Multiplier Rules:</strong>
-                        <ul class="list-disc list-inside mt-1 space-y-1">
-                            <li><strong>5×:</strong> ≤5W + Natural power (battery/alternate power) + No commercial/generator</li>
-                            <li><strong>2×:</strong> ≤5W + Commercial/generator OR 6-100W (any power)</li>
-                            <li><strong>1×:</strong> >100W (any power)</li>
-                        </ul>
-                    </div>
-                </x-alert>
+                @if($this->usesPowerMultiplier)
+                    <x-alert icon="phosphor-info" class="alert-info">
+                        <div class="text-sm">
+                            <strong>Power Multiplier Rules:</strong>
+                            <ul class="list-disc list-inside mt-1 space-y-1">
+                                <li><strong>5×:</strong> ≤5W + Natural power (battery/alternate power) + No commercial/generator</li>
+                                <li><strong>2×:</strong> ≤5W + Commercial/generator OR 6-100W (any power)</li>
+                                <li><strong>1×:</strong> >100W (any power)</li>
+                            </ul>
+                        </div>
+                    </x-alert>
+                @endif
             </div>
         </x-card>
 

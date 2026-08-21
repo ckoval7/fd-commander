@@ -14,6 +14,30 @@ ARRL typically announces Field Day rule tweaks in the spring. Symptoms that we n
 
 If ARRL changes anything that affects a *number*, *formula*, *section number*, or *bonus wording* in scoring, we make a new rules version. We never edit a frozen year.
 
+## Two rulebook families
+
+There are two shapes of rulebook, and a new version must extend the right one.
+
+**ARRL Field Day** (`FieldDay2025`, `FieldDay2026`) implements
+`FieldDayRuleSet`. It scores `(QSO points x power multiplier) + bonuses`,
+awards additive point bonuses, and has GOTA, youth and emergency-power rules.
+
+**Winter Field Day** (`WinterFieldDay2026`) implements `RuleSet` directly. It
+scores `QSO points x (OM + 1)`: awards are *objectives* carrying an Objective
+Multiplier in `bonus_types.objective_multiplier` rather than points, satellite
+QSOs earn no QSO credit, there is no power multiplier (every station is capped
+at 100 W PEP), and there is no GOTA station.
+
+Do not make a WFD ruleset extend a `FieldDay*` class, or vice versa. Each
+rulebook owns its own score composition through `score()`, which is what lets
+one scoring page render both. Rule text and terminology follow the same split:
+WFD objectives are labelled "Objectives", not "Bonus Points", via
+`nomenclature()`.
+
+The WFD source of truth is the WFDA Standard Operating Procedure at
+<https://winterfieldday.org/sop.php>. WFDA publishes changes each autumn; the
+2026 edition's own change list is a good signal that a new version is needed.
+
 ## The golden rule
 
 **Never modify a `FieldDayYYYY` class, or `bonus_types`/`mode_rule_points` rows with `rules_version=YYYY`, after it has shipped.** Doing so retroactively alters historical scores for every event pinned to that year. Add a new class and new DB rows for the new year; leave old ones untouched.
@@ -75,11 +99,14 @@ Do not touch older strategy classes — they are frozen.
 
 ```php
 // app/Scoring/RuleSetFactory.php
-protected array $registry = [
+$registry = [
     'FD' => [
         '2025' => FieldDay2025::class,
         '2026' => FieldDay2026::class,
         '2027' => FieldDay2027::class,   // add this line
+    ],
+    'WFD' => [
+        '2026' => WinterFieldDay2026::class,
     ],
 ];
 ```
@@ -256,12 +283,16 @@ Ideally merge **before** any event pinned to `rules_version='2027'` is created. 
 
 | Concern | Source of truth |
 |---|---|
-| Per-contact mode points | `Mode::points_fd` (default) overridden by `mode_rule_points` rows |
-| GOTA flat points | `RuleSet::gotaPointsPerContact()` |
-| GOTA coach threshold/bonus | `RuleSet::gotaCoachThreshold()` / `::gotaCoachBonus()` |
-| Power multiplier | `RuleSet::powerMultiplier(PowerContext)` |
-| Youth bonus formula | `RuleSet::youthMaxCount()` / `::youthPointsPerYouth()` |
-| Emergency power cap | `RuleSet::emergencyPowerMaxTransmitters()` |
+| Per-contact mode points | `Mode::points_fd` / `Mode::points_wfd` (default) overridden by `mode_rule_points` rows |
+| How the total is composed | `RuleSet::score(EventConfiguration)`, returning a `ScoreBreakdown` |
+| Award wording shown in the UI | `RuleSet::nomenclature()` |
+| Cabrillo `CONTEST:` tag and log filename | `RuleSet::cabrilloContestName()` / `::logFilenameSlug()` |
+| GOTA flat points | `FieldDayRuleSet::gotaPointsPerContact()` |
+| GOTA coach threshold/bonus | `FieldDayRuleSet::gotaCoachThreshold()` / `::gotaCoachBonus()` |
+| Power multiplier | `FieldDayRuleSet::powerMultiplier(PowerContext)` |
+| Youth bonus formula | `FieldDayRuleSet::youthMaxCount()` / `::youthPointsPerYouth()` |
+| Emergency power cap | `FieldDayRuleSet::emergencyPowerMaxTransmitters()` |
+| WFD objective multipliers | `bonus_types.objective_multiplier`, summed by `WinterFieldDay2026::objectiveMultiplier()` |
 | Satellite/emergency/public-location bonus values & eligible classes | `bonus_types` row via `RuleSet::bonus(code)` |
 | ARRL rule section & wording shown next to each bonus | `RuleSet::bonusRuleReference(code)` (backed by `FieldDayYYYY::ruleReferences()`) |
 | Ruleset selection for an event | `RuleSetFactory::forEvent($event)` |

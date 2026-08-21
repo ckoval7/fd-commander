@@ -19,16 +19,20 @@ class BonusTypeSeeder extends Seeder
     ];
 
     /**
-     * Rules versions that inherit verbatim from a parent version.
+     * Rules versions that inherit verbatim from a parent version, per event type.
      *
      * Each entry ensures the child version has a full bonus-type row set
-     * copied from its parent. When ARRL publishes version-specific tweaks,
-     * drop the entry and seed the child explicitly (or ship a migration).
+     * copied from its parent. When a sanctioning body publishes version-specific
+     * tweaks, drop the entry and seed the child explicitly (or ship a migration).
      *
-     * @var array<string, string>
+     * Keyed by event type code because inheritance is not universal: Winter
+     * Field Day 2026 defines its own objectives rather than carrying the 2025
+     * rows forward.
+     *
+     * @var array<string, array<string, string>>
      */
     private const INHERITED_VERSIONS = [
-        '2026' => '2025',
+        'FD' => ['2026' => '2025'],
     ];
 
     /**
@@ -41,15 +45,19 @@ class BonusTypeSeeder extends Seeder
 
         $bonuses = array_merge(
             $this->fieldDayBonuses($fdEventType->id),
-            $this->winterFieldDayBonuses($wfdEventType->id)
+            $this->winterFieldDayBonuses($wfdEventType->id),
+            $this->winterFieldDayObjectives($wfdEventType->id),
         );
 
-        $bonuses = $this->withInheritedVersions($bonuses);
+        $bonuses = $this->withInheritedVersions($bonuses, [
+            'FD' => $fdEventType->id,
+            'WFD' => $wfdEventType->id,
+        ]);
 
         // Seeder is idempotent and non-destructive — existing rows are never overwritten.
         // Use a migration to change values for an already-shipped rules_version.
         foreach ($bonuses as $bonus) {
-            $bonus['trigger_type'] = self::TRIGGER_TYPES[$bonus['code']] ?? 'manual';
+            $bonus['trigger_type'] ??= self::TRIGGER_TYPES[$bonus['code']] ?? 'manual';
 
             BonusType::firstOrCreate(
                 [
@@ -68,18 +76,27 @@ class BonusTypeSeeder extends Seeder
      * per-version rows for lookup and rescore flows.
      *
      * @param  array<int, array<string, mixed>>  $bonuses
+     * @param  array<string, int>  $eventTypeIds
      * @return array<int, array<string, mixed>>
      */
-    private function withInheritedVersions(array $bonuses): array
+    private function withInheritedVersions(array $bonuses, array $eventTypeIds): array
     {
-        foreach (self::INHERITED_VERSIONS as $child => $parent) {
-            foreach ($bonuses as $bonus) {
-                if ($bonus['rules_version'] !== $parent) {
-                    continue;
-                }
+        foreach (self::INHERITED_VERSIONS as $typeCode => $versions) {
+            $eventTypeId = $eventTypeIds[$typeCode] ?? null;
 
-                $bonus['rules_version'] = $child;
-                $bonuses[] = $bonus;
+            if ($eventTypeId === null) {
+                continue;
+            }
+
+            foreach ($versions as $child => $parent) {
+                foreach ($bonuses as $bonus) {
+                    if ($bonus['rules_version'] !== $parent || $bonus['event_type_id'] !== $eventTypeId) {
+                        continue;
+                    }
+
+                    $bonus['rules_version'] = $child;
+                    $bonuses[] = $bonus;
+                }
             }
         }
 
@@ -374,6 +391,213 @@ class BonusTypeSeeder extends Seeder
                 'max_occurrences' => 1,
                 'requires_proof' => false,
                 'eligible_classes' => (['I', 'O']),
+            ],
+        ];
+    }
+
+    /**
+     * Winter Field Day 2026 objectives.
+     *
+     * Objectives are multipliers rather than point awards: each carries an
+     * Objective Multiplier, they are summed, and the score is
+     * `QSO points x (OM + 1)`. Source: WFDA SOP (2026).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function winterFieldDayObjectives(int $eventTypeId): array
+    {
+        return [
+            [
+                'event_type_id' => $eventTypeId,
+                'rules_version' => '2026',
+                'code' => 'alternative_power',
+                'name' => 'Operate 100% on Alternative Power',
+                'description' => 'Operate exclusively on power not connected to the commercial grid. Lights and HVAC are exempt.',
+                'trigger_type' => 'derived',
+                'base_points' => 0,
+                'objective_multiplier' => 1,
+                'is_per_transmitter' => false,
+                'is_per_occurrence' => false,
+                'max_points' => 0,
+                'max_occurrences' => 1,
+                'requires_proof' => false,
+                'eligible_classes' => null,
+            ],
+            [
+                'event_type_id' => $eventTypeId,
+                'rules_version' => '2026',
+                'code' => 'away_from_home',
+                'name' => 'Operate Away From Home',
+                'description' => 'Set up the field station more than half a mile from home.',
+                'trigger_type' => 'manual',
+                'base_points' => 0,
+                'objective_multiplier' => 3,
+                'is_per_transmitter' => false,
+                'is_per_occurrence' => false,
+                'max_points' => 0,
+                'max_occurrences' => 1,
+                'requires_proof' => false,
+                'eligible_classes' => null,
+            ],
+            [
+                'event_type_id' => $eventTypeId,
+                'rules_version' => '2026',
+                'code' => 'multiple_antennas',
+                'name' => 'Deploy Multiple Antennas',
+                'description' => 'Deploy two or more not-previously-installed antennas and make at least one contact on each.',
+                'trigger_type' => 'manual',
+                'base_points' => 0,
+                'objective_multiplier' => 1,
+                'is_per_transmitter' => false,
+                'is_per_occurrence' => false,
+                'max_points' => 0,
+                'max_occurrences' => 1,
+                'requires_proof' => false,
+                'eligible_classes' => null,
+            ],
+            [
+                'event_type_id' => $eventTypeId,
+                'rules_version' => '2026',
+                'code' => 'fm_satellite',
+                'name' => 'FM Satellite Contact',
+                'description' => 'Make at least one FM satellite contact during the operating period.',
+                'trigger_type' => 'manual',
+                'base_points' => 0,
+                'objective_multiplier' => 2,
+                'is_per_transmitter' => false,
+                'is_per_occurrence' => false,
+                'max_points' => 0,
+                'max_occurrences' => 1,
+                'requires_proof' => false,
+                'eligible_classes' => null,
+            ],
+            [
+                'event_type_id' => $eventTypeId,
+                'rules_version' => '2026',
+                'code' => 'ssb_cw_satellite',
+                'name' => 'SSB or CW Satellite Contact',
+                'description' => 'Make at least one satellite contact using SSB or CW.',
+                'trigger_type' => 'manual',
+                'base_points' => 0,
+                'objective_multiplier' => 3,
+                'is_per_transmitter' => false,
+                'is_per_occurrence' => false,
+                'max_points' => 0,
+                'max_occurrences' => 1,
+                'requires_proof' => false,
+                'eligible_classes' => null,
+            ],
+            [
+                'event_type_id' => $eventTypeId,
+                'rules_version' => '2026',
+                'code' => 'winlink_email',
+                'name' => 'Send and Receive a Winlink Email',
+                'description' => 'Send and receive at least one email via a winlink.org address over amateur RF, timestamped within the operational period.',
+                'trigger_type' => 'manual',
+                'base_points' => 0,
+                'objective_multiplier' => 1,
+                'is_per_transmitter' => false,
+                'is_per_occurrence' => false,
+                'max_points' => 0,
+                'max_occurrences' => 1,
+                'requires_proof' => true,
+                'eligible_classes' => null,
+            ],
+            [
+                'event_type_id' => $eventTypeId,
+                'rules_version' => '2026',
+                'code' => 'special_bulletin',
+                'name' => 'Copy the WFD Special Bulletin',
+                'description' => 'Accurately copy the WFD Special Bulletin and submit the copy with the log.',
+                'trigger_type' => 'manual',
+                'base_points' => 0,
+                'objective_multiplier' => 1,
+                'is_per_transmitter' => false,
+                'is_per_occurrence' => false,
+                'max_points' => 0,
+                'max_occurrences' => 1,
+                'requires_proof' => true,
+                'eligible_classes' => null,
+            ],
+            [
+                'event_type_id' => $eventTypeId,
+                'rules_version' => '2026',
+                'code' => 'six_bands',
+                'name' => 'Three Contacts on Six Bands',
+                'description' => 'Log at least three contacts on each of six or more different bands.',
+                'trigger_type' => 'derived',
+                'base_points' => 0,
+                'objective_multiplier' => 6,
+                'is_per_transmitter' => false,
+                'is_per_occurrence' => false,
+                'max_points' => 0,
+                'max_occurrences' => 1,
+                'requires_proof' => false,
+                'eligible_classes' => null,
+            ],
+            [
+                'event_type_id' => $eventTypeId,
+                'rules_version' => '2026',
+                'code' => 'twelve_bands',
+                'name' => 'Three Contacts on Twelve Bands',
+                'description' => 'Log at least three contacts on each of twelve or more different bands. The six-band objective counts toward this one.',
+                'trigger_type' => 'derived',
+                'base_points' => 0,
+                'objective_multiplier' => 6,
+                'is_per_transmitter' => false,
+                'is_per_occurrence' => false,
+                'max_points' => 0,
+                'max_occurrences' => 1,
+                'requires_proof' => false,
+                'eligible_classes' => null,
+            ],
+            [
+                'event_type_id' => $eventTypeId,
+                'rules_version' => '2026',
+                'code' => 'multiple_modes',
+                'name' => 'Use Multiple Modes',
+                'description' => 'Work at least two of the three mode groups (CW, Phone, Digital). Using all three earns no more.',
+                'trigger_type' => 'derived',
+                'base_points' => 0,
+                'objective_multiplier' => 2,
+                'is_per_transmitter' => false,
+                'is_per_occurrence' => false,
+                'max_points' => 0,
+                'max_occurrences' => 1,
+                'requires_proof' => false,
+                'eligible_classes' => null,
+            ],
+            [
+                'event_type_id' => $eventTypeId,
+                'rules_version' => '2026',
+                'code' => 'qrp',
+                'name' => 'Operate the Event QRP',
+                'description' => 'Every station runs 10 W or less on Phone, or 5 W or less on CW and Digital, for the whole time operated.',
+                'trigger_type' => 'derived',
+                'base_points' => 0,
+                'objective_multiplier' => 4,
+                'is_per_transmitter' => false,
+                'is_per_occurrence' => false,
+                'max_points' => 0,
+                'max_occurrences' => 1,
+                'requires_proof' => false,
+                'eligible_classes' => null,
+            ],
+            [
+                'event_type_id' => $eventTypeId,
+                'rules_version' => '2026',
+                'code' => 'six_continuous_hours',
+                'name' => 'Operate Six Continuous Hours',
+                'description' => 'Staff the radio for six continuous hours, monitoring and ready to respond.',
+                'trigger_type' => 'manual',
+                'base_points' => 0,
+                'objective_multiplier' => 2,
+                'is_per_transmitter' => false,
+                'is_per_occurrence' => false,
+                'max_points' => 0,
+                'max_occurrences' => 1,
+                'requires_proof' => false,
+                'eligible_classes' => null,
             ],
         ];
     }
