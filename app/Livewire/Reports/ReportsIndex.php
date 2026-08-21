@@ -29,9 +29,6 @@ class ReportsIndex extends Component
     }
 
     /**
-     * @return array<int, array{hour: string, total: int, cw: int, phone: int, digital: int}>
-     */
-    /**
      * Whether to offer the ARRL Field Day submission sheet for this event.
      *
      * Winter Field Day has no equivalent form, so the card is hidden rather
@@ -44,6 +41,9 @@ class ReportsIndex extends Component
             ->getEventConfiguration()?->usesArrlSubmissionSheet() ?? false;
     }
 
+    /**
+     * @return array<int, array{hour: string, total: int, cw: int, phone: int, digital: int}>
+     */
     #[Computed]
     public function qsoRateByHour(): array
     {
