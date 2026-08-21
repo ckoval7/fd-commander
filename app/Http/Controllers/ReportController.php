@@ -56,6 +56,14 @@ class ReportController extends Controller
             abort(404);
         }
 
+        // The sheet mirrors ARRL's Field Day entry form. Winter Field Day has
+        // no paper equivalent — entrants upload a log and tick their objectives
+        // on winterfieldday.org — so rendering it there would hand the operator
+        // a form no one accepts.
+        if (! $config->usesArrlSubmissionSheet()) {
+            abort(404);
+        }
+
         $data = $this->submissionReportService->getData($config);
 
         $callsign = strtolower($config->callsign);

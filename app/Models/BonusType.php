@@ -34,6 +34,7 @@ class BonusType extends Model
         'name',
         'description',
         'base_points',
+        'objective_multiplier',
         'is_per_transmitter',
         'is_per_occurrence',
         'max_points',
@@ -51,6 +52,7 @@ class BonusType extends Model
             'requires_proof' => 'boolean',
             'eligible_classes' => 'array',
             'is_active' => 'boolean',
+            'objective_multiplier' => 'integer',
         ];
     }
 }

@@ -3,8 +3,11 @@
 namespace App\Models;
 
 use App\Enums\PowerSource;
+use App\Scoring\Contracts\FieldDayRuleSet;
 use App\Scoring\Contracts\RuleSet;
+use App\Scoring\Dto\Nomenclature;
 use App\Scoring\Dto\PowerContext;
+use App\Scoring\Dto\ScoreBreakdown;
 use App\Scoring\RuleSetFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -103,6 +106,83 @@ class EventConfiguration extends Model
     }
 
     /**
+     * The pinned ruleset, but only when it is an ARRL Field Day rulebook.
+     *
+     * Returns null for rulebooks built on a different model (e.g. Winter Field
+     * Day), so the Field-Day-only calculators below degrade to a neutral value
+     * instead of calling methods that rulebook does not implement.
+     */
+    protected function fieldDayRules(): ?FieldDayRuleSet
+    {
+        $rules = $this->ruleSet();
+
+        return $rules instanceof FieldDayRuleSet ? $rules : null;
+    }
+
+    /**
+     * Compose this configuration's score under its pinned ruleset.
+     */
+    public function scoreBreakdown(): ScoreBreakdown
+    {
+        return $this->ruleSet()->score($this);
+    }
+
+    /**
+     * The award terminology used by this configuration's rulebook.
+     */
+    public function nomenclature(): Nomenclature
+    {
+        return $this->ruleSet()->nomenclature();
+    }
+
+    /**
+     * Cabrillo CONTEST: identifier for this configuration's rulebook.
+     */
+    public function cabrilloContestName(): string
+    {
+        return $this->ruleSet()->cabrilloContestName();
+    }
+
+    /**
+     * Slug this configuration's rulebook uses in exported log filenames.
+     */
+    public function logFilenameSlug(): string
+    {
+        return $this->ruleSet()->logFilenameSlug();
+    }
+
+    /**
+     * Whether this event's rulebook submits on ARRL's Field Day entry form.
+     */
+    public function usesArrlSubmissionSheet(): bool
+    {
+        return $this->fieldDayRules() !== null;
+    }
+
+    /**
+     * Whether this configuration's rulebook scores with a power multiplier.
+     */
+    public function usesPowerMultiplier(): bool
+    {
+        return $this->fieldDayRules() !== null;
+    }
+
+    /**
+     * Sum of points on non-duplicate, non-GOTA contacts, before any multiplier.
+     */
+    public function qsoBasePoints(): int
+    {
+        if (! class_exists(Contact::class)) {
+            return 0;
+        }
+
+        return (int) $this->contacts()
+            ->where('is_duplicate', false)
+            ->where('is_gota_contact', false)
+            ->sum('points');
+    }
+
+    /**
      * Resolve points for a single contact via the event's pinned RuleSet.
      *
      * Handles GOTA flat-rate and mode_rule_points overrides internally.
@@ -198,7 +278,7 @@ class EventConfiguration extends Model
      */
     public function calculatePowerMultiplier(): string
     {
-        return $this->ruleSet()->powerMultiplier($this->powerContext());
+        return $this->fieldDayRules()?->powerMultiplier($this->powerContext()) ?? '1';
     }
 
     /**
@@ -257,12 +337,7 @@ class EventConfiguration extends Model
             return 0;
         }
 
-        $basePoints = $this->contacts()
-            ->where('is_duplicate', false)
-            ->where('is_gota_contact', false)
-            ->sum('points');
-
-        return $basePoints * $this->calculatePowerMultiplier();
+        return $this->qsoBasePoints() * (int) $this->calculatePowerMultiplier();
     }
 
     /**
@@ -275,12 +350,18 @@ class EventConfiguration extends Model
             return 0;
         }
 
+        $rules = $this->fieldDayRules();
+
+        if (! $rules) {
+            return 0;
+        }
+
         $gotaContactCount = $this->contacts()
             ->where('is_duplicate', false)
             ->where('is_gota_contact', true)
             ->count();
 
-        return $gotaContactCount * $this->ruleSet()->gotaPointsPerContact();
+        return $gotaContactCount * $rules->gotaPointsPerContact();
     }
 
     /**
@@ -292,7 +373,11 @@ class EventConfiguration extends Model
             return 0;
         }
 
-        $rules = $this->ruleSet();
+        $rules = $this->fieldDayRules();
+
+        if (! $rules) {
+            return 0;
+        }
 
         $supervisedGotaCount = $this->contacts()
             ->where('is_duplicate', false)
@@ -338,7 +423,12 @@ class EventConfiguration extends Model
      */
     public function calculateYouthBonus(): int
     {
-        $rules = $this->ruleSet();
+        $rules = $this->fieldDayRules();
+
+        if (! $rules) {
+            return 0;
+        }
+
         $autoCount = $this->countYouthWithQsos();
 
         $bonusType = $rules->bonus('youth_participation');
@@ -368,7 +458,12 @@ class EventConfiguration extends Model
      */
     public function calculateEmergencyPowerBonus(): int
     {
-        $rules = $this->ruleSet();
+        $rules = $this->fieldDayRules();
+
+        if (! $rules) {
+            return 0;
+        }
+
         $bonusType = $rules->bonus('emergency_power');
 
         $hasCommercialStation = ! $this->uses_commercial_power
@@ -446,14 +541,11 @@ class EventConfiguration extends Model
     }
 
     /**
-     * Calculate final score (QSO + bonus).
+     * Calculate final score, as composed by the event's pinned RuleSet.
      */
     public function calculateFinalScore(): int
     {
-        return $this->calculateQsoScore()
-            + $this->calculateBonusScore()
-            + $this->calculateGotaBonus()
-            + $this->calculateGotaCoachBonus();
+        return $this->scoreBreakdown()->total;
     }
 
     /**

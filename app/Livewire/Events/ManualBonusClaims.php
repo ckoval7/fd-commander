@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\BonusType;
 use App\Models\Event;
 use App\Models\EventBonus;
+use App\Scoring\Dto\Nomenclature;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
@@ -25,6 +26,15 @@ class ManualBonusClaims extends Component
     public array $quantities = [];
 
     public int $additionalYouth = 0;
+
+    /**
+     * The award wording this event's rulebook uses ("Bonus" vs "Objective").
+     */
+    #[Computed]
+    public function terms(): Nomenclature
+    {
+        return $this->event->eventConfiguration?->nomenclature() ?? new Nomenclature;
+    }
 
     #[Computed]
     public function eligibleBonusTypes(): Collection

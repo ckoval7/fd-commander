@@ -1,6 +1,10 @@
 <?php
 
+use App\Models\Band;
 use App\Models\BonusType;
+use App\Models\Contact;
+use App\Models\Event;
+use App\Models\EventConfiguration;
 use App\Models\EventType;
 use App\Models\Mode;
 use App\Models\ModeRulePoint;
@@ -129,4 +133,45 @@ test('bonusRuleReference covers GOTA synthetic codes', function () {
 
 test('bonusRuleReference returns null for unknown code', function () {
     expect($this->rules->bonusRuleReference('no_such_code'))->toBeNull();
+});
+
+test('score composition is unchanged by the ruleset contract split', function () {
+    $fd = EventType::firstOrCreate(['code' => 'FD'], ['name' => 'Field Day']);
+
+    $event = Event::factory()->create([
+        'event_type_id' => $fd->id,
+        'rules_version' => '2025',
+    ]);
+
+    $config = EventConfiguration::factory()->create([
+        'event_id' => $event->id,
+        'max_power_watts' => 100,
+        'has_gota_station' => false,
+    ]);
+
+    $band = Band::factory()->create();
+    $mode = Mode::factory()->create(['points_fd' => 2]);
+
+    Contact::factory()->count(4)->create([
+        'event_configuration_id' => $config->id,
+        'band_id' => $band->id,
+        'mode_id' => $mode->id,
+        'points' => 2,
+        'is_duplicate' => false,
+        'is_gota_contact' => false,
+    ]);
+
+    $breakdown = $config->scoreBreakdown();
+
+    // 8 QSO points at the 2x low-power multiplier, still additive with bonuses.
+    expect($breakdown->value('qso_points'))->toBe(8)
+        ->and($breakdown->value('power_multiplier'))->toBe(2)
+        ->and($breakdown->value('qso_score'))->toBe(16)
+        ->and($breakdown->formula)->toBe('(QSO Points x Power Multiplier) + GOTA + Bonus Points')
+        ->and($breakdown->total)->toBe($config->calculateQsoScore() + $config->calculateBonusScore());
+});
+
+test('Field Day still reports a power multiplier and Bonus wording', function () {
+    expect((new FieldDay2025)->nomenclature()->awardPlural)->toBe('Bonuses')
+        ->and((new FieldDay2025)->nomenclature()->awardSectionTitle)->toBe('Bonus Points');
 });

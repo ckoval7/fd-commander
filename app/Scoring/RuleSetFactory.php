@@ -8,6 +8,7 @@ use App\Scoring\Exceptions\UnknownRuleSet;
 use App\Scoring\Rules\FieldDay2025;
 use App\Scoring\Rules\FieldDay2026;
 use App\Scoring\Rules\FieldDayTest;
+use App\Scoring\Rules\WinterFieldDay2026;
 use Illuminate\Support\Facades\Log;
 
 class RuleSetFactory
@@ -39,6 +40,9 @@ class RuleSetFactory
             'FD' => [
                 '2025' => FieldDay2025::class,
                 '2026' => FieldDay2026::class,
+            ],
+            'WFD' => [
+                '2026' => WinterFieldDay2026::class,
             ],
         ];
 
@@ -84,6 +88,19 @@ class RuleSetFactory
         ]);
 
         return $this->resolved[$key] = $fallback;
+    }
+
+    /**
+     * Resolve a ruleset by event type code and version, without an Event.
+     *
+     * Used where only a type and version are known — e.g. the event form,
+     * which needs to know how a not-yet-saved event would be scored.
+     */
+    public function resolve(string $typeCode, string $version): ?RuleSet
+    {
+        $class = $this->registry[$typeCode][$version] ?? $this->latestRegisteredFor($typeCode);
+
+        return $class ? app($class) : null;
     }
 
     /**

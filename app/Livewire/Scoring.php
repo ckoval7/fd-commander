@@ -10,6 +10,10 @@ use App\Models\Contact;
 use App\Models\Event;
 use App\Models\EventConfiguration;
 use App\Models\Mode;
+use App\Models\Station;
+use App\Scoring\Dto\Nomenclature;
+use App\Scoring\Dto\ScoreBreakdown;
+use App\Scoring\Dto\ScoreTerm;
 use App\Services\EventContextService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -71,17 +75,17 @@ class Scoring extends Component
     // SCORE TOTALS
     // ========================================================================
 
+    /**
+     * QSO points as the event's ruleset counts them.
+     *
+     * Delegating to the breakdown keeps this figure identical to the one in the
+     * headline equation — Winter Field Day excludes satellite QSOs from QSO
+     * credit, so a raw sum over contacts would disagree with the score shown.
+     */
     #[Computed]
     public function qsoBasePoints(): int
     {
-        if (! $this->config()) {
-            return 0;
-        }
-
-        return (int) $this->config()->contacts()
-            ->where('is_duplicate', false)
-            ->where('is_gota_contact', false)
-            ->sum('points');
+        return $this->breakdown?->value('qso_points') ?? 0;
     }
 
     #[Computed]
@@ -138,6 +142,83 @@ class Scoring extends Component
     public function finalScore(): int
     {
         return $this->config()?->calculateFinalScore() ?? 0;
+    }
+
+    /**
+     * The pinned ruleset's own score composition, or null with no config.
+     */
+    #[Computed]
+    public function breakdown(): ?ScoreBreakdown
+    {
+        return $this->config()?->scoreBreakdown();
+    }
+
+    /**
+     * Ordered headline equation parts supplied by the ruleset.
+     *
+     * @return array<int, ScoreTerm|string>
+     */
+    #[Computed]
+    public function headline(): array
+    {
+        return $this->breakdown?->headline ?? [];
+    }
+
+    /**
+     * The award wording this event's rulebook uses ("Bonus" vs "Objective").
+     */
+    #[Computed]
+    public function terms(): Nomenclature
+    {
+        return $this->config()?->nomenclature() ?? new Nomenclature;
+    }
+
+    /**
+     * Whether this rulebook scores with a power multiplier at all.
+     *
+     * Winter Field Day caps every station at 100 W PEP and has no multiplier,
+     * so the power column and its explainer are hidden for those events.
+     */
+    #[Computed]
+    public function usesPowerMultiplier(): bool
+    {
+        return $this->config()?->usesPowerMultiplier() ?? true;
+    }
+
+    /**
+     * Objective completion for rulebooks that track it, as {achieved, available, percent}.
+     *
+     * WFDA records the percentage of objectives completed year over year, so
+     * it belongs next to the score rather than only in the multiplier.
+     *
+     * @return array{achieved: int, available: int, percent: int}|null
+     */
+    #[Computed]
+    public function objectiveProgress(): ?array
+    {
+        $breakdown = $this->breakdown;
+        $achieved = $breakdown?->line('objectives_achieved');
+
+        if (! $breakdown || ! $achieved) {
+            return null;
+        }
+
+        $available = $breakdown->value('objectives_available');
+
+        return [
+            'achieved' => $achieved->value,
+            'available' => $available,
+            'percent' => $available > 0 ? (int) round($achieved->value / $available * 100) : 0,
+        ];
+    }
+
+    /**
+     * Whether this rulebook's awards are multipliers rather than point values.
+     */
+    #[Computed]
+    public function awardsAreMultipliers(): bool
+    {
+        return $this->terms->awardsAreMultipliers;
     }
 
     // ========================================================================
@@ -252,7 +333,7 @@ class Scoring extends Component
         if ($rulesVersion !== null) {
             $query->where('rules_version', $rulesVersion);
         }
-        $bonusTypes = $query->orderByDesc('base_points')->get()
+        $bonusTypes = $query->orderByDesc('objective_multiplier')->orderByDesc('base_points')->get()
             ->filter(fn (BonusType $bt) => $bt->eligible_classes === null
                 || ($classCode !== null && in_array($classCode, $bt->eligible_classes, true)));
 
@@ -328,6 +409,12 @@ class Scoring extends Component
             'verified_pts' => (int) $list->where('status', 'verified')->sum('points'),
             'claimed_pts' => (int) $list->where('status', 'claimed')->sum('points'),
             'unclaimed_count' => $list->where('status', 'unclaimed')->count(),
+            // Objective rulebooks award multipliers rather than points, so the
+            // same tiles show summed OM instead of summed points.
+            'verified_multiplier' => (int) $list->where('status', 'verified')
+                ->sum(fn (array $item) => (int) $item['type']->objective_multiplier),
+            'claimed_multiplier' => (int) $list->where('status', 'claimed')
+                ->sum(fn (array $item) => (int) $item['type']->objective_multiplier),
         ];
     }
 
@@ -534,6 +621,23 @@ class Scoring extends Component
 
         return $all->filter(fn (Band $band) => ! $band->is_vhf_uhf || in_array($band->id, $bandIdsWithQsos))
             ->values();
+    }
+
+    /**
+     * Points a single contact in this mode is worth under the event's ruleset.
+     *
+     * Field Day reads modes.points_fd and Winter Field Day modes.points_wfd, so
+     * the scoring key asks the ruleset rather than picking a column.
+     */
+    public function pointsForMode(Mode $mode): int
+    {
+        $config = $this->config();
+
+        if (! $config) {
+            return (int) ($mode->points_fd ?? 1);
+        }
+
+        return $config->pointsForContact($mode, Station::make(['is_gota' => false]));
     }
 
     #[Computed]
