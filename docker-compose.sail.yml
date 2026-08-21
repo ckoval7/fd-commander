@@ -1,0 +1,110 @@
+# Laravel Sail — local development & testing environment.
+#
+# Kept separate from docker-compose.yml (the production/deployment stack) so the
+# two can't clobber each other. Use it via the COMPOSE_FILE var in .env, or:
+#   docker compose -f docker-compose.sail.yml up -d
+#
+# The `trivy` service scans this project's dependencies for known CVEs. See the
+# `sail-trivy` helper script, or run it directly:
+#   docker compose -f docker-compose.sail.yml run --rm trivy fs /project
+services:
+    laravel.test:
+        build:
+            context: ./vendor/laravel/sail/runtimes/8.4
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP:-1000}'
+        image: sail-8.4/app
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        ports:
+            - '${APP_PORT:-80}:80'
+            - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
+            - '${REVERB_PORT:-8080}:8080'
+        environment:
+            WWWUSER: '${WWWUSER:-1000}'
+            LARAVEL_SAIL: 1
+            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
+            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
+            IGNITION_LOCAL_SITES_PATH: '${PWD}'
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - mysql
+            - redis
+
+    mysql:
+        image: 'mysql:8.4'
+        ports:
+            - '${FORWARD_DB_PORT:-3306}:3306'
+        environment:
+            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD:-password}'
+            MYSQL_ROOT_HOST: '%'
+            MYSQL_DATABASE: '${DB_DATABASE:-fd_commander}'
+            MYSQL_USER: '${DB_USERNAME:-sail}'
+            MYSQL_PASSWORD: '${DB_PASSWORD:-password}'
+            MYSQL_ALLOW_EMPTY_PASSWORD: 1
+        volumes:
+            - 'sail-mysql:/var/lib/mysql'
+            - './vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
+        networks:
+            - sail
+        healthcheck:
+            test: ['CMD', 'mysqladmin', 'ping', '-p${DB_PASSWORD:-password}']
+            retries: 3
+            timeout: 5s
+
+    redis:
+        image: 'redis:alpine'
+        ports:
+            - '${FORWARD_REDIS_PORT:-6379}:6379'
+        volumes:
+            - 'sail-redis:/data'
+        networks:
+            - sail
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            retries: 3
+            timeout: 5s
+
+    # Aqua Security Trivy — vulnerability scanner for dependencies (composer.lock,
+    # package-lock.json), container images, and IaC. Runs on demand rather than as a
+    # long-lived service, so there is no healthcheck and no restart policy.
+    # The named volume caches the vulnerability DB between runs to avoid re-downloading.
+    trivy:
+        image: 'aquasec/trivy:latest'
+        profiles:
+            - scan
+        volumes:
+            - '.:/project:ro'
+            - 'sail-trivy-cache:/root/.cache/trivy'
+            - '/var/run/docker.sock:/var/run/docker.sock'
+        networks:
+            - sail
+        entrypoint: ['trivy']
+        # --skip-files excludes Mockery's vendored Python docs requirements file.
+        # It pins the toolchain that builds Mockery's own documentation site, is
+        # never installed by this project, and Mockery is require-dev only — so
+        # its CVEs are not reachable from this application. Everything else,
+        # including composer.lock and package-lock.json, is still scanned.
+        command:
+            - 'fs'
+            - '--scanners'
+            - 'vuln'
+            - '--skip-files'
+            - '/project/vendor/mockery/mockery/docs/requirements.txt'
+            - '/project'
+
+networks:
+    sail:
+        driver: bridge
+
+volumes:
+    sail-mysql:
+        driver: local
+    sail-redis:
+        driver: local
+    sail-trivy-cache:
+        driver: local

@@ -164,3 +164,78 @@ docker compose up -d
 ```
 
 The entrypoint runs `php artisan migrate --force` on every start, so new migrations are applied automatically.
+
+## Local Development & Testing (Laravel Sail)
+
+The compose file above (`docker-compose.yml`) is the **deployment** stack. For
+local development and running the test suite, use **`docker-compose.sail.yml`**
+instead. It is kept as a separate file so the two stacks cannot clobber each
+other's containers or volumes.
+
+Sail runs PHP 8.4, matching what the application targets — worth using even if
+you have PHP installed locally, since a different local PHP version can produce
+failures that do not reproduce in CI.
+
+### Setup
+
+```bash
+# 1. Point the sail wrapper at the Sail compose file, and set your host UID/GID
+#    so files written inside the container stay owned by you.
+cat >> .env <<EOF
+COMPOSE_FILE=docker-compose.sail.yml
+WWWUSER=$(id -u)
+WWWGROUP=$(id -g)
+EOF
+
+# 2. Build and start
+vendor/bin/sail up -d
+
+# 3. Generate an app key if .env does not have one yet
+vendor/bin/sail artisan key:generate
+```
+
+### Everyday use
+
+```bash
+vendor/bin/sail up -d                  # start
+vendor/bin/sail down                   # stop
+vendor/bin/sail artisan test --compact # run the test suite
+vendor/bin/sail artisan test --compact tests/Feature/Weather   # run a subset
+vendor/bin/sail composer install
+vendor/bin/sail npm run build
+```
+
+The full suite takes a long time. Pass a path or `--filter` to run only the
+tests relevant to your change.
+
+Tests use in-memory SQLite (see `phpunit.xml`), so the MySQL container is not
+required for them — it is there for manual testing against a realistic database.
+
+### Vulnerability scanning (Trivy)
+
+The Sail stack includes [Trivy](https://trivy.dev/), which scans `composer.lock`
+and `package-lock.json` for known CVEs. It sits behind a `scan` profile so it
+does not start with `sail up`:
+
+```bash
+# Scan dependencies (uses the service's default arguments)
+docker compose -f docker-compose.sail.yml run --rm trivy
+
+# Only show what matters right now
+docker compose -f docker-compose.sail.yml run --rm trivy \
+    fs --scanners vuln --severity HIGH,CRITICAL /project
+
+# Scan the built deployment image
+docker compose -f docker-compose.sail.yml run --rm trivy image fd-commander-app
+```
+
+The vulnerability database is cached in the `sail-trivy-cache` volume, so only
+the first run pays the download cost.
+
+Trivy complements — rather than replaces — the native tooling. Use all three:
+
+```bash
+vendor/bin/sail composer audit
+vendor/bin/sail npm audit
+docker compose -f docker-compose.sail.yml run --rm trivy
+```
