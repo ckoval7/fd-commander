@@ -497,6 +497,17 @@ run_migrations() {
 
     cd "$APP_PATH"
     sudo -u fdcommander php artisan migrate --force
+
+    # In demo mode the default connection is 'demo' (demo_base), so the run
+    # above never reaches the main 'mysql' connection where the analytics
+    # tables (demo_sessions, demo_events) live. Migrate it explicitly, the
+    # same way deploy.sh does — without this, migrations that touch those
+    # tables are silently skipped and provisioning 500s on the missing column.
+    if grep -qE '^DEMO_MODE=(true|1)$' "$APP_PATH/.env" 2>/dev/null; then
+        log_info "Demo mode detected — migrating main database (analytics tables)..."
+        sudo -u fdcommander php artisan migrate --database=mysql --force
+    fi
+
     log_info "Migrations complete"
 }
 

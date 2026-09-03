@@ -66,6 +66,14 @@ php artisan migrate --database=demo --force
 php artisan migrate --database=mysql --force   # analytics tables
 ```
 
+### Updating a demo instance
+
+Both migrate commands are needed on **every** update, not just the first deploy. Because `demo` is the default connection, a plain `php artisan migrate --force` migrates `demo_base` alone and reports `Nothing to migrate` while the analytics tables in the main database stay behind. A migration touching `demo_sessions` or `demo_events` is then silently skipped, and provisioning fails with `SQLSTATE[42S22] ... Unknown column`.
+
+`deploy.sh --demo` and `update.sh` both handle this automatically, keying off `DEMO_MODE=true` in the deployed `.env`. Run the second command by hand only when migrating outside those scripts.
+
+Note that a provisioning failure still leaves its `demo_*` database behind, and orphans count toward `DEMO_MAX_SESSIONS`. `demo:cleanup` clears them once they pass the TTL, or drop them by hand after a failed update.
+
 ## Event Selection
 
 The landing page presents both events; the choice drives how `DemoSeeder` builds the sandbox.
