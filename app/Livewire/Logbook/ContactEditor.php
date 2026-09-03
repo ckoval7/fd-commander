@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Band;
 use App\Models\Contact;
 use App\Models\Mode;
+use App\Models\OperatingClass;
 use App\Models\Section;
 use App\Models\Station;
 use App\Models\User;
@@ -76,6 +77,21 @@ class ContactEditor extends Component
             'qsoTime' => 'required|date',
             'notes' => 'nullable|string|max:500',
         ]);
+
+        $eventTypeId = $contact->eventConfiguration?->event?->event_type_id;
+        $classCode = strtoupper(substr($this->exchangeClass, -1));
+
+        $definedClasses = $eventTypeId === null ? [] : OperatingClass::query()
+            ->where('event_type_id', $eventTypeId)
+            ->pluck('code')
+            ->map(fn (string $code): string => strtoupper($code))
+            ->all();
+
+        if ($definedClasses !== [] && ! in_array($classCode, $definedClasses, true)) {
+            $this->addError('exchangeClass', "Class {$classCode} is not valid for this event.");
+
+            return;
+        }
 
         $oldValues = collect([
             'callsign' => $contact->callsign,

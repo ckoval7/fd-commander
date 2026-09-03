@@ -196,6 +196,16 @@ export default function contactQueue(sessionId, csrfToken, sessionContext) {
                 return null;
             }
 
+            // Only the class letters this event's rulebook defines are legal,
+            // so a Field Day log rejects Winter Field Day classes and vice
+            // versa. Falls through when the server sent no list.
+            const validClasses = sessionContext.class_codes;
+            const letter = tokens[1].slice(-1).toUpperCase();
+            if (Array.isArray(validClasses) && validClasses.length > 0 && !validClasses.includes(letter)) {
+                this.parseError = `Class ${letter} is not valid for this event`;
+                return null;
+            }
+
             const sectionCode = tokens[2];
             const sectionId = sessionContext.sections?.[sectionCode];
             if (!sectionId) {

@@ -435,7 +435,7 @@ class TranscribeInterface extends Component
             }
         }
 
-        $parsed = app(ExchangeParserService::class)->parse($exchange);
+        $parsed = app(ExchangeParserService::class)->parse($exchange, $this->eventTypeId());
 
         if (! $parsed['success']) {
             $this->parseError = $parsed['errors'][0] ?? 'Invalid exchange';
@@ -527,6 +527,15 @@ class TranscribeInterface extends Component
             ->first();
     }
 
+    /**
+     * Event type of the event being transcribed, so the parser only accepts
+     * the class letters this rulebook defines.
+     */
+    protected function eventTypeId(): ?int
+    {
+        return $this->station->eventConfiguration?->event?->event_type_id;
+    }
+
     protected function extractCallsign(): ?string
     {
         return app(ExchangeParserService::class)
@@ -535,7 +544,7 @@ class TranscribeInterface extends Component
 
     protected function parseExchangeFromString(string $exchange): array
     {
-        return app(ExchangeParserService::class)->parse($exchange);
+        return app(ExchangeParserService::class)->parse($exchange, $this->eventTypeId());
     }
 
     /**

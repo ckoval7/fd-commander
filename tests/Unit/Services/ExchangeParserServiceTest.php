@@ -1,7 +1,10 @@
 <?php
 
+use App\Models\EventType;
 use App\Models\Section;
 use App\Services\ExchangeParserService;
+use Database\Seeders\EventTypeSeeder;
+use Database\Seeders\OperatingClassSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -12,6 +15,9 @@ beforeEach(function () {
     Section::create(['code' => 'STX', 'name' => 'South Texas', 'region' => 'W5', 'is_active' => true]);
     Section::create(['code' => 'WWA', 'name' => 'Western Washington', 'region' => 'W7', 'is_active' => true]);
     Section::create(['code' => 'DX', 'name' => 'DX', 'region' => 'DX', 'is_active' => true]);
+
+    $this->seed(EventTypeSeeder::class);
+    $this->seed(OperatingClassSeeder::class);
 
     $this->parser = new ExchangeParserService;
 });
@@ -172,3 +178,39 @@ test('still rejects letters that are not a class in any rulebook', function (str
     expect($result['success'])->toBeFalse()
         ->and($result['errors'][0])->toContain('Invalid class');
 })->with(['G', 'J', 'K', 'N', 'P', 'Z']);
+
+test('rejects Winter Field Day classes when parsing for a Field Day event', function (string $classCode) {
+    $eventType = EventType::where('code', 'FD')->firstOrFail();
+
+    $result = $this->parser->parse("W1AW 2{$classCode} CT", $eventType->id);
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['errors'][0])->toContain("Class {$classCode} is not valid");
+})->with(['H', 'I', 'O', 'M']);
+
+test('rejects Field Day classes when parsing for a Winter Field Day event', function (string $classCode) {
+    $eventType = EventType::where('code', 'WFD')->firstOrFail();
+
+    $result = $this->parser->parse("W1AW 2{$classCode} CT", $eventType->id);
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['errors'][0])->toContain("Class {$classCode} is not valid");
+})->with(['A', 'B', 'C', 'D', 'E', 'F']);
+
+test('accepts each rulebook its own classes when an event type is given', function (string $eventCode, string $classCode) {
+    $eventType = EventType::where('code', $eventCode)->firstOrFail();
+
+    $result = $this->parser->parse("W1AW 2{$classCode} CT", $eventType->id);
+
+    expect($result['success'])->toBeTrue()
+        ->and($result['class_code'])->toBe($classCode);
+})->with([
+    ['FD', 'A'], ['FD', 'F'],
+    ['WFD', 'H'], ['WFD', 'M'],
+]);
+
+test('accepts any known class when no event type is given', function (string $classCode) {
+    $result = $this->parser->parse("W1AW 2{$classCode} CT");
+
+    expect($result['success'])->toBeTrue();
+})->with(['A', 'F', 'H', 'M']);

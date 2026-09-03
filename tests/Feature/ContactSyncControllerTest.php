@@ -4,11 +4,14 @@ use App\Models\Band;
 use App\Models\Contact;
 use App\Models\Event;
 use App\Models\EventConfiguration;
+use App\Models\EventType;
 use App\Models\Mode;
 use App\Models\OperatingSession;
 use App\Models\Section;
 use App\Models\Station;
 use App\Models\User;
+use Database\Seeders\EventTypeSeeder;
+use Database\Seeders\OperatingClassSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
@@ -20,6 +23,9 @@ beforeEach(function () {
     DB::table('system_config')->insert(
         ['key' => 'setup_completed', 'value' => 'true'],
     );
+
+    $this->seed(EventTypeSeeder::class);
+    $this->seed(OperatingClassSeeder::class);
 
     $this->band = Band::first() ?? Band::create([
         'name' => '20m', 'meters' => 20, 'frequency_mhz' => 14.175,
@@ -63,6 +69,32 @@ beforeEach(function () {
         'power_watts' => 100,
     ]);
 });
+
+/**
+ * A live operating session on a Winter Field Day event, for asserting that
+ * each rulebook accepts only its own class letters.
+ */
+function wfdSession(User $user, Band $band, Mode $mode): OperatingSession
+{
+    $wfdType = EventType::where('code', 'WFD')->firstOrFail();
+
+    $event = Event::factory()->create([
+        'event_type_id' => $wfdType->id,
+        'start_time' => now()->subHours(12),
+        'end_time' => now()->addHours(12),
+    ]);
+
+    $config = EventConfiguration::factory()->create(['event_id' => $event->id]);
+    $station = Station::factory()->create(['event_configuration_id' => $config->id]);
+
+    return OperatingSession::factory()->active()->create([
+        'station_id' => $station->id,
+        'operator_user_id' => $user->id,
+        'band_id' => $band->id,
+        'mode_id' => $mode->id,
+        'power_watts' => 100,
+    ]);
+}
 
 test('unauthenticated users cannot sync contacts', function () {
     $this->postJson('/logging/contacts', [])
@@ -340,13 +372,31 @@ test('cannot sync contacts to an ended session', function () {
         ->assertUnprocessable();
 });
 
+test('syncing rejects a class the events rulebook does not define', function (string $exchangeClass) {
+    $this->actingAs($this->user)
+        ->postJson('/logging/contacts', [
+            'uuid' => fake()->uuid(),
+            'operating_session_id' => $this->session->id,
+            'band_id' => $this->band->id,
+            'mode_id' => $this->mode->id,
+            'callsign' => 'W1AW',
+            'section_id' => $this->section->id,
+            'exchange_class' => $exchangeClass,
+            'power_watts' => 100,
+            'qso_time' => now()->toISOString(),
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('exchange_class');
+})->with(['1H', '2I', '3O', '10M']);
+
 test('syncing a contact accepts Winter Field Day exchange classes', function (string $exchangeClass) {
     $uuid = fake()->uuid();
+    $session = wfdSession($this->user, $this->band, $this->mode);
 
     $this->actingAs($this->user)
         ->postJson('/logging/contacts', [
             'uuid' => $uuid,
-            'operating_session_id' => $this->session->id,
+            'operating_session_id' => $session->id,
             'band_id' => $this->band->id,
             'mode_id' => $this->mode->id,
             'callsign' => 'W1AW',
