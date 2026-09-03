@@ -339,3 +339,43 @@ test('cannot sync contacts to an ended session', function () {
         ])
         ->assertUnprocessable();
 });
+
+test('syncing a contact accepts Winter Field Day exchange classes', function (string $exchangeClass) {
+    $uuid = fake()->uuid();
+
+    $this->actingAs($this->user)
+        ->postJson('/logging/contacts', [
+            'uuid' => $uuid,
+            'operating_session_id' => $this->session->id,
+            'band_id' => $this->band->id,
+            'mode_id' => $this->mode->id,
+            'callsign' => 'W1AW',
+            'section_id' => $this->section->id,
+            'exchange_class' => $exchangeClass,
+            'power_watts' => 100,
+            'qso_time' => now()->toISOString(),
+        ])
+        ->assertCreated();
+
+    $this->assertDatabaseHas('contacts', [
+        'uuid' => $uuid,
+        'exchange_class' => $exchangeClass,
+    ]);
+})->with(['1H', '2I', '3O', '10M']);
+
+test('syncing a contact rejects an unknown exchange class letter', function () {
+    $this->actingAs($this->user)
+        ->postJson('/logging/contacts', [
+            'uuid' => fake()->uuid(),
+            'operating_session_id' => $this->session->id,
+            'band_id' => $this->band->id,
+            'mode_id' => $this->mode->id,
+            'callsign' => 'W1AW',
+            'section_id' => $this->section->id,
+            'exchange_class' => '3Z',
+            'power_watts' => 100,
+            'qso_time' => now()->toISOString(),
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('exchange_class');
+});

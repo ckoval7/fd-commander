@@ -11,8 +11,16 @@ class ExchangeParserService
      *
      * A-F are ARRL Field Day; H (Home), I (Indoor), O (Outdoor) and M (Mobile)
      * are Winter Field Day.
+     *
+     * Public so the validation rules that guard the same exchange field share
+     * one source of truth rather than restating the pattern and drifting.
      */
-    private const EXCHANGE_CLASS_CODES = '[A-FHIMO]';
+    public const EXCHANGE_CLASS_CODES = '[A-FHIMO]';
+
+    /**
+     * Validation regex for a full exchange class token, e.g. "3A" or "2M".
+     */
+    public const EXCHANGE_CLASS_PATTERN = '/^\d{1,2}'.self::EXCHANGE_CLASS_CODES.'$/i';
 
     /** @var array<string, int>|null */
     private ?array $sectionCache = null;

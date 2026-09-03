@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\ExchangeParserService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreContactSyncRequest extends FormRequest
@@ -30,7 +31,7 @@ class StoreContactSyncRequest extends FormRequest
             'mode_id' => ['required', 'integer', 'exists:modes,id'],
             'callsign' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9\/]+$/'],
             'section_id' => ['required', 'integer', 'exists:sections,id'],
-            'exchange_class' => ['required', 'string', 'max:5', 'regex:/^\d{1,2}[A-Fa-f]$/'],
+            'exchange_class' => ['required', 'string', 'max:5', 'regex:'.ExchangeParserService::EXCHANGE_CLASS_PATTERN],
             'power_watts' => ['required', 'integer', 'min:1'],
             'qso_time' => ['required', 'date'],
             'is_gota_contact' => ['sometimes', 'boolean'],
@@ -51,7 +52,7 @@ class StoreContactSyncRequest extends FormRequest
             'callsign.required' => 'A callsign is required',
             'callsign.regex' => 'The callsign must contain only letters, numbers, and forward slashes',
             'exchange_class.required' => 'The exchange class is required',
-            'exchange_class.regex' => 'The exchange class must be a number followed by a letter (e.g. 3A)',
+            'exchange_class.regex' => 'The exchange class must be a number followed by a valid class letter (e.g. 3A, 2M)',
         ];
     }
 }
