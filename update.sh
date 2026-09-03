@@ -125,6 +125,7 @@ fi
 
 # --- Fetch and check for updates ---
 DEPLOYED_REV_FILE="$APP_PATH/.deployed-revision"
+NPM_LOCK_HASH_FILE="$APP_PATH/.npm-lock-hash"
 
 fetch_updates() {
     log_phase "Checking for updates"
@@ -235,6 +236,7 @@ pull_updates() {
             --exclude='vendor' \
             --exclude='.env' \
             --exclude='.deployed-revision' \
+            --exclude='.npm-lock-hash' \
             --exclude='public/storage' \
             --exclude='storage/app' \
             --exclude='storage/logs' \
@@ -486,9 +488,51 @@ install_dependencies() {
     sudo -u fdcommander COMPOSER_HOME="$APP_PATH/.composer" \
         /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction
 
-    log_info "Installing Node dependencies and building assets..."
-    sudo -u fdcommander HOME="$APP_PATH" npm ci --cache "$APP_PATH/.npm"
+    install_node_dependencies
+
+    log_info "Building assets..."
     sudo -u fdcommander HOME="$APP_PATH" npm run build
+}
+
+# Run `npm ci` only when the dependency set actually changed.
+#
+# `npm ci` deletes node_modules and reinstalls every package from scratch,
+# which takes minutes even on a fast host and is almost entirely network
+# wait. Most updates touch no dependencies at all, so hash package-lock.json
+# and skip the reinstall when it matches the last successful run.
+#
+# The hash is written only after a successful install, so an interrupted or
+# failed run reinstalls next time rather than being wrongly skipped.
+install_node_dependencies() {
+    local lock_file="$APP_PATH/package-lock.json"
+
+    if [[ ! -f "$lock_file" ]]; then
+        log_warn "No package-lock.json found — running npm install"
+        sudo -u fdcommander HOME="$APP_PATH" npm install --cache "$APP_PATH/.npm"
+        return 0
+    fi
+
+    local current_hash previous_hash=""
+    current_hash=$(sha256sum "$lock_file" | cut -d' ' -f1)
+    [[ -f "$NPM_LOCK_HASH_FILE" ]] && previous_hash=$(cat "$NPM_LOCK_HASH_FILE")
+
+    # node_modules is excluded from rsync and can be absent on a first update
+    # or after a manual clean, so verify it exists before trusting the hash.
+    if [[ "$current_hash" == "$previous_hash" && -d "$APP_PATH/node_modules" ]]; then
+        log_info "Node dependencies unchanged — skipping npm ci"
+        return 0
+    fi
+
+    if [[ -n "$previous_hash" && "$current_hash" != "$previous_hash" ]]; then
+        log_info "package-lock.json changed — reinstalling Node dependencies..."
+    else
+        log_info "Installing Node dependencies..."
+    fi
+
+    sudo -u fdcommander HOME="$APP_PATH" npm ci --cache "$APP_PATH/.npm"
+
+    echo "$current_hash" > "$NPM_LOCK_HASH_FILE"
+    chown "fdcommander:${WEB_GROUP}" "$NPM_LOCK_HASH_FILE"
 }
 
 # --- Run migrations ---
