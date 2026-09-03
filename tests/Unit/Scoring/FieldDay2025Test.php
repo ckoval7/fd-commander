@@ -173,5 +173,6 @@ test('score composition is unchanged by the ruleset contract split', function ()
 
 test('Field Day still reports a power multiplier and Bonus wording', function () {
     expect((new FieldDay2025)->nomenclature()->awardPlural)->toBe('Bonuses')
-        ->and((new FieldDay2025)->nomenclature()->awardSectionTitle)->toBe('Bonus Points');
+        ->and((new FieldDay2025)->nomenclature()->awardSectionTitle)->toBe('Bonus Points')
+        ->and((new FieldDay2025)->nomenclature()->rulebookName)->toBe('ARRL');
 });

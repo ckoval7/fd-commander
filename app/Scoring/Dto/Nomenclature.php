@@ -23,5 +23,11 @@ final class Nomenclature
          * point value, so the UI shows "OM x3" in place of "300 pts".
          */
         public readonly bool $awardsAreMultipliers = false,
+        /**
+         * The body that publishes this rulebook, as operators see it cited
+         * next to a rule — "ARRL Rule 7.3.1", "WFDA Rule Objective &
+         * Multipliers".
+         */
+        public readonly string $rulebookName = 'ARRL',
     ) {}
 }

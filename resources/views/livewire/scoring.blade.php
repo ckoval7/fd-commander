@@ -328,7 +328,7 @@
                     <div class="flex items-start justify-between gap-2 py-1.5"
                          style="border-bottom: 1px solid var(--score-divider);">
                         <div class="flex-1 min-w-0">
-                            <x-bonus-rule-help :rule="$this->bonusRule($item['type']->code)">
+                            <x-bonus-rule-help :rulebook="$this->terms->rulebookName" :rule="$this->bonusRule($item['type']->code)">
                                 <span class="text-sm font-medium leading-tight" style="color: var(--score-text);">
                                     {{ $item['type']->name }}
                                 </span>
@@ -385,7 +385,7 @@
                     <div class="space-y-2">
                         <div class="flex items-start justify-between py-1.5" style="border-bottom: 1px solid var(--score-divider);">
                             <div>
-                                <x-bonus-rule-help :rule="$this->bonusRule('gota_qso')">
+                                <x-bonus-rule-help :rulebook="$this->terms->rulebookName" :rule="$this->bonusRule('gota_qso')">
                                     <span class="text-sm font-medium" style="color: var(--score-text);">GOTA QSO Bonus</span>
                                 </x-bonus-rule-help>
                                 <div class="text-xs mt-0.5" style="color: var(--score-text-muted);">
@@ -398,7 +398,7 @@
                         </div>
                         <div class="flex items-start justify-between py-1.5" style="border-bottom: 1px solid var(--score-divider);">
                             <div>
-                                <x-bonus-rule-help :rule="$this->bonusRule('gota_coach')">
+                                <x-bonus-rule-help :rulebook="$this->terms->rulebookName" :rule="$this->bonusRule('gota_coach')">
                                     <span class="text-sm font-medium" style="color: var(--score-text);">GOTA Coach Bonus</span>
                                 </x-bonus-rule-help>
                                 <div class="text-xs mt-0.5" style="color: var(--score-text-muted);">

@@ -309,7 +309,8 @@ test('nomenclature uses WFD objective wording', function () {
 
     expect($terms->awardSingular)->toBe('Objective')
         ->and($terms->awardPlural)->toBe('Objectives')
-        ->and($terms->awardValueLabel)->toBe('Multiplier');
+        ->and($terms->awardValueLabel)->toBe('Multiplier')
+        ->and($terms->rulebookName)->toBe('WFDA');
 });
 
 test('a deactivated objective stops counting toward the multiplier and the total', function () {

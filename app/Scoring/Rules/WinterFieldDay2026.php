@@ -213,6 +213,7 @@ class WinterFieldDay2026 implements RuleSet
             claimsTitle: 'Manual Objective Claims',
             awardValueLabel: 'Multiplier',
             awardsAreMultipliers: true,
+            rulebookName: 'WFDA',
         );
     }
 

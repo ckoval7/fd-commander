@@ -230,6 +230,22 @@ test('the scoring page renders for a WFD event with objective wording', function
         ->assertDontSee('GOTA');
 });
 
+test('the scoring page cites WFDA rules rather than ARRL rules', function () {
+    $user = User::factory()->create();
+
+    $this->config->update(['is_active' => true]);
+    $this->config->event->update(['is_active' => true]);
+
+    $band = Band::factory()->create(['name' => '20m', 'meters' => 20]);
+    logContacts($this->config, $this->phone, $band, 3);
+
+    Livewire::actingAs($user)
+        ->test(Scoring::class)
+        ->assertOk()
+        ->assertSee('WFDA Rule Objective &amp; Multipliers:', escape: false)
+        ->assertDontSee('ARRL Rule');
+});
+
 test('the QSO points column agrees with the headline for satellite QSOs', function () {
     $band = Band::factory()->create(['name' => '20m', 'meters' => 20]);
     logContacts($this->config, $this->phone, $band, 3);

@@ -22,7 +22,7 @@
                                     @if($claimed) wire:confirm="Remove this {{ strtolower($this->terms->awardSingular) }} claim?" @endif
                                 />
                                 <div class="min-w-0 flex-1">
-                                    <x-bonus-rule-help :rule="$this->bonusRule($bonusType->code)">
+                                    <x-bonus-rule-help :rulebook="$this->terms->rulebookName" :rule="$this->bonusRule($bonusType->code)">
                                         <span class="text-sm font-medium">{{ $bonusType->name }}</span>
                                     </x-bonus-rule-help>
                                     <div class="text-xs text-base-content/60 truncate">{{ $bonusType->description }}</div>
