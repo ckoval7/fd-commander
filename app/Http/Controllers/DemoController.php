@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Spatie\Permission\PermissionRegistrar;
 
 class DemoController extends Controller
 {
@@ -84,6 +85,14 @@ class DemoController extends Controller
             $seededSessionIds,
             (int) config('demo.ttl_hours', 24),
         );
+
+        // Spatie caches role and permission IDs in the shared default cache
+        // store (Redis in production). Those IDs are per-database, so a cache
+        // populated by another visitor's sandbox resolves to IDs that do not
+        // exist in this one and the role lookup below finds nothing.
+        // DemoMiddleware flushes this on later requests, but it deliberately
+        // skips the provisioning route, so flush it here too.
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $user = $this->resolveUserForRole($request->role);
         Auth::login($user);
