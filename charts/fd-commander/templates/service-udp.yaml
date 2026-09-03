@@ -1,0 +1,52 @@
+{{- if .Values.externalLoggers.enabled }}
+{{- /*
+Separate service for the external logger UDP listeners. Kept apart from the
+web service so the UDP endpoints can use a different service type — a plain
+ClusterIP is not reachable from the radio logging software on the LAN.
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fd-commander.fullname" . }}-udp
+  labels:
+    {{- include "fd-commander.labels" . | nindent 4 }}
+  {{- with .Values.externalLoggers.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.externalLoggers.service.type }}
+  {{- if and (eq .Values.externalLoggers.service.type "LoadBalancer") .Values.externalLoggers.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.externalLoggers.service.loadBalancerIP }}
+  {{- end }}
+  ports:
+    {{- if .Values.externalLoggers.n1mm.enabled }}
+    - port: {{ .Values.externalLoggers.n1mm.port }}
+      targetPort: n1mm
+      protocol: UDP
+      name: n1mm
+      {{- if eq .Values.externalLoggers.service.type "NodePort" }}
+      nodePort: {{ .Values.externalLoggers.service.nodePorts.n1mm }}
+      {{- end }}
+    {{- end }}
+    {{- if .Values.externalLoggers.wsjtx.enabled }}
+    - port: {{ .Values.externalLoggers.wsjtx.port }}
+      targetPort: wsjtx
+      protocol: UDP
+      name: wsjtx
+      {{- if eq .Values.externalLoggers.service.type "NodePort" }}
+      nodePort: {{ .Values.externalLoggers.service.nodePorts.wsjtx }}
+      {{- end }}
+    {{- end }}
+    {{- if .Values.externalLoggers.udpAdif.enabled }}
+    - port: {{ .Values.externalLoggers.udpAdif.port }}
+      targetPort: udp-adif
+      protocol: UDP
+      name: udp-adif
+      {{- if eq .Values.externalLoggers.service.type "NodePort" }}
+      nodePort: {{ .Values.externalLoggers.service.nodePorts.udpAdif }}
+      {{- end }}
+    {{- end }}
+  selector:
+    {{- include "fd-commander.selectorLabels" . | nindent 4 }}
+{{- end }}
