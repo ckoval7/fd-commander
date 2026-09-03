@@ -9,6 +9,7 @@ use App\Models\Mode;
 use App\Models\Section;
 use App\Models\Station;
 use App\Models\User;
+use App\Services\ExchangeParserService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Computed;
@@ -68,7 +69,7 @@ class ContactEditor extends Component
 
         $validated = $this->validate([
             'callsign' => 'required|string|max:20',
-            'exchangeClass' => ['required', 'string', 'max:5', 'regex:/^\d{1,2}[A-F]$/i'],
+            'exchangeClass' => ['required', 'string', 'max:5', 'regex:'.ExchangeParserService::EXCHANGE_CLASS_PATTERN],
             'sectionId' => 'required|exists:sections,id',
             'bandId' => 'required|exists:bands,id',
             'modeId' => 'required|exists:modes,id',
