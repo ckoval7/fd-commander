@@ -20,15 +20,18 @@ class Setting extends Model
 
     /**
      * Get a setting value with optional default
+     *
+     * Only the raw stored value is cached, so the same key resolves
+     * consistently regardless of which default a caller passes.
      */
     public static function get(string $key, mixed $default = null): mixed
     {
-        $value = Cache::remember("setting.{$key}", 3600, function () use ($key, $default) {
-            return static::where('key', $key)->value('value') ?? $default;
+        $value = Cache::remember("setting.{$key}", 3600, function () use ($key) {
+            return static::where('key', $key)->value('value');
         });
 
-        if ($value === $default) {
-            return $value;
+        if ($value === null) {
+            return $default;
         }
 
         // Try to decode JSON values
