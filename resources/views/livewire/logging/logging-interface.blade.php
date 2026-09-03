@@ -8,7 +8,8 @@
         get gota_operator_last_name() { return document.querySelector('[wire\\:model=gotaOperatorLastName]')?.value || null },
         get gota_operator_callsign() { return document.querySelector('[wire\\:model=gotaOperatorCallsign]')?.value || null },
         get gota_operator_user_id() { return @this.gotaOperatorUserId || null },
-        sections: {{ Js::from(\App\Models\Section::where('is_active', true)->pluck('id', 'code')->toArray()) }}
+        sections: {{ Js::from(\App\Models\Section::where('is_active', true)->pluck('id', 'code')->toArray()) }},
+        class_codes: {{ Js::from(\App\Models\OperatingClass::where('event_type_id', $operatingSession->station->eventConfiguration?->event?->event_type_id)->pluck('code')->map(fn ($code) => strtoupper($code))->all()) }}
      })">
     {{-- Sticky Session Info Bar --}}
     <div class="sticky top-0 max-lg:z-10 lg:z-30 bg-base-100 border-b border-base-300 shadow-sm">

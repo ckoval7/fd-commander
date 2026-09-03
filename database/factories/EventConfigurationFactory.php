@@ -2,10 +2,16 @@
 
 namespace Database\Factories;
 
+use App\Models\Event;
+use App\Models\EventConfiguration;
+use App\Models\EventType;
+use App\Models\OperatingClass;
+use App\Models\Section;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\EventConfiguration>
+ * @extends Factory<EventConfiguration>
  */
 class EventConfigurationFactory extends Factory
 {
@@ -17,37 +23,42 @@ class EventConfigurationFactory extends Factory
     public function definition(): array
     {
         // Ensure we have required reference data
-        $section = \App\Models\Section::where('code', 'CT')->first();
+        $section = Section::where('code', 'CT')->first();
         if (! $section) {
-            $section = \App\Models\Section::create([
+            $section = Section::create([
                 'code' => 'CT',
                 'name' => 'Connecticut',
                 'region' => 'W1',
             ]);
         }
 
-        $eventType = \App\Models\EventType::where('code', 'FD')->first();
+        $eventType = EventType::where('code', 'FD')->first();
         if (! $eventType) {
-            $eventType = \App\Models\EventType::create([
+            $eventType = EventType::create([
                 'name' => 'Field Day',
                 'code' => 'FD',
                 'description' => 'ARRL Field Day',
             ]);
         }
 
-        $operatingClass = \App\Models\OperatingClass::where('code', '1A')->first();
-        if (! $operatingClass) {
-            $operatingClass = \App\Models\OperatingClass::create([
-                'event_type_id' => $eventType->id,
-                'code' => '1A',
-                'name' => 'Class 1A',
-                'description' => 'Test Class',
-            ]);
+        // Operating class codes are a single letter; the transmitter count is
+        // a separate field, so seeding "1A" here would not match a real class.
+        // Define the whole Field Day set so exchanges are validated against a
+        // realistic rulebook rather than a single fixture class.
+        foreach (['A', 'B', 'C', 'D', 'E', 'F'] as $code) {
+            OperatingClass::firstOrCreate(
+                ['event_type_id' => $eventType->id, 'code' => $code],
+                ['name' => 'Class '.$code, 'description' => 'Test Class '.$code],
+            );
         }
 
+        $operatingClass = OperatingClass::where('event_type_id', $eventType->id)
+            ->where('code', 'A')
+            ->firstOrFail();
+
         return [
-            'event_id' => \App\Models\Event::factory(),
-            'created_by_user_id' => \App\Models\User::factory(),
+            'event_id' => Event::factory(),
+            'created_by_user_id' => User::factory(),
             'callsign' => 'W1AW',
             'club_name' => 'Test Radio Club',
             'section_id' => $section->id,
