@@ -191,8 +191,8 @@ export default function contactQueue(sessionId, csrfToken, sessionContext) {
                 return null;
             }
 
-            if (!/^\d{1,2}[A-F]$/i.test(tokens[1])) {
-                this.parseError = `Invalid class: ${tokens[1]} (expected format like 3A, 1D)`;
+            if (!/^\d{1,2}[A-FHIMO]$/i.test(tokens[1])) {
+                this.parseError = `Invalid class: ${tokens[1]} (expected format like 3A, 1D, 2M)`;
                 return null;
             }
 
@@ -203,7 +203,7 @@ export default function contactQueue(sessionId, csrfToken, sessionContext) {
                 return null;
             }
 
-            const classMatch = tokens[1].match(/^(\d{1,2})([A-F])$/i);
+            const classMatch = tokens[1].match(/^(\d{1,2})([A-FHIMO])$/i);
             const transmitter_count = classMatch[1];
             const class_code = classMatch[2].toUpperCase();
 
