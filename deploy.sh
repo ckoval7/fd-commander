@@ -588,7 +588,7 @@ setup_app() {
     # Step 6: Install Node dependencies and build
     log_info "Installing Node dependencies and building assets..."
     cd "$APP_PATH"
-    sudo -u fdcommander HOME="$APP_PATH" npm ci --cache "$APP_PATH/.npm"
+    sudo -u fdcommander HOME="$APP_PATH" npm ci --ignore-scripts --cache "$APP_PATH/.npm"
     sudo -u fdcommander HOME="$APP_PATH" npm run build
 
     # Step 7: Storage link

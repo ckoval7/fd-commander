@@ -508,7 +508,7 @@ install_node_dependencies() {
 
     if [[ ! -f "$lock_file" ]]; then
         log_warn "No package-lock.json found — running npm install"
-        sudo -u fdcommander HOME="$APP_PATH" npm install --cache "$APP_PATH/.npm"
+        sudo -u fdcommander HOME="$APP_PATH" npm install --ignore-scripts --cache "$APP_PATH/.npm"
         return 0
     fi
 
@@ -529,7 +529,7 @@ install_node_dependencies() {
         log_info "Installing Node dependencies..."
     fi
 
-    sudo -u fdcommander HOME="$APP_PATH" npm ci --cache "$APP_PATH/.npm"
+    sudo -u fdcommander HOME="$APP_PATH" npm ci --ignore-scripts --cache "$APP_PATH/.npm"
 
     echo "$current_hash" > "$NPM_LOCK_HASH_FILE"
     chown "fdcommander:${WEB_GROUP}" "$NPM_LOCK_HASH_FILE"
