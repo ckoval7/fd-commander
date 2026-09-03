@@ -487,7 +487,7 @@ install_dependencies() {
         /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction
 
     log_info "Installing Node dependencies and building assets..."
-    sudo -u fdcommander HOME="$APP_PATH" npm ci --cache "$APP_PATH/.npm"
+    sudo -u fdcommander HOME="$APP_PATH" npm ci --ignore-scripts --cache "$APP_PATH/.npm"
     sudo -u fdcommander HOME="$APP_PATH" npm run build
 }
 
