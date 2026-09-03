@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -94,7 +95,37 @@ class DemoController extends Controller
         // skips the provisioning route, so flush it here too.
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $user = $this->resolveUserForRole($request->role);
+        // TEMPORARY DIAGNOSTIC — remove once the demo 404 is resolved.
+        // A failing firstOrFail() renders as a 404 that Laravel does not log,
+        // so record what the connection actually sees before resolving.
+        try {
+            Log::info('demo.provision diagnostic', [
+                'requested_role' => $request->role,
+                'default_connection' => config('database.default'),
+                'demo_connection_db' => config('database.connections.demo.database'),
+                'users_on_default' => DB::table('users')->count(),
+                'roles_on_default' => DB::table('roles')->pluck('name')->all(),
+                'model_role_rows' => DB::table('model_has_roles')->count(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('demo.provision diagnostic failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            $user = $this->resolveUserForRole($request->role);
+        } catch (\Throwable $e) {
+            Log::error('demo.provision role resolution failed', [
+                'requested_role' => $request->role,
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+            ]);
+
+            throw $e;
+        }
+
         Auth::login($user);
 
         session(['dev_role_override' => $user->roles->first()?->name ?? '']);
