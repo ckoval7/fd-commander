@@ -165,25 +165,8 @@ class EquipmentForm extends Component
     {
         $validated = $this->validate();
 
-        // Convert comma-separated tags input to array
-        $tags = [];
-        if (! empty($this->tagsInput)) {
-            $tags = array_filter(
-                array_map('trim', explode(',', $this->tagsInput))
-            );
-        }
-
-        // Handle photo upload
-        $photoPath = $this->existingPhotoPath;
-        if ($this->photo) {
-            // Delete old photo if exists
-            if ($photoPath && Storage::disk('public')->exists($photoPath)) {
-                Storage::disk('public')->delete($photoPath);
-            }
-
-            // Store new photo
-            $photoPath = $this->photo->store('equipment-photos', 'public');
-        }
+        $tags = $this->parseTags();
+        $photoPath = $this->resolvePhotoPath();
 
         // Prepare equipment data
         $equipmentData = [
@@ -279,16 +262,56 @@ class EquipmentForm extends Component
             'css' => 'alert-success',
         ]);
 
-        // Redirect back to the appropriate list
-        if ($this->isClubEquipment) {
-            $redirectRoute = route('equipment.club');
-        } elseif (! $this->equipmentId && auth()->user()->can('edit-any-equipment') && $this->owner_user_id !== auth()->id()) {
-            $redirectRoute = route('equipment.all');
-        } else {
-            $redirectRoute = route('equipment.index');
+        return $this->redirect($this->redirectRouteAfterSave(), navigate: true);
+    }
+
+    /**
+     * Split the comma-separated tags input into a trimmed, non-empty list.
+     *
+     * @return list<string>
+     */
+    private function parseTags(): array
+    {
+        if (empty($this->tagsInput)) {
+            return [];
         }
 
-        return $this->redirect($redirectRoute, navigate: true);
+        return array_values(array_filter(
+            array_map('trim', explode(',', $this->tagsInput))
+        ));
+    }
+
+    /**
+     * Store a newly uploaded photo, replacing any previous one, and return the
+     * path to persist. Falls back to the existing path when no upload occurred.
+     */
+    private function resolvePhotoPath(): ?string
+    {
+        if (! $this->photo) {
+            return $this->existingPhotoPath;
+        }
+
+        if ($this->existingPhotoPath && Storage::disk('public')->exists($this->existingPhotoPath)) {
+            Storage::disk('public')->delete($this->existingPhotoPath);
+        }
+
+        return $this->photo->store('equipment-photos', 'public');
+    }
+
+    /**
+     * Pick the list the user should land on after saving.
+     */
+    private function redirectRouteAfterSave(): string
+    {
+        if ($this->isClubEquipment) {
+            return route('equipment.club');
+        }
+
+        if (! $this->equipmentId && auth()->user()->can('edit-any-equipment') && $this->owner_user_id !== auth()->id()) {
+            return route('equipment.all');
+        }
+
+        return route('equipment.index');
     }
 
     public function closeModal(): void

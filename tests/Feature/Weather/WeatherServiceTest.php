@@ -314,7 +314,7 @@ test('checkAlerts does not broadcast when fingerprint is unchanged', function ()
 
     // Fingerprint must include severity_level to match what checkAlerts now computes
     $expectedAlerts = [['event' => 'Tornado Warning', 'headline' => 'Test', 'description' => '', 'severity' => 'Extreme', 'expires' => null, 'severity_level' => 'yellow']];
-    Setting::set('weather.alert_fingerprint', md5(json_encode($expectedAlerts)));
+    Setting::set('weather.alert_fingerprint', hash('xxh128', json_encode($expectedAlerts)));
 
     $service = makeWeatherService();
     $service->checkAlerts(41.3083, -72.9279);
@@ -372,7 +372,7 @@ test('checkAlerts does not overwrite weather.location when relativeLocation miss
 
 test('checkAlerts stores empty array and broadcasts all-clear when no relevant alerts', function () {
     EventFacade::fake([WeatherAlertChanged::class]);
-    Setting::set('weather.alert_fingerprint', md5(json_encode([['event' => 'Old Alert']])));
+    Setting::set('weather.alert_fingerprint', hash('xxh128', json_encode([['event' => 'Old Alert']])));
 
     Http::fake([
         'api.weather.gov/points/*' => Http::response([
@@ -471,7 +471,7 @@ test('checkAlerts preserves manual alert when NWS returns empty', function () {
         'expires' => null,
     ]];
     Setting::set('weather.alerts', $manualAlerts);
-    Setting::set('weather.alert_fingerprint', md5(json_encode($manualAlerts)));
+    Setting::set('weather.alert_fingerprint', hash('xxh128', json_encode($manualAlerts)));
 
     Http::fake([
         'api.weather.gov/points/*' => Http::response([
@@ -1182,7 +1182,7 @@ test('checkAlerts in demo mode does not rebroadcast when fingerprint unchanged',
         'severity_level' => 'yellow',
     ]];
     cache()->put('weather:demo:alerts', $alerts, now()->addHour());
-    cache()->put('weather:demo:alert_fingerprint', md5(json_encode($alerts)), now()->addHour());
+    cache()->put('weather:demo:alert_fingerprint', hash('xxh128', json_encode($alerts)), now()->addHour());
 
     Http::fake([
         'api.weather.gov/points/*' => Http::response([

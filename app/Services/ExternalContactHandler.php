@@ -158,6 +158,9 @@ class ExternalContactHandler
      *
      * RadioInfo is NOT used to create sessions or trigger notifications.
      * Sessions are only created when actual contacts are logged.
+     *
+     * $config is unused here but kept so every handleX() method shares the
+     * same (dto, config) signature that N1mmListenCommand dispatches against.
      */
     public function handleRadioInfo(ExternalRadioInfoDto $dto, EventConfiguration $config): void
     {

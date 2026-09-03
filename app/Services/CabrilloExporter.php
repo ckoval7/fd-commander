@@ -22,7 +22,7 @@ class CabrilloExporter
         $lines = [
             'START-OF-LOG: 3.0',
             'CREATED-BY: FD Commander',
-            'CONTEST: ARRL-FD',
+            'CONTEST: '.$config->cabrilloContestName(),
             'CALLSIGN: '.$config->callsign,
             'LOCATION: '.$config->section->code,
             'CATEGORY-OPERATOR: MULTI-OP',
@@ -96,7 +96,7 @@ class CabrilloExporter
         $year = $config->event->start_time->year;
         $callsign = strtolower($config->callsign);
 
-        return "{$callsign}-{$year}-field-day.log";
+        return "{$callsign}-{$year}-{$config->logFilenameSlug()}.log";
     }
 
     private function powerCategory(int $watts): string

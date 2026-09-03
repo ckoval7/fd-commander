@@ -20,6 +20,9 @@ class Setting extends Model
 
     /**
      * Get a setting value with optional default
+     *
+     * Only the raw stored value is cached, so the same key resolves
+     * consistently regardless of which default a caller passes.
      */
     public static function get(string $key, mixed $default = null): mixed
     {
@@ -38,6 +41,7 @@ class Setting extends Model
             return $value;
         }
 
+        // Try to decode JSON values
         $decoded = json_decode($value, true);
 
         return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;

@@ -37,56 +37,24 @@
     <div class="px-6 py-10" style="border-bottom: 2px solid var(--score-divider);">
         <div class="flex flex-wrap items-center justify-center gap-2 md:gap-4">
 
-            <span class="text-4xl md:text-5xl font-light select-none" style="color: var(--score-text-muted);">(</span>
-
-            <a href="#col-qso" class="text-center group no-underline">
-                <div class="font-black tabular-nums transition-opacity group-hover:opacity-75"
-                     style="font-size: clamp(2.5rem, 5vw, 4rem); color: var(--score-headline);">
-                    {{ number_format($this->qsoBasePoints) }}
-                </div>
-                <div class="text-xs uppercase tracking-widest mt-1" style="color: var(--score-text-muted);">
-                    QSO Base Pts
-                </div>
-            </a>
-
-            <span class="text-3xl md:text-4xl font-light select-none" style="color: var(--score-text-muted);">×</span>
-
-            <a href="#col-power" class="text-center group no-underline">
-                <div class="font-black tabular-nums transition-opacity group-hover:opacity-75"
-                     style="font-size: clamp(2.5rem, 5vw, 4rem); color: var(--score-headline);">
-                    {{ $this->powerMultiplier }}×
-                </div>
-                <div class="text-xs uppercase tracking-widest mt-1" style="color: var(--score-text-muted);">
-                    Power Multi.
-                </div>
-            </a>
-
-            <span class="text-4xl md:text-5xl font-light select-none" style="color: var(--score-text-muted);">)</span>
-            <span class="text-3xl md:text-4xl font-light select-none" style="color: var(--score-text-muted);">+</span>
-
-            <a href="#col-bonus" class="text-center group no-underline">
-                <div class="font-black tabular-nums transition-opacity group-hover:opacity-75"
-                     style="font-size: clamp(2.5rem, 5vw, 4rem); color: var(--score-headline);">
-                    {{ number_format($this->bonusScore) }}
-                </div>
-                <div class="text-xs uppercase tracking-widest mt-1" style="color: var(--score-text-muted);">
-                    Bonus Pts
-                </div>
-            </a>
-
-            @if($this->event?->eventConfiguration?->has_gota_station)
-                <span class="text-3xl md:text-4xl font-light select-none" style="color: var(--score-text-muted);">+</span>
-
-                <a href="#col-bonus" class="text-center group no-underline">
-                    <div class="font-black tabular-nums transition-opacity group-hover:opacity-75"
-                         style="font-size: clamp(2.5rem, 5vw, 4rem); color: var(--score-headline);">
-                        {{ number_format($this->gotaTotalBonus) }}
-                    </div>
-                    <div class="text-xs uppercase tracking-widest mt-1" style="color: var(--score-text-muted);">
-                        GOTA Bonus
-                    </div>
-                </a>
-            @endif
+            {{-- Equation shape comes from the event's ruleset, so Field Day renders
+                 (QSO x Power) + Bonus while Winter Field Day renders QSO x (OM + 1). --}}
+            @foreach ($this->headline as $part)
+                @if (is_string($part))
+                    <span class="{{ in_array($part, ['(', ')'], true) ? 'text-4xl md:text-5xl' : 'text-3xl md:text-4xl' }} font-light select-none"
+                          style="color: var(--score-text-muted);">{{ $part }}</span>
+                @else
+                    <a href="{{ $part->anchor ?? '#' }}" class="text-center group no-underline">
+                        <div class="font-black tabular-nums transition-opacity group-hover:opacity-75"
+                             style="font-size: clamp(2.5rem, 5vw, 4rem); color: var(--score-headline);">
+                            {{ $part->value }}
+                        </div>
+                        <div class="text-xs uppercase tracking-widest mt-1" style="color: var(--score-text-muted);">
+                            {{ $part->label }}
+                        </div>
+                    </a>
+                @endif
+            @endforeach
 
             <span class="text-3xl md:text-4xl font-light select-none" style="color: var(--score-text-muted);">=</span>
 
@@ -104,7 +72,7 @@
     </div>
 
     {{-- ZONE 3: THREE COLUMNS --}}
-    <div class="grid grid-cols-1 md:grid-cols-3" style="border-bottom: 1px solid var(--score-divider);">
+    <div class="grid grid-cols-1 {{ $this->usesPowerMultiplier ? 'md:grid-cols-3' : 'md:grid-cols-2' }}" style="border-bottom: 1px solid var(--score-divider);">
 
         {{-- Column 1: QSO Points --}}
         <div id="col-qso" class="p-6 md:border-r" style="border-color: var(--score-border);">
@@ -115,9 +83,10 @@
             {{-- Scoring key --}}
             <div class="flex flex-wrap gap-2 mb-4">
                 @foreach ($this->modes as $mode)
+                    @php $modePoints = $this->pointsForMode($mode); @endphp
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
                           style="background: var(--score-surface-alt); color: var(--score-text);">
-                        {{ $mode->name }} = {{ $mode->points_fd }} {{ $mode->points_fd === 1 ? 'pt' : 'pts' }}
+                        {{ $mode->name }} = {{ $modePoints }} {{ $modePoints === 1 ? 'pt' : 'pts' }}
                     </span>
                 @endforeach
             </div>
@@ -227,7 +196,9 @@
             </div>
         </div>
 
-        {{-- Column 2: Power Multiplier --}}
+        {{-- Column 2: Power Multiplier (Field Day only — WFD caps every station
+             at 100 W PEP and has no multiplier) --}}
+        @if ($this->usesPowerMultiplier)
         <div id="col-power" class="p-6 md:border-r" style="border-color: var(--score-border);">
             <div class="text-xs font-bold uppercase tracking-widest mb-4" style="color: var(--score-text-muted);">
                 Power Multiplier
@@ -293,24 +264,54 @@
             </div>
         </div>
 
-        {{-- Column 3: Bonus Points --}}
+        @endif
+
+        {{-- Column 3: the rulebook's awards — "Bonus Points" for Field Day,
+             "Objectives" for Winter Field Day --}}
         <div id="col-bonus" class="p-6">
             <div class="text-xs font-bold uppercase tracking-widest mb-4" style="color: var(--score-text-muted);">
-                Bonus Points
+                {{ $this->terms->awardSectionTitle }}
             </div>
+
+            {{-- Objective completion — WFDA tracks this percentage year over year --}}
+            @if ($this->objectiveProgress)
+                <div class="mb-4">
+                    <div class="flex items-baseline justify-between mb-1">
+                        <span class="text-xs uppercase tracking-wide" style="color: var(--score-text-muted);">
+                            Objectives Completed
+                        </span>
+                        <span class="text-sm font-bold tabular-nums" style="color: var(--score-headline);">
+                            {{ $this->objectiveProgress['achieved'] }}/{{ $this->objectiveProgress['available'] }}
+                            ({{ $this->objectiveProgress['percent'] }}%)
+                        </span>
+                    </div>
+                    <div class="h-2 w-full rounded-full overflow-hidden" style="background: var(--score-surface-alt);">
+                        <div class="h-full rounded-full"
+                             style="width: {{ $this->objectiveProgress['percent'] }}%; background: var(--score-headline);"></div>
+                    </div>
+                </div>
+            @endif
 
             {{-- Bonus summary totals --}}
             <div class="grid grid-cols-3 gap-2 mb-4 text-center">
                 <div>
                     <div class="text-xs uppercase tracking-wide" style="color: var(--score-text-muted);">Verified</div>
                     <div class="text-xl font-bold tabular-nums" style="color: var(--score-verified);">
-                        {{ number_format($this->bonusSummary['verified_pts']) }}
+                        @if ($this->awardsAreMultipliers)
+                            {{ $this->bonusSummary['verified_multiplier'] }}×
+                        @else
+                            {{ number_format($this->bonusSummary['verified_pts']) }}
+                        @endif
                     </div>
                 </div>
                 <div>
                     <div class="text-xs uppercase tracking-wide" style="color: var(--score-text-muted);">Claimed</div>
                     <div class="text-xl font-bold tabular-nums" style="color: var(--score-warning);">
-                        {{ number_format($this->bonusSummary['claimed_pts']) }}
+                        @if ($this->awardsAreMultipliers)
+                            {{ $this->bonusSummary['claimed_multiplier'] }}×
+                        @else
+                            {{ number_format($this->bonusSummary['claimed_pts']) }}
+                        @endif
                     </div>
                 </div>
                 <div>
@@ -327,7 +328,7 @@
                     <div class="flex items-start justify-between gap-2 py-1.5"
                          style="border-bottom: 1px solid var(--score-divider);">
                         <div class="flex-1 min-w-0">
-                            <x-bonus-rule-help :rule="$this->bonusRule($item['type']->code)">
+                            <x-bonus-rule-help :rulebook="$this->terms->rulebookName" :rule="$this->bonusRule($item['type']->code)">
                                 <span class="text-sm font-medium leading-tight" style="color: var(--score-text);">
                                     {{ $item['type']->name }}
                                 </span>
@@ -345,7 +346,13 @@
                         <div class="flex items-center gap-2 shrink-0">
                             <span class="text-xs tabular-nums font-semibold"
                                   style="color: {{ $item['status'] !== 'unclaimed' ? 'var(--score-headline)' : 'var(--score-text-muted)' }};">
-                                @if ($item['points'] > 0) +{{ $item['points'] }} @else {{ $item['type']->base_points }} pts @endif
+                                @if ($item['type']->objective_multiplier !== null)
+                                    OM ×{{ $item['type']->objective_multiplier }}
+                                @elseif ($item['points'] > 0)
+                                    +{{ $item['points'] }}
+                                @else
+                                    {{ $item['type']->base_points }} pts
+                                @endif
                             </span>
 
                             @if ($item['status'] === 'verified')
@@ -378,7 +385,7 @@
                     <div class="space-y-2">
                         <div class="flex items-start justify-between py-1.5" style="border-bottom: 1px solid var(--score-divider);">
                             <div>
-                                <x-bonus-rule-help :rule="$this->bonusRule('gota_qso')">
+                                <x-bonus-rule-help :rulebook="$this->terms->rulebookName" :rule="$this->bonusRule('gota_qso')">
                                     <span class="text-sm font-medium" style="color: var(--score-text);">GOTA QSO Bonus</span>
                                 </x-bonus-rule-help>
                                 <div class="text-xs mt-0.5" style="color: var(--score-text-muted);">
@@ -391,7 +398,7 @@
                         </div>
                         <div class="flex items-start justify-between py-1.5" style="border-bottom: 1px solid var(--score-divider);">
                             <div>
-                                <x-bonus-rule-help :rule="$this->bonusRule('gota_coach')">
+                                <x-bonus-rule-help :rulebook="$this->terms->rulebookName" :rule="$this->bonusRule('gota_coach')">
                                     <span class="text-sm font-medium" style="color: var(--score-text);">GOTA Coach Bonus</span>
                                 </x-bonus-rule-help>
                                 <div class="text-xs mt-0.5" style="color: var(--score-text-muted);">
@@ -455,7 +462,7 @@
 
     @if ($event?->resolved_rules_version)
         <div class="mt-8 text-center text-xs text-base-content/50 border-t border-base-200 pt-3">
-            Scored per ARRL {{ $event->eventType->name ?? 'Field Day' }}
+            Scored per {{ $event->eventType->name ?? 'Field Day' }}
             rules version <span class="font-mono">{{ $event->resolved_rules_version }}</span>@if ($event->effective_rules_version !== $event->resolved_rules_version)
                 <span class="text-warning"> (event pinned to {{ $event->effective_rules_version }}; not yet shipped)</span>@endif.
         </div>

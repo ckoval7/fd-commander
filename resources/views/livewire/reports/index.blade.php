@@ -159,7 +159,9 @@
                 </div>
             </a>
 
-            {{-- ARRL SUBMISSION SHEET — blue border --}}
+            {{-- ARRL SUBMISSION SHEET — blue border. Field Day only; WFD entrants
+                 upload their log on winterfieldday.org instead. --}}
+            @if ($this->showsArrlSubmissionSheet)
             <a href="{{ route('reports.submission-sheet') }}"
                class="group no-underline block rounded-lg p-5 transition-shadow hover:shadow-md"
                style="background-color: var(--reports-pdf-bg); border: 2px solid var(--reports-pdf-border);">
@@ -182,6 +184,7 @@
                     </div>
                 </div>
             </a>
+            @endif
 
             {{-- CSV LOGBOOK — neutral --}}
             <a href="{{ route('logbook.export') }}"

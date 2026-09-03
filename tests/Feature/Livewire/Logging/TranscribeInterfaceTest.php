@@ -189,6 +189,13 @@ test('accepts flexible inline time formats', function (string $timeInput, string
     'Z suffix' => ['1423z', '14:23'],
     'hour only' => ['14', '14:00'],
     'hour with pm' => ['2pm', '14:00'],
+    'colon midnight' => ['00:00', '00:00'],
+    '4-digit midnight' => ['0000', '00:00'],
+    '3-digit leading zero' => ['002', '00:02'],
+    'colon single-digit hour' => ['9:05', '09:05'],
+    '3-digit single-digit hour' => ['905', '09:05'],
+    '12-hour midnight am' => ['12:30am', '00:30'],
+    '12-hour noon pm' => ['12:30pm', '12:30'],
 ]);
 
 test('rejects invalid time format', function () {

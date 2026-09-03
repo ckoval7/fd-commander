@@ -157,3 +157,18 @@ test('extractCallsign returns null for invalid callsign', function () {
 
     expect($callsign)->toBeNull();
 });
+
+test('accepts Winter Field Day class codes', function (string $classCode) {
+    $result = $this->parser->parse("W1AW 2{$classCode} CT");
+
+    expect($result['success'])->toBeTrue()
+        ->and($result['class_code'])->toBe($classCode)
+        ->and($result['transmitter_count'])->toBe(2);
+})->with(['H', 'I', 'O', 'M']);
+
+test('still rejects letters that are not a class in any rulebook', function (string $classCode) {
+    $result = $this->parser->parse("W1AW 3{$classCode} CT");
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['errors'][0])->toContain('Invalid class');
+})->with(['G', 'J', 'K', 'N', 'P', 'Z']);

@@ -3,9 +3,11 @@
 namespace App\Scoring\Contracts;
 
 use App\Models\BonusType;
+use App\Models\EventConfiguration;
 use App\Models\Mode;
 use App\Models\Station;
-use App\Scoring\Dto\PowerContext;
+use App\Scoring\Dto\Nomenclature;
+use App\Scoring\Dto\ScoreBreakdown;
 
 /**
  * Immutable per-year, per-event-type scoring rules.
@@ -34,37 +36,42 @@ interface RuleSet
     // -- Per-contact point values --
 
     /**
-     * Points awarded for a single non-duplicate, non-GOTA contact.
-     * GOTA contacts are always flat 5 (see gotaPointsPerContact()).
+     * Points awarded for a single non-duplicate contact.
+     *
+     * Rulesets apply their own per-class handling here (e.g. Field Day's flat
+     * GOTA rate, or Winter Field Day excluding satellite QSOs from QSO credit).
      */
     public function pointsForContact(Mode $mode, Station $station): int;
 
-    /**
-     * Flat points for each non-duplicate GOTA contact, ignored by QSO multiplier.
-     */
-    public function gotaPointsPerContact(): int;
-
-    // -- Multiplier --
+    // -- Score composition --
 
     /**
-     * Returns '1', '2', or '5' (string, to match stored `power_multiplier`).
+     * Compose this configuration's full score under this rulebook.
+     *
+     * Owning the composition here is what lets one scoring UI serve rulebooks
+     * that combine their parts differently — Field Day adds bonus points to a
+     * power-multiplied QSO score, Winter Field Day multiplies QSO points by an
+     * objective multiplier.
      */
-    public function powerMultiplier(PowerContext $ctx): string;
-
-    // -- Bonuses that are fully formula-driven (no DB row) --
-
-    public function gotaCoachThreshold(): int;
-
-    public function gotaCoachBonus(): int;
-
-    public function youthMaxCount(): int;
-
-    public function youthPointsPerYouth(): int;
+    public function score(EventConfiguration $config): ScoreBreakdown;
 
     /**
-     * Max number of transmitters eligible for the emergency-power bonus.
+     * The words this rulebook uses for its awards, for UI labelling.
      */
-    public function emergencyPowerMaxTransmitters(): int;
+    public function nomenclature(): Nomenclature;
+
+    /**
+     * Cabrillo CONTEST: identifier for logs submitted under this rulebook.
+     *
+     * Submitting a Winter Field Day log tagged ARRL-FD would be rejected by
+     * the receiving robot, so the value comes from the rulebook.
+     */
+    public function cabrilloContestName(): string;
+
+    /**
+     * Slug used in exported log filenames, e.g. "field-day".
+     */
+    public function logFilenameSlug(): string;
 
     // -- Bonus row lookup (partitioned by rules_version) --
 

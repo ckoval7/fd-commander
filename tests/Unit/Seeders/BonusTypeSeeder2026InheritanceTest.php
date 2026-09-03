@@ -8,28 +8,47 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 uses()->group('unit', 'seeders', 'scoring');
 
-test('seeder clones 2025 bonus rows as 2026 rows so the inherited ruleset scores', function () {
-    EventType::firstOrCreate(['code' => 'FD'], ['name' => 'Field Day']);
+test('seeder clones 2025 Field Day bonus rows as 2026 rows so the inherited ruleset scores', function () {
+    $fd = EventType::firstOrCreate(['code' => 'FD'], ['name' => 'Field Day']);
     EventType::firstOrCreate(['code' => 'WFD'], ['name' => 'Winter Field Day']);
 
     (new BonusTypeSeeder)->run();
 
-    $codes2025 = BonusType::query()
-        ->where('rules_version', '2025')
-        ->orderBy('event_type_id')->orderBy('code')
-        ->get(['event_type_id', 'code'])
-        ->map(fn ($row) => $row->event_type_id.'|'.$row->code)
+    $codesFor = fn (string $version) => BonusType::query()
+        ->where('event_type_id', $fd->id)
+        ->where('rules_version', $version)
+        ->orderBy('code')
+        ->pluck('code')
         ->all();
 
-    $codes2026 = BonusType::query()
+    expect($codesFor('2026'))->not->toBeEmpty()
+        ->and($codesFor('2026'))->toEqual($codesFor('2025'));
+});
+
+test('WFD 2026 is seeded from its own objectives, not inherited from 2025', function () {
+    EventType::firstOrCreate(['code' => 'FD'], ['name' => 'Field Day']);
+    $wfd = EventType::firstOrCreate(['code' => 'WFD'], ['name' => 'Winter Field Day']);
+
+    (new BonusTypeSeeder)->run();
+
+    $wfd2026 = BonusType::query()
+        ->where('event_type_id', $wfd->id)
         ->where('rules_version', '2026')
-        ->orderBy('event_type_id')->orderBy('code')
-        ->get(['event_type_id', 'code'])
-        ->map(fn ($row) => $row->event_type_id.'|'.$row->code)
-        ->all();
+        ->get();
 
-    expect($codes2026)->not->toBeEmpty()
-        ->and($codes2026)->toEqual($codes2025);
+    // The 2026 rulebook replaced the point-bonus model with 12 objectives, so
+    // the 2025 placeholder rows must not be carried forward.
+    expect($wfd2026)->toHaveCount(12)
+        ->and($wfd2026->pluck('code'))->not->toContain('public_location_wfd')
+        ->and($wfd2026->whereNull('objective_multiplier'))->toBeEmpty();
+
+    // The frozen 2025 rows are still there, untouched.
+    expect(BonusType::query()
+        ->where('event_type_id', $wfd->id)
+        ->where('rules_version', '2025')
+        ->pluck('code')
+        ->all())
+        ->toEqual(['alternative_power', 'away_from_home', 'public_location_wfd']);
 });
 
 test('seeder copies base_points and trigger_type verbatim from 2025 to 2026', function () {
