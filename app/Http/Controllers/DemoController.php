@@ -29,8 +29,9 @@ class DemoController extends Controller
     {
         abort_unless(config('demo.enabled'), 404);
 
-        $request->validate([
+        $validated = $request->validate([
             'role' => 'required|in:operator,station_captain,event_manager,system_admin',
+            'event_type' => 'required|in:FD,WFD',
         ]);
 
         $currentCount = $this->countDemoSessions();
@@ -54,8 +55,18 @@ class DemoController extends Controller
             '--no-interaction' => true,
         ]);
 
+        // `db:seed` takes no custom arguments, so the chosen event type is
+        // handed to the seeder through the container. Running it via Artisan
+        // (rather than resolving the seeder here) keeps the console command
+        // wired up that the shared reference seeders write their output to.
+        app()->instance(DemoSeeder::EVENT_TYPE_KEY, $validated['event_type']);
+
+        // `--database` is required: without it the seeder writes every model
+        // to the default connection, filling the shared app database instead
+        // of the visitor's freshly provisioned sandbox.
         Artisan::call('db:seed', [
             '--class' => DemoSeeder::class,
+            '--database' => 'demo',
             '--force' => true,
             '--no-interaction' => true,
         ]);
@@ -82,6 +93,7 @@ class DemoController extends Controller
         DemoSession::create([
             'session_uuid' => $uuid,
             'role' => $request->role,
+            'event_type' => $validated['event_type'],
             'visitor_hash' => DemoSession::visitorHash($request->ip()),
             'user_agent' => $request->userAgent() ?? '',
             'device_type' => DemoSession::parseDeviceType($request->userAgent() ?? ''),

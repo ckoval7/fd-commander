@@ -35,8 +35,49 @@ class DemoSeeder extends Seeder
 {
     private const ROLE_STATION_CAPTAIN = 'Station Captain';
 
+    /**
+     * Container key carrying the event type code the sandbox is built around.
+     *
+     * The seeder is invoked through `db:seed`, which accepts no custom
+     * arguments, so the caller stashes the choice in the container instead.
+     */
+    public const EVENT_TYPE_KEY = 'demo.seed.event_type';
+
+    /**
+     * Event type code the sandbox is seeded for: 'FD' or 'WFD'.
+     *
+     * Set by {@see forEventType()} before the seeder runs. Defaults to ARRL
+     * Field Day so existing callers (and `db:seed` by hand) are unaffected.
+     */
+    private string $eventTypeCode = 'FD';
+
+    /**
+     * Choose which event the sandbox is built around.
+     *
+     * Unknown codes fall back to FD rather than throwing — the controller
+     * validates the input, and a bad value should not leave a visitor with an
+     * unseeded database.
+     */
+    public function forEventType(string $code): static
+    {
+        $this->eventTypeCode = $code === 'WFD' ? 'WFD' : 'FD';
+
+        return $this;
+    }
+
+    private function isWinter(): bool
+    {
+        return $this->eventTypeCode === 'WFD';
+    }
+
     public function run(): void
     {
+        // Picked up when the seeder is dispatched through `db:seed`, which has
+        // no way to pass the choice in directly. Harmless when unbound.
+        if (app()->bound(self::EVENT_TYPE_KEY)) {
+            $this->forEventType((string) app(self::EVENT_TYPE_KEY));
+        }
+
         // Suppress notification-firing observers during seeding to prevent
         // broadcast storms that exceed PHP's max_execution_time when Reverb
         // is unavailable (each failed HTTP round-trip × hundreds of records).
@@ -82,6 +123,7 @@ class DemoSeeder extends Seeder
         // 3. System config
         Setting::set('setup_completed', 'true');
         Setting::set('demo_provisioned_at', now()->toIso8601String());
+        Setting::set('demo_event_type', $this->eventTypeCode);
         Setting::set('site_name', 'Field Day Commander — Demo');
         Setting::set('timezone', 'America/New_York');
         Setting::set('default_organization_id', $organization->id);
@@ -111,10 +153,15 @@ class DemoSeeder extends Seeder
         $operators[7]->update(['is_youth' => true]);
 
         // 5. Event (in progress: started 2h ago, ends 22h from now)
-        $fdType = EventType::where('code', 'FD')->first();
+        //
+        // WFD runs a 30-hour period against Field Day's 27, but the demo keeps
+        // the same "2 hours in" framing for both so the dashboard, shift
+        // schedule and contact history line up regardless of which event the
+        // visitor picked.
+        $eventType = EventType::where('code', $this->eventTypeCode)->first();
         $event = Event::create([
-            'event_type_id' => $fdType->id,
-            'name' => 'Field Day '.now()->year,
+            'event_type_id' => $eventType->id,
+            'name' => $eventType->name.' '.now()->year,
             'year' => now()->year,
             'start_time' => now()->subHours(2),
             'end_time' => now()->addHours(22),
@@ -124,25 +171,34 @@ class DemoSeeder extends Seeder
             'is_current' => true,
         ]);
 
-        // 6. EventConfiguration (4A class)
+        // 6. EventConfiguration
+        //
+        // FD runs 4A with a GOTA station and the 2x low-power multiplier.
+        // WFD has neither: the WFDA rules define no GOTA station and no power
+        // multiplier (all entrants are capped at 100 W), so the demo entry is
+        // 4O — four transmitters, Outdoor — with solar added to the generator
+        // so the "operate 100% on alternative power" objective reads true.
         $section = Section::where('code', 'CT')->first() ?? Section::first();
-        $class4a = OperatingClass::where('code', 'A')->first();
+        $operatingClass = OperatingClass::where('event_type_id', $event->event_type_id)
+            ->where('code', $this->isWinter() ? 'O' : 'A')
+            ->first();
+
         $config = EventConfiguration::create([
             'event_id' => $event->id,
             'created_by_user_id' => $manager->id,
             'callsign' => 'W1FDC',
             'club_name' => 'Demo Radio Club',
             'section_id' => $section->id,
-            'operating_class_id' => $class4a->id,
+            'operating_class_id' => $operatingClass->id,
             'transmitter_count' => 4,
-            'has_gota_station' => true,
-            'gota_callsign' => 'W1GOT',
+            'has_gota_station' => ! $this->isWinter(),
+            'gota_callsign' => $this->isWinter() ? null : 'W1GOT',
             'max_power_watts' => 100,
-            'power_multiplier' => '2',
+            'power_multiplier' => $this->isWinter() ? '1' : '2',
             'uses_commercial_power' => false,
             'uses_generator' => true,
-            'uses_battery' => false,
-            'uses_solar' => false,
+            'uses_battery' => $this->isWinter(),
+            'uses_solar' => $this->isWinter(),
             'uses_wind' => false,
             'uses_water' => false,
             'uses_methane' => false,
@@ -154,9 +210,21 @@ class DemoSeeder extends Seeder
             'state' => 'CT',
         ]);
 
-        // Seed checklist items and shift roles
+        // Seed checklist items and shift roles.
+        //
+        // Both helpers key off the operating class letter. The WFD classes
+        // (H/I/O/M) are absent from those FD-oriented eligibility lists, so a
+        // WFD sandbox would otherwise come up with an empty schedule. Seed the
+        // roles that carry over to Winter Field Day explicitly instead. The
+        // safety checklist is deliberately left empty for WFD classes — that
+        // checklist backs an ARRL bonus that WFD does not have.
         SafetyChecklistItem::seedDefaults($config);
-        ShiftRole::seedDefaults($config);
+
+        if ($this->isWinter()) {
+            $this->seedWinterShiftRoles($config);
+        } else {
+            ShiftRole::seedDefaults($config);
+        }
 
         // 7. Build stations, operating sessions, contacts
         $this->seedStationsAndContacts($config, [$captain1, $captain2], $operators);
@@ -294,6 +362,15 @@ class DemoSeeder extends Seeder
             ],
         ];
 
+        // WFD has no Get On The Air station — the WFDA rules define none — so
+        // the GOTA entry is dropped entirely for a Winter Field Day sandbox.
+        if ($this->isWinter()) {
+            $stationDefs = array_values(array_filter(
+                $stationDefs,
+                fn (array $def): bool => ! $def['is_gota'],
+            ));
+        }
+
         foreach ($stationDefs as $def) {
             $band = Band::where('name', $def['band'])->first();
             $mode = Mode::where('name', $def['mode'])->first();
@@ -393,9 +470,10 @@ class DemoSeeder extends Seeder
             ->get()
             ->keyBy('name');
 
-        // Reassign most station radios to club ownership (heavy-club profile)
+        // Reassign most station radios to club ownership (heavy-club profile).
+        // GOTA is absent on a WFD sandbox, so skip any station not present.
         foreach (['Station Alpha', 'Station Bravo', 'VHF/UHF', 'GOTA'] as $stationName) {
-            $stations[$stationName]->primaryRadio->update([
+            $stations->get($stationName)?->primaryRadio->update([
                 'owner_user_id' => null,
                 'owner_organization_id' => $organization->id,
             ]);
@@ -440,7 +518,11 @@ class DemoSeeder extends Seeder
         ];
 
         foreach ($loadouts as $stationName => $items) {
-            $station = $stations[$stationName];
+            $station = $stations->get($stationName);
+
+            if (! $station) {
+                continue;
+            }
 
             // Create EquipmentEvent for the station's primary radio
             EquipmentEvent::create([
@@ -530,15 +612,15 @@ class DemoSeeder extends Seeder
         $canadianSections = $allSections->filter(fn (Section $s) => $s->country === 'CA');
         $windowSeconds = max(1, $windowEnd->diffInSeconds($windowStart));
 
-        // Weighted class pool: A most common, F very rare
-        $classPool = array_merge(
-            array_fill(0, 50, 'A'),
-            array_fill(0, 20, 'B'),
-            array_fill(0, 15, 'C'),
-            array_fill(0, 10, 'D'),
-            array_fill(0, 4, 'E'),
-            array_fill(0, 1, 'F'),
-        );
+        $classPool = $this->exchangeClassPool();
+
+        // Per-QSO points come from the mode's own rulebook column so a WFD
+        // sandbox scores Phone at 1 and CW/Digital at 2 the way the WFDA SOP
+        // does, rather than inheriting Field Day's values.
+        $mode = Mode::find($session->mode_id);
+        $contactPoints = (int) ($this->isWinter()
+            ? ($mode?->points_wfd ?? 1)
+            : ($mode?->points_fd ?? 1));
 
         // Build a weighted section pool. Nearby/populous sections appear more often;
         // rarer/distant ones appear once. This mimics a real early-event QSO log where
@@ -585,14 +667,7 @@ class DemoSeeder extends Seeder
                 $section = $allSections->get($code) ?? $allSections->random();
             }
 
-            $fdClassLetter = $classPool[array_rand($classPool)];
-            $transmitterCount = match ($fdClassLetter) {
-                'A' => random_int(1, 20),
-                'B' => random_int(1, 2),
-                'F' => random_int(2, 10),
-                default => 1,
-            };
-            $fdClass = $transmitterCount.$fdClassLetter;
+            $exchangeClass = $this->makeExchangeClass($classPool);
 
             $qsoTime = $windowStart->copy()->addSeconds(random_int(0, $windowSeconds));
 
@@ -607,7 +682,7 @@ class DemoSeeder extends Seeder
                 'qso_time' => $qsoTime,
                 'callsign' => $callsign,
                 'section_id' => $section->id,
-                'exchange_class' => $fdClass,
+                'exchange_class' => $exchangeClass,
                 'power_watts' => 100,
                 'is_gota_contact' => $session->is_supervised,
                 'gota_operator_first_name' => $gotaOp['first_name'] ?? null,
@@ -615,14 +690,72 @@ class DemoSeeder extends Seeder
                 'gota_operator_callsign' => $gotaOp['callsign'] ?? null,
                 'is_natural_power' => false,
                 'is_satellite' => false,
-                'points' => 2,
+                'points' => $contactPoints,
                 'is_duplicate' => false,
             ]);
         }
     }
 
+    /**
+     * Weighted pool of exchange class letters for the seeded event type.
+     *
+     * FD classes run A–F with A dominant and F very rare. WFD uses H (home),
+     * I (indoor), O (outdoor) and M (mobile) — home stations are by far the
+     * most common entry in a January event, with outdoor a distant second.
+     *
+     * @return array<int, string>
+     */
+    private function exchangeClassPool(): array
+    {
+        if ($this->isWinter()) {
+            return array_merge(
+                array_fill(0, 55, 'H'),
+                array_fill(0, 20, 'O'),
+                array_fill(0, 15, 'I'),
+                array_fill(0, 10, 'M'),
+            );
+        }
+
+        return array_merge(
+            array_fill(0, 50, 'A'),
+            array_fill(0, 20, 'B'),
+            array_fill(0, 15, 'C'),
+            array_fill(0, 10, 'D'),
+            array_fill(0, 4, 'E'),
+            array_fill(0, 1, 'F'),
+        );
+    }
+
+    /**
+     * Build a received exchange class such as "3A" or "1H".
+     *
+     * Both rulebooks send a transmitter count ahead of the class letter. Only
+     * classes that can plausibly run several transmitters get a count above 1.
+     *
+     * @param  array<int, string>  $classPool
+     */
+    private function makeExchangeClass(array $classPool): string
+    {
+        $letter = $classPool[array_rand($classPool)];
+
+        $transmitterCount = match ($letter) {
+            'A' => random_int(1, 20),
+            'F', 'O' => random_int(2, 10),
+            'B', 'I' => random_int(1, 2),
+            default => 1,
+        };
+
+        return $transmitterCount.$letter;
+    }
+
     private function seedBonuses(EventConfiguration $config, User $manager, Event $event): void
     {
+        if ($this->isWinter()) {
+            $this->seedWinterObjectives($config, $manager, $event);
+
+            return;
+        }
+
         $verifiedCodes = ['emergency_power', 'public_location'];
 
         foreach ($verifiedCodes as $code) {
@@ -659,6 +792,42 @@ class DemoSeeder extends Seeder
         }
     }
 
+    /**
+     * Claim a couple of Winter Field Day objectives by hand.
+     *
+     * Only manually-claimed objectives are seeded. The derived ones —
+     * alternative power, band and mode counts, QRP — are owned by their
+     * strategies and reconciled from the logged contacts, so writing them here
+     * would either duplicate or contradict what the scoring engine computes.
+     */
+    private function seedWinterObjectives(EventConfiguration $config, User $manager, Event $event): void
+    {
+        $claims = [
+            'away_from_home' => 'Operating from the community center, 4 miles from the nearest member QTH.',
+            'multiple_antennas' => 'G5RV and a 2m J-pole both raised during the setup window.',
+        ];
+
+        foreach ($claims as $code => $notes) {
+            $bonusType = BonusType::resolveFor($event, $code);
+
+            if (! $bonusType) {
+                continue;
+            }
+
+            EventBonus::create([
+                'event_configuration_id' => $config->id,
+                'bonus_type_id' => $bonusType->id,
+                'claimed_by_user_id' => $manager->id,
+                'quantity' => 1,
+                'calculated_points' => $bonusType->base_points,
+                'notes' => $notes,
+                'is_verified' => true,
+                'verified_by_user_id' => $manager->id,
+                'verified_at' => now()->subMinutes(25),
+            ]);
+        }
+    }
+
     private function seedSafetyChecklist(User $captain): void
     {
         $items = SafetyChecklistItem::all();
@@ -686,7 +855,7 @@ class DemoSeeder extends Seeder
             // Licensed hams visiting in person
             [
                 'callsign' => 'W1ABC', 'first_name' => 'Alice', 'last_name' => 'Brown',
-                'email' => null, 'comments' => 'Great setup! Running 4A is impressive. 73!',
+                'email' => null, 'comments' => 'Great setup! Running four transmitters is impressive. 73!',
                 'presence_type' => 'in_person', 'visitor_category' => 'ham_club',
             ],
             [
@@ -743,6 +912,44 @@ class DemoSeeder extends Seeder
                 'is_verified' => true,
                 'verified_at' => now()->subMinutes(random_int(5, 120)),
             ]);
+        }
+    }
+
+    /**
+     * Shift roles for a Winter Field Day sandbox.
+     *
+     * WFD has no GOTA station, no safety-officer bonus and no public
+     * information table, so only the roles that describe running the event
+     * itself carry over. Values come from {@see ShiftRole::DEFAULTS} so the
+     * descriptions, icons and colors stay in one place.
+     */
+    private function seedWinterShiftRoles(EventConfiguration $config): void
+    {
+        $carriedOver = ['Event Manager', self::ROLE_STATION_CAPTAIN, 'Operator', 'Message Handler', 'Site Responsibilities'];
+
+        $sortOrder = 0;
+        foreach ($carriedOver as $name) {
+            $defaults = ShiftRole::DEFAULTS[$name];
+
+            ShiftRole::firstOrCreate(
+                [
+                    'event_configuration_id' => $config->id,
+                    'name' => $name,
+                ],
+                [
+                    'description' => $defaults['description'],
+                    'is_default' => true,
+                    // WFD awards objective multipliers, not per-role bonus
+                    // points, so no role carries points into a WFD event.
+                    'bonus_points' => null,
+                    'requires_confirmation' => $defaults['requires_confirmation'],
+                    'icon' => $defaults['icon'],
+                    'color' => $defaults['color'],
+                    'sort_order' => $sortOrder,
+                ]
+            );
+
+            $sortOrder++;
         }
     }
 

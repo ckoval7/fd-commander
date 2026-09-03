@@ -22,13 +22,35 @@
     <div class="text-center mb-8">
         <h1 class="text-3xl font-bold">Field Day Commander</h1>
         @php($ttlHours = config('demo.ttl_hours', 24))
-        <p class="text-base-content/60 mt-2">Pick a role to explore. Your sandbox is private and resets after {{ $ttlHours }} {{ \Illuminate\Support\Str::plural('hour', $ttlHours) }}.</p>
+        <p class="text-base-content/60 mt-2">Pick an event and a role to explore. Your sandbox is private and resets after {{ $ttlHours }} {{ \Illuminate\Support\Str::plural('hour', $ttlHours) }}.</p>
     </div>
 
     @if(session('error'))
         <div class="alert alert-error mb-6">{{ session('error') }}</div>
     @endif
 
+    {{-- Step 1: which rulebook the sandbox is built around. The choice is
+         mirrored into each role form's hidden input by the script below. --}}
+    <div class="mb-6">
+        <p class="text-sm font-semibold mb-2">1. Choose an event</p>
+        <div class="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Event">
+            @foreach([
+                ['code' => 'FD',  'label' => 'ARRL Field Day',   'desc' => 'June · classes A–F, GOTA, bonus points'],
+                ['code' => 'WFD', 'label' => 'Winter Field Day', 'desc' => 'January · classes H/I/O/M, objective multipliers'],
+            ] as $i => $event)
+            <button type="button"
+                    role="radio"
+                    aria-checked="{{ $i === 0 ? 'true' : 'false' }}"
+                    data-event-code="{{ $event['code'] }}"
+                    class="demo-event-option btn h-auto py-3 flex-col items-start gap-1 text-left normal-case {{ $i === 0 ? 'btn-primary' : 'btn-outline' }}">
+                <span class="font-semibold">{{ $event['label'] }}</span>
+                <span class="text-xs font-normal opacity-70">{{ $event['desc'] }}</span>
+            </button>
+            @endforeach
+        </div>
+    </div>
+
+    <p class="text-sm font-semibold mb-2">2. Choose a role</p>
     <div class="grid gap-4">
         @foreach([
             ['role' => 'operator',        'label' => 'Operator',        'desc' => 'Log contacts and view the live dashboard', 'icon' => 'o-pencil-square'],
@@ -39,6 +61,7 @@
         <form method="POST" action="{{ route('demo.provision') }}">
             @csrf
             <input type="hidden" name="role" value="{{ $option['role'] }}">
+            <input type="hidden" name="event_type" value="FD" class="demo-event-input">
             <button type="submit" class="btn btn-outline w-full justify-start gap-4 h-auto py-4">
                 <x-icon name="{{ $option['icon'] }}" class="w-6 h-6 shrink-0" />
                 <div class="text-left">
@@ -67,6 +90,44 @@
     var overlay  = document.getElementById('provision-overlay');
     var content  = document.getElementById('provision-content');
     var statusEl = document.getElementById('provision-status');
+
+    // Event picker: highlight the chosen option and mirror its code into the
+    // hidden input on every role form, so whichever role button is pressed
+    // submits the currently selected event.
+    var eventOptions = Array.prototype.slice.call(
+        document.querySelectorAll('.demo-event-option')
+    );
+    var eventInputs = document.querySelectorAll('.demo-event-input');
+
+    function selectEvent(chosen) {
+        eventOptions.forEach(function (option) {
+            var isChosen = option === chosen;
+            option.classList.toggle('btn-primary', isChosen);
+            option.classList.toggle('btn-outline', !isChosen);
+            option.setAttribute('aria-checked', isChosen ? 'true' : 'false');
+        });
+
+        eventInputs.forEach(function (input) {
+            input.value = chosen.dataset.eventCode;
+        });
+    }
+
+    eventOptions.forEach(function (option, index) {
+        option.addEventListener('click', function () {
+            selectEvent(option);
+        });
+
+        option.addEventListener('keydown', function (e) {
+            if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') {
+                return;
+            }
+            e.preventDefault();
+            var delta = e.key === 'ArrowRight' ? 1 : -1;
+            var next = eventOptions[(index + delta + eventOptions.length) % eventOptions.length];
+            selectEvent(next);
+            next.focus();
+        });
+    });
 
     document.querySelectorAll('form').forEach(function (form) {
         form.addEventListener('submit', function () {

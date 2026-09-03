@@ -20,6 +20,15 @@ test('landing page renders when demo mode is enabled', function () {
     $response->assertSee('Event Manager');
 });
 
+test('landing page offers both events, defaulting to Field Day', function () {
+    $response = $this->get(route('demo.landing'));
+
+    $response->assertStatus(200);
+    $response->assertSee('ARRL Field Day');
+    $response->assertSee('Winter Field Day');
+    $response->assertSee('name="event_type" value="FD"', false);
+});
+
 test('landing page returns 404 when demo mode is disabled', function () {
     Config::set('demo.enabled', false);
 
@@ -35,13 +44,32 @@ test('landing page returns 404 when demo mode is disabled', function () {
 });
 
 test('provision rejects invalid role', function () {
-    $response = $this->post(route('demo.provision'), ['role' => 'supervillain']);
+    $response = $this->post(route('demo.provision'), [
+        'role' => 'supervillain',
+        'event_type' => 'FD',
+    ]);
     $response->assertSessionHasErrors('role');
+});
+
+test('provision rejects an unsupported event type', function () {
+    $response = $this->post(route('demo.provision'), [
+        'role' => 'operator',
+        'event_type' => 'SPRINT',
+    ]);
+    $response->assertSessionHasErrors('event_type');
+});
+
+test('provision requires an event type', function () {
+    $response = $this->post(route('demo.provision'), ['role' => 'operator']);
+    $response->assertSessionHasErrors('event_type');
 });
 
 test('provision redirects back with error when session cap is reached', function () {
     Config::set('demo.max_sessions', 0);
-    $response = $this->post(route('demo.provision'), ['role' => 'operator']);
+    $response = $this->post(route('demo.provision'), [
+        'role' => 'operator',
+        'event_type' => 'WFD',
+    ]);
     $response->assertRedirect(route('demo.landing'));
     $response->assertSessionHas('error');
 });

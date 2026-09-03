@@ -90,7 +90,7 @@ class DemoSimulateActivity extends Command
         $activeSessions = OperatingSession::active()
             ->whereIn('id', $simulatedIds)
             ->whereHas('station', fn ($q) => $q->where('is_gota', false))
-            ->with(['station.eventConfiguration.event', 'band', 'mode'])
+            ->with(['station.eventConfiguration.event.eventType', 'band', 'mode'])
             ->get();
 
         $logged = 0;
@@ -126,22 +126,14 @@ class DemoSimulateActivity extends Command
                 $callsign = CallsignGenerator::us();
                 $section = $usSections->isNotEmpty() ? $usSections->random() : $sections->random();
             }
-            $classPool = array_merge(
-                array_fill(0, 50, 'A'),
-                array_fill(0, 20, 'B'),
-                array_fill(0, 15, 'C'),
-                array_fill(0, 10, 'D'),
-                array_fill(0, 4, 'E'),
-                array_fill(0, 1, 'F'),
-            );
-            $fdClassLetter = $classPool[array_rand($classPool)];
-            $transmitterCount = match ($fdClassLetter) {
-                'A' => random_int(1, 20),
-                'B' => random_int(1, 2),
-                'F' => random_int(2, 10),
-                default => 1,
-            };
-            $fdClass = $transmitterCount.$fdClassLetter;
+            $isWinter = $event->eventType?->code === 'WFD';
+            $exchangeClass = $this->makeExchangeClass($isWinter);
+
+            // Score each simulated QSO by its mode under the event's own
+            // rulebook, rather than assuming Field Day's values.
+            $points = (int) ($isWinter
+                ? ($session->mode?->points_wfd ?? 1)
+                : ($session->mode?->points_fd ?? 1));
 
             $contact = Contact::create([
                 'event_configuration_id' => $config->id,
@@ -152,12 +144,12 @@ class DemoSimulateActivity extends Command
                 'qso_time' => now(),
                 'callsign' => $callsign,
                 'section_id' => $section->id,
-                'exchange_class' => $fdClass,
+                'exchange_class' => $exchangeClass,
                 'power_watts' => $session->power_watts ?? 100,
                 'is_gota_contact' => $session->station->is_gota,
                 'is_natural_power' => false,
                 'is_satellite' => false,
-                'points' => 1,
+                'points' => $points,
                 'is_duplicate' => false,
                 'notes' => null,
             ]);
@@ -167,6 +159,42 @@ class DemoSimulateActivity extends Command
         }
 
         return $logged;
+    }
+
+    /**
+     * Build a plausible received exchange class for the event being simulated.
+     *
+     * Field Day sends classes A-F; Winter Field Day sends H (home), I (indoor),
+     * O (outdoor) and M (mobile). Both prefix a transmitter count.
+     */
+    private function makeExchangeClass(bool $isWinter): string
+    {
+        $classPool = $isWinter
+            ? array_merge(
+                array_fill(0, 55, 'H'),
+                array_fill(0, 20, 'O'),
+                array_fill(0, 15, 'I'),
+                array_fill(0, 10, 'M'),
+            )
+            : array_merge(
+                array_fill(0, 50, 'A'),
+                array_fill(0, 20, 'B'),
+                array_fill(0, 15, 'C'),
+                array_fill(0, 10, 'D'),
+                array_fill(0, 4, 'E'),
+                array_fill(0, 1, 'F'),
+            );
+
+        $letter = $classPool[array_rand($classPool)];
+
+        $transmitterCount = match ($letter) {
+            'A' => random_int(1, 20),
+            'F', 'O' => random_int(2, 10),
+            'B', 'I' => random_int(1, 2),
+            default => 1,
+        };
+
+        return $transmitterCount.$letter;
     }
 
     /**

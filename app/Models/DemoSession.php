@@ -12,6 +12,7 @@ class DemoSession extends Model
     protected $fillable = [
         'session_uuid',
         'role',
+        'event_type',
         'visitor_hash',
         'user_agent',
         'device_type',
