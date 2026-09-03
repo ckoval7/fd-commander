@@ -2,8 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Models\OperatingClass;
+use App\Models\OperatingSession;
 use App\Services\ExchangeParserService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreContactSyncRequest extends FormRequest
 {
@@ -39,6 +42,46 @@ class StoreContactSyncRequest extends FormRequest
             'gota_operator_last_name' => ['nullable', 'string', 'max:50'],
             'gota_operator_callsign' => ['nullable', 'string', 'max:20', 'regex:/^[A-Z0-9\/]*$/'],
             'gota_operator_user_id' => ['nullable', 'integer', 'exists:users,id'],
+        ];
+    }
+
+    /**
+     * Reject class letters the event's own rulebook does not define, so a
+     * Field Day log cannot accept Winter Field Day classes or vice versa.
+     *
+     * Runs after the base rules so it can rely on a well-formed class token
+     * and an existing operating session.
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                if ($validator->errors()->isNotEmpty()) {
+                    return;
+                }
+
+                $session = OperatingSession::find($this->operating_session_id);
+                $eventTypeId = $session?->station->eventConfiguration?->event?->event_type_id;
+
+                if ($eventTypeId === null) {
+                    return;
+                }
+
+                $classCode = strtoupper(substr((string) $this->exchange_class, -1));
+
+                $definedClasses = OperatingClass::query()
+                    ->where('event_type_id', $eventTypeId)
+                    ->pluck('code')
+                    ->map(fn (string $code): string => strtoupper($code))
+                    ->all();
+
+                if ($definedClasses !== [] && ! in_array($classCode, $definedClasses, true)) {
+                    $validator->errors()->add(
+                        'exchange_class',
+                        "Class {$classCode} is not valid for this event.",
+                    );
+                }
+            },
         ];
     }
 

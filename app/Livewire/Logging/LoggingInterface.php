@@ -240,7 +240,7 @@ class LoggingInterface extends Component
             abort(403);
         }
 
-        $parsed = app(ExchangeParserService::class)->parse($exchangeInput);
+        $parsed = app(ExchangeParserService::class)->parse($exchangeInput, $this->eventTypeId());
 
         if (! $parsed['success']) {
             $this->parseError = $parsed['errors'][0] ?? 'Invalid exchange';
@@ -295,6 +295,15 @@ class LoggingInterface extends Component
         $this->parseError = '';
         $this->clearDuplicateState();
         unset($this->recentContacts);
+    }
+
+    /**
+     * Event type of the event being logged, so the parser only accepts the
+     * class letters this rulebook defines.
+     */
+    protected function eventTypeId(): ?int
+    {
+        return $this->operatingSession->station->eventConfiguration?->event?->event_type_id;
     }
 
     #[Computed]
