@@ -1,0 +1,444 @@
+questions:
+
+# ---------------------------------------------------------------------------
+# Application
+# ---------------------------------------------------------------------------
+- variable: app.url
+  label: Application URL
+  description: "Public URL where operators reach Field Day Commander, with no trailing slash. Asset and storage links are built from this, so it must match how the site is actually reached."
+  type: string
+  default: "http://localhost"
+  required: true
+  group: "Application"
+
+- variable: app.name
+  label: Site Name
+  description: "Shown in the browser title bar and in notification emails."
+  type: string
+  default: "Field Day Commander"
+  group: "Application"
+
+- variable: image.tag
+  label: Image Tag
+  description: "Container image tag to deploy. Leave blank to use the version shipped with this chart."
+  type: string
+  default: ""
+  group: "Application"
+
+- variable: app.env
+  label: Environment
+  type: enum
+  options:
+    - production
+    - staging
+    - local
+  default: production
+  group: "Application"
+
+- variable: app.debug
+  label: Debug Mode
+  description: "Shows detailed error pages. Leave off in production — it exposes configuration details to visitors."
+  type: boolean
+  default: false
+  group: "Application"
+
+- variable: app.developerMode
+  label: Developer Mode
+  description: "Enables time travel and database reset tools. Never enable this for a real event."
+  type: boolean
+  default: false
+  group: "Application"
+
+# ---------------------------------------------------------------------------
+# Networking
+# ---------------------------------------------------------------------------
+- variable: ingress.enabled
+  label: Enable Ingress
+  description: "Expose the application through an ingress controller."
+  type: boolean
+  default: false
+  group: "Networking"
+  show_subquestion_if: true
+  subquestions:
+    - variable: ingress.host
+      label: Hostname
+      type: hostname
+      default: "fd-commander.local"
+      required: true
+    - variable: ingress.className
+      label: Ingress Class
+      description: "Leave blank to use the cluster's default ingress class."
+      type: string
+      default: ""
+    - variable: ingress.tls.enabled
+      label: Enable TLS
+      type: boolean
+      default: false
+    - variable: ingress.tls.secretName
+      label: TLS Secret Name
+      description: "Existing secret holding the certificate. Leave blank to use a secret named after the release."
+      type: string
+      default: ""
+
+- variable: service.type
+  label: Service Type
+  description: "How the web interface is exposed. Use NodePort or LoadBalancer when not using an ingress."
+  type: enum
+  options:
+    - ClusterIP
+    - NodePort
+    - LoadBalancer
+  default: ClusterIP
+  group: "Networking"
+
+- variable: app.sessionSecureCookie
+  label: Secure Session Cookie
+  description: "Send the session cookie only over HTTPS. Turn this on whenever the site is served over TLS, and leave it off for plain-HTTP field deployments."
+  type: boolean
+  default: false
+  group: "Networking"
+
+# ---------------------------------------------------------------------------
+# External loggers
+# ---------------------------------------------------------------------------
+- variable: externalLoggers.enabled
+  label: Enable External Logger Ports
+  description: "Accept contacts sent over UDP from N1MM Logger+, WSJT-X and other logging software on the local network."
+  type: boolean
+  default: true
+  group: "External Loggers"
+  show_subquestion_if: true
+  subquestions:
+    - variable: externalLoggers.service.type
+      label: UDP Service Type
+      description: "UDP must reach the pod from the LAN, so ClusterIP is not usable here. LoadBalancer keeps the standard port numbers; NodePort remaps them into the node port range."
+      type: enum
+      options:
+        - NodePort
+        - LoadBalancer
+      default: NodePort
+    - variable: externalLoggers.service.loadBalancerIP
+      label: LoadBalancer IP
+      description: "Optional fixed address when using a LoadBalancer service."
+      type: string
+      default: ""
+    - variable: externalLoggers.n1mm.enabled
+      label: N1MM Logger+
+      type: boolean
+      default: true
+    - variable: externalLoggers.n1mm.port
+      label: N1MM Port
+      description: "Must match the port set in Settings > External Loggers."
+      type: int
+      default: 12060
+    - variable: externalLoggers.wsjtx.enabled
+      label: WSJT-X / JTDX
+      type: boolean
+      default: true
+    - variable: externalLoggers.wsjtx.port
+      label: WSJT-X Port
+      description: "Must match the port set in Settings > External Loggers."
+      type: int
+      default: 2237
+    - variable: externalLoggers.udpAdif.enabled
+      label: UDP ADIF (fldigi and others)
+      type: boolean
+      default: true
+    - variable: externalLoggers.udpAdif.port
+      label: UDP ADIF Port
+      description: "Must match the port set in Settings > External Loggers."
+      type: int
+      default: 2238
+
+# ---------------------------------------------------------------------------
+# Database
+# ---------------------------------------------------------------------------
+- variable: mysql.enabled
+  label: Deploy Bundled MySQL
+  description: "Deploy a MySQL server alongside the application. Turn this off to use an existing database server."
+  type: boolean
+  default: true
+  group: "Database"
+  show_subquestion_if: true
+  subquestions:
+    - variable: mysql.auth.database
+      label: Database Name
+      type: string
+      default: fd_commander
+    - variable: mysql.auth.username
+      label: Database User
+      type: string
+      default: fd_commander
+    - variable: mysql.auth.password
+      label: Database Password
+      description: "Leave blank to generate one automatically on first install."
+      type: password
+      default: ""
+    - variable: mysql.primary.persistence.size
+      label: Database Volume Size
+      type: string
+      default: "8Gi"
+    - variable: mysql.primary.persistence.storageClass
+      label: Database Storage Class
+      description: "Leave blank to use the cluster's default storage class."
+      type: storageclass
+      default: ""
+
+- variable: externalDatabase.host
+  label: External Database Host
+  type: string
+  default: ""
+  group: "Database"
+  show_if: "mysql.enabled=false"
+  required: true
+- variable: externalDatabase.port
+  label: External Database Port
+  type: int
+  default: 3306
+  group: "Database"
+  show_if: "mysql.enabled=false"
+- variable: externalDatabase.database
+  label: External Database Name
+  type: string
+  default: fd_commander
+  group: "Database"
+  show_if: "mysql.enabled=false"
+- variable: externalDatabase.username
+  label: External Database User
+  type: string
+  default: fd_commander
+  group: "Database"
+  show_if: "mysql.enabled=false"
+- variable: externalDatabase.password
+  label: External Database Password
+  type: password
+  default: ""
+  group: "Database"
+  show_if: "mysql.enabled=false"
+
+# ---------------------------------------------------------------------------
+# Redis
+# ---------------------------------------------------------------------------
+- variable: redis.enabled
+  label: Deploy Bundled Redis
+  description: "Redis backs the cache, sessions and queue. Without it the application falls back to the database, which works but is slower."
+  type: boolean
+  default: true
+  group: "Redis"
+  show_subquestion_if: true
+  subquestions:
+    - variable: redis.auth.password
+      label: Redis Password
+      description: "Leave blank to generate one automatically on first install."
+      type: password
+      default: ""
+    - variable: redis.master.persistence.size
+      label: Redis Volume Size
+      type: string
+      default: "2Gi"
+    - variable: redis.master.persistence.storageClass
+      label: Redis Storage Class
+      description: "Leave blank to use the cluster's default storage class."
+      type: storageclass
+      default: ""
+
+- variable: externalRedis.host
+  label: External Redis Host
+  description: "Leave blank to run without Redis and use the database for cache, sessions and queue."
+  type: string
+  default: ""
+  group: "Redis"
+  show_if: "redis.enabled=false"
+- variable: externalRedis.port
+  label: External Redis Port
+  type: int
+  default: 6379
+  group: "Redis"
+  show_if: "redis.enabled=false"
+- variable: externalRedis.password
+  label: External Redis Password
+  type: password
+  default: ""
+  group: "Redis"
+  show_if: "redis.enabled=false"
+
+# ---------------------------------------------------------------------------
+# Storage
+# ---------------------------------------------------------------------------
+- variable: persistence.enabled
+  label: Enable Persistent Storage
+  description: "Keeps uploads, gallery images and logs across restarts. Disable only for throwaway tests."
+  type: boolean
+  default: true
+  group: "Storage"
+  show_subquestion_if: true
+  subquestions:
+    - variable: persistence.size
+      label: Storage Size
+      type: string
+      default: "10Gi"
+    - variable: persistence.storageClass
+      label: Storage Class
+      description: "Leave blank to use the cluster's default storage class."
+      type: storageclass
+      default: ""
+    - variable: persistence.existingClaim
+      label: Existing Claim
+      description: "Use an existing PersistentVolumeClaim instead of creating one."
+      type: string
+      default: ""
+
+# ---------------------------------------------------------------------------
+# Real-time updates
+# ---------------------------------------------------------------------------
+- variable: reverb.enabled
+  label: Enable Live Updates
+  description: "Runs the Reverb WebSocket server so scoreboards and dashboards update in real time."
+  type: boolean
+  default: true
+  group: "Real-time"
+  show_subquestion_if: true
+  subquestions:
+    - variable: reverb.host
+      label: WebSocket Hostname
+      description: "Hostname browsers use for the WebSocket connection. Leave blank to derive it from the application URL or ingress hostname."
+      type: string
+      default: ""
+
+# ---------------------------------------------------------------------------
+# Security
+# ---------------------------------------------------------------------------
+- variable: app.registrationMode
+  label: Registration Mode
+  description: "How new operator accounts are created."
+  type: enum
+  options:
+    - open
+    - approval_required
+    - email_verification_required
+    - disabled
+  default: open
+  group: "Security"
+
+- variable: app.twoFactorMode
+  label: Two-Factor Authentication
+  type: enum
+  options:
+    - optional
+    - required
+    - disabled
+  default: optional
+  group: "Security"
+
+- variable: app.passwordResetMethod
+  label: Password Reset Method
+  description: "Email sends a reset link, admin_only requires an administrator, hybrid allows either. Email requires a configured mail server."
+  type: enum
+  options:
+    - hybrid
+    - email
+    - admin_only
+  default: hybrid
+  group: "Security"
+
+- variable: app.failedLoginStrategy
+  label: Failed Login Handling
+  type: enum
+  options:
+    - progressive_delay
+    - lockout
+  default: progressive_delay
+  group: "Security"
+
+- variable: app.auditLoggingEnabled
+  label: Audit Logging
+  description: "Track login attempts, permission changes and administrative actions."
+  type: boolean
+  default: true
+  group: "Security"
+
+- variable: app.key
+  label: Application Key
+  description: "Laravel encryption key. Leave blank to generate one on first install. Changing it later makes existing encrypted data and sessions unreadable."
+  type: password
+  default: ""
+  group: "Security"
+
+# ---------------------------------------------------------------------------
+# Mail
+# ---------------------------------------------------------------------------
+- variable: mail.mailer
+  label: Mail Transport
+  description: "Use log to write emails to the application log instead of sending them. Email-based password resets and verification need smtp."
+  type: enum
+  options:
+    - log
+    - smtp
+    - sendmail
+    - ses
+    - postmark
+    - array
+  default: log
+  group: "Mail"
+  show_subquestion_if: smtp
+  subquestions:
+    - variable: mail.host
+      label: SMTP Host
+      type: string
+      default: ""
+    - variable: mail.port
+      label: SMTP Port
+      type: int
+      default: 587
+    - variable: mail.username
+      label: SMTP Username
+      type: string
+      default: ""
+    - variable: mail.password
+      label: SMTP Password
+      type: password
+      default: ""
+    - variable: mail.encryption
+      label: SMTP Encryption
+      type: enum
+      options:
+        - tls
+        - ssl
+        - "null"
+      default: tls
+
+- variable: mail.fromAddress
+  label: From Address
+  type: string
+  default: "fdcommander@example.com"
+  group: "Mail"
+
+# ---------------------------------------------------------------------------
+# Resources
+# ---------------------------------------------------------------------------
+- variable: resources.requests.cpu
+  label: CPU Request
+  type: string
+  default: "500m"
+  group: "Resources"
+- variable: resources.requests.memory
+  label: Memory Request
+  type: string
+  default: "1Gi"
+  group: "Resources"
+- variable: resources.limits.cpu
+  label: CPU Limit
+  type: string
+  default: "2000m"
+  group: "Resources"
+- variable: resources.limits.memory
+  label: Memory Limit
+  type: string
+  default: "2Gi"
+  group: "Resources"
+- variable: octane.workers
+  label: Octane Workers
+  description: "Number of Octane worker processes. Use auto to match the available CPUs."
+  type: string
+  default: "auto"
+  group: "Resources"

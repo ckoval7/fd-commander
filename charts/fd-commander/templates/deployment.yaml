@@ -1,0 +1,174 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fd-commander.fullname" . }}
+  labels:
+    {{- include "fd-commander.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    # The entrypoint runs migrations and the storage volume is normally
+    # ReadWriteOnce, so the old pod must terminate before the new one starts.
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "fd-commander.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "fd-commander.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "fd-commander.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "fd-commander.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+            {{- if .Values.reverb.enabled }}
+            - name: reverb
+              containerPort: {{ .Values.reverb.port }}
+              protocol: TCP
+            {{- end }}
+            {{- if .Values.externalLoggers.enabled }}
+            {{- if .Values.externalLoggers.n1mm.enabled }}
+            - name: n1mm
+              containerPort: {{ .Values.externalLoggers.n1mm.port }}
+              protocol: UDP
+            {{- end }}
+            {{- if .Values.externalLoggers.wsjtx.enabled }}
+            - name: wsjtx
+              containerPort: {{ .Values.externalLoggers.wsjtx.port }}
+              protocol: UDP
+            {{- end }}
+            {{- if .Values.externalLoggers.udpAdif.enabled }}
+            - name: udp-adif
+              containerPort: {{ .Values.externalLoggers.udpAdif.port }}
+              protocol: UDP
+            {{- end }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "fd-commander.fullname" . }}
+          env:
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fd-commander.secretName" . }}
+                  key: APP_KEY
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fd-commander.databaseSecretName" . }}
+                  key: {{ include "fd-commander.databaseSecretKey" . }}
+            {{- if include "fd-commander.redisAuthEnabled" . }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fd-commander.redisSecretName" . }}
+                  key: {{ include "fd-commander.redisSecretKey" . }}
+            {{- end }}
+            {{- if .Values.reverb.enabled }}
+            - name: REVERB_APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fd-commander.secretName" . }}
+                  key: REVERB_APP_KEY
+            - name: REVERB_APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fd-commander.secretName" . }}
+                  key: REVERB_APP_SECRET
+            - name: REVERB_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fd-commander.secretName" . }}
+                  key: REVERB_APP_ID
+            {{- end }}
+            {{- if .Values.mail.password }}
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fd-commander.secretName" . }}
+                  key: MAIL_PASSWORD
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe:
+            # Covers the first boot, which waits for the database and then runs
+            # migrations and seeders before Octane starts listening.
+            httpGet:
+              path: /up
+              port: http
+            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+            periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+          {{- end }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /up
+              port: http
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /up
+              port: http
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: storage
+              mountPath: /app/storage
+      volumes:
+        - name: storage
+        {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-storage" (include "fd-commander.fullname" .)) }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

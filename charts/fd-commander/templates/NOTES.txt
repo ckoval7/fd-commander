@@ -1,0 +1,69 @@
+Field Day Commander {{ .Chart.AppVersion }} is installing.
+
+The first boot waits for the database, then runs migrations and seeders, so
+it can take a few minutes before the app answers. Watch it with:
+
+  kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ include "fd-commander.fullname" . }}
+
+1. Reach the application:
+{{- if .Values.ingress.enabled }}
+
+  http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.host }}
+{{- else if eq .Values.service.type "LoadBalancer" }}
+
+  Wait for the load balancer address:
+    kubectl -n {{ .Release.Namespace }} get svc {{ include "fd-commander.fullname" . }} -w
+{{- else if eq .Values.service.type "NodePort" }}
+
+  export NODE_IP=$(kubectl -n {{ .Release.Namespace }} get nodes -o jsonpath='{.items[0].status.addresses[0].address}')
+  export NODE_PORT=$(kubectl -n {{ .Release.Namespace }} get svc {{ include "fd-commander.fullname" . }} -o jsonpath='{.spec.ports[0].nodePort}')
+  echo "http://$NODE_IP:$NODE_PORT"
+{{- else }}
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "fd-commander.fullname" . }} 8080:{{ .Values.service.port }}
+  echo "http://127.0.0.1:8080"
+{{- end }}
+
+2. Sign in with the seeded system administrator account, then change the
+   password immediately through the setup wizard:
+
+     Callsign: SYSTEM
+     Password: ChangeMe123!
+
+{{- if .Values.externalLoggers.enabled }}
+
+3. External logger UDP ports. These must match the ports set in the admin UI
+   under Settings > External Loggers:
+{{- if .Values.externalLoggers.n1mm.enabled }}
+     N1MM Logger+   {{ .Values.externalLoggers.n1mm.port }}/udp{{ if eq .Values.externalLoggers.service.type "NodePort" }} (node port {{ .Values.externalLoggers.service.nodePorts.n1mm }}){{ end }}
+{{- end }}
+{{- if .Values.externalLoggers.wsjtx.enabled }}
+     WSJT-X / JTDX  {{ .Values.externalLoggers.wsjtx.port }}/udp{{ if eq .Values.externalLoggers.service.type "NodePort" }} (node port {{ .Values.externalLoggers.service.nodePorts.wsjtx }}){{ end }}
+{{- end }}
+{{- if .Values.externalLoggers.udpAdif.enabled }}
+     UDP ADIF       {{ .Values.externalLoggers.udpAdif.port }}/udp{{ if eq .Values.externalLoggers.service.type "NodePort" }} (node port {{ .Values.externalLoggers.service.nodePorts.udpAdif }}){{ end }}
+{{- end }}
+{{- if eq .Values.externalLoggers.service.type "NodePort" }}
+
+   Note: with NodePort the logging software must send to the node port, which
+   differs from the in-container port. Use a LoadBalancer service if you need
+   the standard port numbers on the LAN.
+{{- end }}
+{{- end }}
+
+{{- if not .Values.persistence.enabled }}
+
+WARNING: persistence is disabled. Uploads, gallery images and logs live in an
+emptyDir and are lost when the pod restarts. Set persistence.enabled=true for
+anything but a throwaway test.
+{{- end }}
+{{- if and .Values.app.debug (eq .Values.app.env "production") }}
+
+WARNING: app.debug is true in a production environment. This exposes stack
+traces and configuration details to visitors. Set app.debug=false.
+{{- end }}
+{{- if .Values.app.developerMode }}
+
+WARNING: developer mode is enabled. It exposes database reset and time travel
+tools. Never leave this on for a real event.
+{{- end }}
