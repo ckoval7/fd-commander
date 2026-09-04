@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "fd-commander.fullname" . }}
+  labels:
+    {{- include "fd-commander.labels" . | nindent 4 }}
+data:
+  APP_NAME: {{ .Values.app.name | quote }}
+  APP_ENV: {{ .Values.app.env | quote }}
+  APP_DEBUG: {{ .Values.app.debug | quote }}
+  APP_URL: {{ .Values.app.url | quote }}
+  APP_TIMEZONE: {{ .Values.app.timezone | quote }}
+  DEVELOPER_MODE: {{ .Values.app.developerMode | quote }}
+  LOG_CHANNEL: "stack"
+  LOG_STACK: "single"
+  LOG_LEVEL: {{ .Values.app.logLevel | quote }}
+  LOG_DEPRECATIONS_CHANNEL: "null"
+
+  # --- Octane / FrankenPHP ---
+  OCTANE_SERVER: "frankenphp"
+  OCTANE_WORKERS: {{ .Values.octane.workers | quote }}
+  OCTANE_MAX_REQUESTS: {{ .Values.octane.maxRequests | quote }}
+
+  # --- Database ---
+  DB_CONNECTION: "mysql"
+  DB_HOST: {{ include "fd-commander.databaseHost" . | quote }}
+  DB_PORT: {{ include "fd-commander.databasePort" . | quote }}
+  DB_DATABASE: {{ include "fd-commander.databaseName" . | quote }}
+  DB_USERNAME: {{ include "fd-commander.databaseUser" . | quote }}
+
+  {{- if include "fd-commander.redisAvailable" . }}
+  # --- Redis-backed cache, sessions and queue ---
+  CACHE_STORE: "redis"
+  SESSION_DRIVER: "redis"
+  QUEUE_CONNECTION: "redis"
+  REDIS_CLIENT: "phpredis"
+  REDIS_HOST: {{ include "fd-commander.redisHost" . | quote }}
+  REDIS_PORT: {{ include "fd-commander.redisPort" . | quote }}
+  REDIS_DB: {{ .Values.externalRedis.database | quote }}
+  REDIS_CACHE_DB: {{ .Values.externalRedis.cacheDatabase | quote }}
+  {{- else }}
+  # --- No Redis: fall back to the database for cache, sessions and queue ---
+  CACHE_STORE: "database"
+  SESSION_DRIVER: "database"
+  QUEUE_CONNECTION: "database"
+  {{- end }}
+
+  SESSION_LIFETIME: {{ .Values.app.sessionTimeoutDefault | quote }}
+  SESSION_ENCRYPT: "false"
+  SESSION_PATH: "/"
+  SESSION_DOMAIN: "null"
+  SESSION_SECURE_COOKIE: {{ .Values.app.sessionSecureCookie | quote }}
+
+  {{- if .Values.reverb.enabled }}
+  # --- Reverb (WebSockets) ---
+  BROADCAST_CONNECTION: "reverb"
+  REVERB_SERVER_HOST: "0.0.0.0"
+  REVERB_SERVER_PORT: {{ .Values.reverb.port | quote }}
+  REVERB_HOST: {{ include "fd-commander.reverbHost" . | quote }}
+  REVERB_PORT: {{ include "fd-commander.reverbPublicPort" . | quote }}
+  REVERB_SCHEME: {{ include "fd-commander.reverbScheme" . | quote }}
+  # The browser reads these through the reverb-config meta tag rendered by the
+  # layouts, so no VITE_ build-time variables are needed at runtime.
+  {{- else }}
+  BROADCAST_CONNECTION: "log"
+  {{- end }}
+
+  # --- Mail ---
+  MAIL_MAILER: {{ .Values.mail.mailer | quote }}
+  {{- if .Values.mail.host }}
+  MAIL_HOST: {{ .Values.mail.host | quote }}
+  MAIL_PORT: {{ .Values.mail.port | quote }}
+  MAIL_ENCRYPTION: {{ .Values.mail.encryption | quote }}
+  {{- end }}
+  {{- if .Values.mail.username }}
+  MAIL_USERNAME: {{ .Values.mail.username | quote }}
+  {{- end }}
+  MAIL_FROM_ADDRESS: {{ .Values.mail.fromAddress | quote }}
+  MAIL_FROM_NAME: {{ default .Values.app.name .Values.mail.fromName | quote }}
+
+  # --- Authentication and security ---
+  2FA_MODE: {{ .Values.app.twoFactorMode | quote }}
+  REGISTRATION_MODE: {{ .Values.app.registrationMode | quote }}
+  PASSWORD_RESET_METHOD: {{ .Values.app.passwordResetMethod | quote }}
+  FAILED_LOGIN_STRATEGY: {{ .Values.app.failedLoginStrategy | quote }}
+  LOCKOUT_THRESHOLD: {{ .Values.app.lockoutThreshold | quote }}
+  LOCKOUT_DURATION: {{ .Values.app.lockoutDuration | quote }}
+  SESSION_TIMEOUT_ADMIN: {{ .Values.app.sessionTimeoutAdmin | quote }}
+  SESSION_TIMEOUT_DEFAULT: {{ .Values.app.sessionTimeoutDefault | quote }}
+  EVENT_DURATION_MODE: {{ .Values.app.eventDurationMode | quote }}
+  AUDIT_LOGGING_ENABLED: {{ .Values.app.auditLoggingEnabled | quote }}
+  AUDIT_RETENTION_DAYS: {{ .Values.app.auditRetentionDays | quote }}
+  PASSWORD_MIN_LENGTH: {{ .Values.app.passwordMinLength | quote }}
+  PASSWORD_ADMIN_MIN_LENGTH: {{ .Values.app.passwordAdminMinLength | quote }}
+  BCRYPT_ROUNDS: "12"
+
+  {{- if .Values.externalLoggers.enabled }}
+  # --- External logger UDP ports ---
+  # These must match the ports configured in Settings > External Loggers.
+  {{- if .Values.externalLoggers.n1mm.enabled }}
+  N1MM_PORT: {{ .Values.externalLoggers.n1mm.port | quote }}
+  {{- end }}
+  {{- if .Values.externalLoggers.wsjtx.enabled }}
+  WSJTX_PORT: {{ .Values.externalLoggers.wsjtx.port | quote }}
+  {{- end }}
+  {{- if .Values.externalLoggers.udpAdif.enabled }}
+  UDP_ADIF_PORT: {{ .Values.externalLoggers.udpAdif.port | quote }}
+  {{- end }}
+  {{- end }}
+
+  FILESYSTEM_DISK: "local"
+  APP_MAINTENANCE_DRIVER: "file"

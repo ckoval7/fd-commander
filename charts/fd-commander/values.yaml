@@ -1,0 +1,258 @@
+# Default values for fd-commander.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/ckoval7/fielddaycommander
+  pullPolicy: IfNotPresent
+  # Defaults to the chart's appVersion when empty.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+# The entrypoint chowns storage and supervisord runs as root, so the
+# container needs to start as root. Octane/Caddy drop to www-data.
+securityContext: {}
+
+# ---------------------------------------------------------------------------
+# Application settings (mapped to the container environment)
+# ---------------------------------------------------------------------------
+app:
+  name: "Field Day Commander"
+  env: production
+  debug: false
+  # Public URL of the installation, no trailing slash. Also used to build
+  # asset and storage URLs, so it must match how users reach the app.
+  url: "http://localhost"
+  # Leave blank to have the entrypoint generate a key on first boot. For
+  # multi-replica or upgrade-safe installs, set one (php artisan key:generate
+  # --show) or supply it via existingSecret.
+  key: ""
+  logLevel: info
+  timezone: UTC
+  # Never enable in production — exposes time travel and DB reset tools.
+  developerMode: false
+
+  # Feature/security settings mirroring .env.example.
+  twoFactorMode: optional          # required | optional | disabled
+  registrationMode: open           # open | approval_required | email_verification_required | disabled
+  passwordResetMethod: hybrid      # email | admin_only | hybrid
+  failedLoginStrategy: progressive_delay  # lockout | progressive_delay
+  lockoutThreshold: 5
+  lockoutDuration: 15
+  sessionTimeoutAdmin: 30
+  sessionTimeoutDefault: 240
+  eventDurationMode: true
+  auditLoggingEnabled: true
+  auditRetentionDays: 365
+  passwordMinLength: 8
+  passwordAdminMinLength: 12
+  # Send the session cookie only over HTTPS. Turn on whenever TLS terminates
+  # in front of the app; leave off for plain-HTTP field/LAN deployments.
+  sessionSecureCookie: false
+
+# Existing secret supplying sensitive values instead of the generated one.
+# Recognised keys: APP_KEY, DB_PASSWORD, REDIS_PASSWORD, MAIL_PASSWORD,
+# REVERB_APP_KEY, REVERB_APP_SECRET, REVERB_APP_ID.
+existingSecret: ""
+
+# ---------------------------------------------------------------------------
+# Octane (FrankenPHP) runtime
+# ---------------------------------------------------------------------------
+octane:
+  workers: auto
+  maxRequests: 500
+
+# ---------------------------------------------------------------------------
+# External logger UDP listeners
+# ---------------------------------------------------------------------------
+# The listeners are spawned inside the application pod and bind these ports.
+# The port numbers must match what is configured in the admin UI under
+# Settings > External Loggers. Exposing them requires a service type that
+# carries UDP to the pod (LoadBalancer or NodePort).
+externalLoggers:
+  enabled: true
+  n1mm:
+    enabled: true
+    port: 12060
+  wsjtx:
+    enabled: true
+    port: 2237
+  udpAdif:
+    enabled: true
+    port: 2238
+  service:
+    # Separate service so UDP can use a different type than the web service.
+    type: NodePort
+    annotations: {}
+    loadBalancerIP: ""
+    # Node ports used when type is NodePort. Must be inside the cluster's
+    # node port range (default 30000-32767).
+    nodePorts:
+      n1mm: 31060
+      wsjtx: 32237
+      udpAdif: 32238
+
+# ---------------------------------------------------------------------------
+# Reverb (WebSockets) — powers live scoreboard and dashboard updates
+# ---------------------------------------------------------------------------
+reverb:
+  enabled: true
+  # Hostname browsers use to reach the WebSocket endpoint. Leave blank to
+  # derive it from app.url. The ingress routes /app to the Reverb port.
+  host: ""
+  port: 8080
+  # Public port browsers connect to (443 behind TLS, 80 behind plain HTTP).
+  publicPort: ""
+  scheme: ""
+
+# ---------------------------------------------------------------------------
+# Database
+# ---------------------------------------------------------------------------
+# When mysql.enabled is true the bundled Bitnami MySQL subchart is deployed
+# and used automatically. Set it to false and fill in externalDatabase to
+# point at an existing MySQL/MariaDB server.
+mysql:
+  enabled: true
+  auth:
+    database: fd_commander
+    username: fd_commander
+    password: ""
+    rootPassword: ""
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+      storageClass: ""
+
+externalDatabase:
+  host: ""
+  port: 3306
+  database: fd_commander
+  username: fd_commander
+  password: ""
+  # Key holding the password inside existingSecret, if used.
+  existingSecretPasswordKey: DB_PASSWORD
+
+# ---------------------------------------------------------------------------
+# Redis — cache, sessions and queue
+# ---------------------------------------------------------------------------
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    password: ""
+  master:
+    persistence:
+      enabled: true
+      size: 2Gi
+      storageClass: ""
+    # AOF with appendfsync=always so queued jobs survive a power cut, which
+    # matters for field deployments running off generators or batteries.
+    configuration: |-
+      appendonly yes
+      appendfsync always
+      save 900 1
+      save 300 10
+      save 60 10000
+      maxmemory-policy volatile-lru
+
+externalRedis:
+  host: ""
+  port: 6379
+  password: ""
+  database: 0
+  cacheDatabase: 1
+
+# ---------------------------------------------------------------------------
+# Persistence for storage/ (uploads, gallery images, logs, seeder marker)
+# ---------------------------------------------------------------------------
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  existingClaim: ""
+
+# ---------------------------------------------------------------------------
+# Networking
+# ---------------------------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 80
+  nodePort: ""
+  annotations: {}
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: fd-commander.local
+  path: /
+  pathType: Prefix
+  tls:
+    enabled: false
+    secretName: ""
+
+# ---------------------------------------------------------------------------
+# Mail
+# ---------------------------------------------------------------------------
+mail:
+  mailer: log            # smtp | log | sendmail | ses | postmark | array
+  host: ""
+  port: 587
+  username: ""
+  password: ""
+  encryption: tls
+  fromAddress: "fdcommander@example.com"
+  fromName: ""
+
+# ---------------------------------------------------------------------------
+# Resources, scheduling and probes
+# ---------------------------------------------------------------------------
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+# The entrypoint runs migrations and seeders before supervisord starts, so
+# the startup probe must tolerate a slow first boot.
+startupProbe:
+  enabled: true
+  failureThreshold: 60
+  periodSeconds: 5
+
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 0
+  periodSeconds: 20
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 0
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+extraEnv: []
