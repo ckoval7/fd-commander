@@ -50,70 +50,117 @@ class ExchangeParserService
             'errors' => [],
         ];
 
-        $input = trim($input);
-        if ($input === '') {
-            $result['errors'][] = 'Exchange is empty';
+        $tokens = $this->tokenize($input, $result['errors']);
 
-            return $result;
+        if ($tokens !== null
+            && $this->applyCallsign($tokens[0], $result)
+            && $this->applyExchangeClass($tokens[1], $eventTypeId, $result)
+            && $this->applySection($tokens[2], $result)) {
+            $result['success'] = true;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Split an exchange into its three uppercased tokens.
+     *
+     * @param  array<string>  $errors
+     * @return array{0: string, 1: string, 2: string}|null
+     */
+    private function tokenize(string $input, array &$errors): ?array
+    {
+        $input = trim($input);
+
+        if ($input === '') {
+            $errors[] = 'Exchange is empty';
+
+            return null;
         }
 
         $tokens = preg_split('/\s+/', strtoupper($input));
 
         if (count($tokens) !== 3) {
-            $result['errors'][] = count($tokens) < 3
+            $errors[] = count($tokens) < 3
                 ? 'Exchange must contain callsign, class, and section (e.g. W1AW 3A CT)'
                 : 'Too many parts in exchange';
 
-            return $result;
+            return null;
         }
 
-        // Token 1: Callsign
-        $callsign = $tokens[0];
+        return $tokens;
+    }
+
+    /**
+     * Validate the callsign token and record it on the result.
+     *
+     * @param  array{success: bool, callsign: ?string, transmitter_count: ?int, class_code: ?string, section_code: ?string, section_id: ?int, errors: array<string>}  $result
+     */
+    private function applyCallsign(string $callsign, array &$result): bool
+    {
         if (! $this->isValidCallsign($callsign)) {
             $result['errors'][] = "Invalid callsign: {$callsign}";
 
-            return $result;
+            return false;
         }
+
         $result['callsign'] = $callsign;
 
-        // Token 2: Exchange class (e.g. "3A", "1D", "15F", or WFD's "2M", "1H")
-        //
-        // The shape is checked against the union of every rulebook's class
-        // letters; which of those letters are actually legal is decided by the
-        // event type when one is supplied, so a Field Day event rejects WFD's
-        // H/I/O/M and vice versa.
-        if (! preg_match('/^(\d{1,2})('.self::EXCHANGE_CLASS_CODES.')$/i', $tokens[1], $matches)) {
-            $result['errors'][] = "Invalid class: {$tokens[1]} (expected format like 3A, 1D, 2M)";
+        return true;
+    }
 
-            return $result;
+    /**
+     * Validate the exchange class token (e.g. "3A", "1D", "2M") and record it.
+     *
+     * The shape is checked against the union of every rulebook's class letters;
+     * which of those letters are actually legal is decided by the event type
+     * when one is supplied, so a Field Day event rejects WFD's H/I/O/M and vice
+     * versa.
+     *
+     * @param  array{success: bool, callsign: ?string, transmitter_count: ?int, class_code: ?string, section_code: ?string, section_id: ?int, errors: array<string>}  $result
+     */
+    private function applyExchangeClass(string $token, ?int $eventTypeId, array &$result): bool
+    {
+        if (! preg_match('/^(\d{1,2})('.self::EXCHANGE_CLASS_CODES.')$/i', $token, $matches)) {
+            $result['errors'][] = "Invalid class: {$token} (expected format like 3A, 1D, 2M)";
+
+            return false;
         }
-        $classCode = strtoupper($matches[2]);
 
+        $classCode = strtoupper($matches[2]);
         $validClassCodes = $eventTypeId === null ? [] : $this->validClassCodes($eventTypeId);
 
         if ($validClassCodes !== [] && ! in_array($classCode, $validClassCodes, true)) {
             $result['errors'][] = "Class {$classCode} is not valid for this event";
 
-            return $result;
+            return false;
         }
 
         $result['transmitter_count'] = (int) $matches[1];
         $result['class_code'] = $classCode;
 
-        // Token 3: Section code
-        $sectionCode = $tokens[2];
+        return true;
+    }
+
+    /**
+     * Resolve the section token to a section id and record it.
+     *
+     * @param  array{success: bool, callsign: ?string, transmitter_count: ?int, class_code: ?string, section_code: ?string, section_id: ?int, errors: array<string>}  $result
+     */
+    private function applySection(string $sectionCode, array &$result): bool
+    {
         $sectionId = $this->lookupSection($sectionCode);
+
         if ($sectionId === null) {
             $result['errors'][] = "Unknown section: {$sectionCode}";
 
-            return $result;
+            return false;
         }
+
         $result['section_code'] = $sectionCode;
         $result['section_id'] = $sectionId;
 
-        $result['success'] = true;
-
-        return $result;
+        return true;
     }
 
     /**

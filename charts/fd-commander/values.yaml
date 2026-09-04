@@ -16,6 +16,9 @@ serviceAccount:
   create: true
   annotations: {}
   name: ""
+  # FD Commander never calls the Kubernetes API, so the pod does not need a
+  # projected API token. Set to true only if you add a sidecar that does.
+  automountServiceAccountToken: false
 
 podAnnotations: {}
 podLabels: {}
@@ -226,9 +229,12 @@ resources:
   limits:
     cpu: 2000m
     memory: 2Gi
+    # Bounds the container's writable layer and any emptyDir it mounts.
+    ephemeral-storage: 4Gi
   requests:
     cpu: 500m
     memory: 1Gi
+    ephemeral-storage: 1Gi
 
 # The entrypoint runs migrations and seeders before supervisord starts, so
 # the startup probe must tolerate a slow first boot.
