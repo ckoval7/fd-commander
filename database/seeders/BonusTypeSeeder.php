@@ -407,6 +407,20 @@ class BonusTypeSeeder extends Seeder
     protected function winterFieldDayObjectives(int $eventTypeId): array
     {
         return [
+            ...$this->winterFieldDayDeploymentObjectives($eventTypeId),
+            ...$this->winterFieldDayDigitalObjectives($eventTypeId),
+            ...$this->winterFieldDayOperatingObjectives($eventTypeId),
+        ];
+    }
+
+    /**
+     * Deployment and power objectives: how and where the station is set up.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function winterFieldDayDeploymentObjectives(int $eventTypeId): array
+    {
+        return [
             [
                 'event_type_id' => $eventTypeId,
                 'rules_version' => '2026',
@@ -455,6 +469,17 @@ class BonusTypeSeeder extends Seeder
                 'requires_proof' => false,
                 'eligible_classes' => null,
             ],
+        ];
+    }
+
+    /**
+     * Satellite, Winlink and bulletin objectives: contacts made outside plain HF phone/CW.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function winterFieldDayDigitalObjectives(int $eventTypeId): array
+    {
+        return [
             [
                 'event_type_id' => $eventTypeId,
                 'rules_version' => '2026',
@@ -519,6 +544,17 @@ class BonusTypeSeeder extends Seeder
                 'requires_proof' => true,
                 'eligible_classes' => null,
             ],
+        ];
+    }
+
+    /**
+     * Operating-achievement objectives: band, mode, power and endurance milestones.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function winterFieldDayOperatingObjectives(int $eventTypeId): array
+    {
+        return [
             [
                 'event_type_id' => $eventTypeId,
                 'rules_version' => '2026',

@@ -459,35 +459,47 @@ class EventConfiguration extends Model
     public function calculateEmergencyPowerBonus(): int
     {
         $rules = $this->fieldDayRules();
-
-        if (! $rules) {
-            return 0;
-        }
-
-        $bonusType = $rules->bonus('emergency_power');
+        $bonusType = $rules?->bonus('emergency_power');
 
         $hasCommercialStation = ! $this->uses_commercial_power
             && $this->stations()
                 ->where('power_source', PowerSource::CommercialMains->value)
                 ->exists();
 
-        if ($this->uses_commercial_power || $hasCommercialStation || ! $bonusType || ! $bonusType->is_active) {
+        $disqualified = ! $rules
+            || ! $bonusType
+            || ! $bonusType->is_active
+            || $this->uses_commercial_power
+            || $hasCommercialStation
+            || ! $this->isClassEligibleForBonus($bonusType);
+
+        if ($disqualified) {
             return 0;
         }
 
-        $classCode = $this->operatingClass?->code;
+        return min($this->transmitter_count, $rules->emergencyPowerMaxTransmitters()) * $bonusType->base_points;
+    }
+
+    /**
+     * Determine whether this event's operating class may claim the given bonus.
+     *
+     * A bonus with no `eligible_classes` restriction is open to every class.
+     * The column is decoded defensively because older rows store the list as a
+     * JSON string rather than an array.
+     */
+    protected function isClassEligibleForBonus(BonusType $bonusType): bool
+    {
         $eligibleClasses = $bonusType->eligible_classes;
 
-        if ($eligibleClasses !== null) {
-            if (is_string($eligibleClasses)) {
-                $eligibleClasses = json_decode($eligibleClasses, true) ?? [];
-            }
-            if (! in_array($classCode, $eligibleClasses)) {
-                return 0;
-            }
+        if ($eligibleClasses === null) {
+            return true;
         }
 
-        return min($this->transmitter_count, $rules->emergencyPowerMaxTransmitters()) * $bonusType->base_points;
+        if (is_string($eligibleClasses)) {
+            $eligibleClasses = json_decode($eligibleClasses, true) ?? [];
+        }
+
+        return in_array($this->operatingClass?->code, $eligibleClasses);
     }
 
     /**
