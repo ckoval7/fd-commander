@@ -20,11 +20,11 @@ class Release extends Command
     public function handle(): int
     {
         if ($this->option('push') && ! $this->option('tag')) {
-            $this->setOption('tag', true);
+            $this->input->setOption('tag', true);
         }
 
         if ($this->option('tag') && ! $this->option('write')) {
-            $this->setOption('write', true);
+            $this->input->setOption('write', true);
         }
 
         $month = (string) ($this->option('month') ?: Version::currentMonth());
